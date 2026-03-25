@@ -65,7 +65,7 @@ const sections = [
   },
 ];
 
-export default function GradePlanCard({ grade, gradeData }) {
+export default function GradePlanCard({ grade, gradeData, schoolName }) {
   if (!gradeData) return null;
 
   return (
@@ -105,9 +105,15 @@ export default function GradePlanCard({ grade, gradeData }) {
               )}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {items.map((item, i) => (
-                  <span key={i} className={cn("px-2.5 py-1 rounded-lg text-xs font-medium", tagColor)}>
+                  <a
+                    key={i}
+                    href={`https://www.google.com/search?q=${encodeURIComponent(item + (schoolName ? ' ' + schoolName : ''))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn("px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70 transition-opacity cursor-pointer", tagColor)}
+                  >
                     {item}
-                  </span>
+                  </a>
                 ))}
               </div>
             </div>
