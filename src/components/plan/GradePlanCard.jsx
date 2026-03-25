@@ -89,7 +89,7 @@ export default function GradePlanCard({ grade, gradeData }) {
       {/* Sections grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map(({ key, label, icon: Icon, color, tagColor, badge }) => {
-          const items = gradeData[key] || [];
+          const items = Array.isArray(gradeData[key]) ? gradeData[key] : [];
           if (!items.length) return null;
 
           return (
