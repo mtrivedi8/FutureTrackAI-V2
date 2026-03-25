@@ -207,8 +207,6 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
             <SchoolSearch
               value={form.school_name || ""}
               onChange={v => setForm(p => ({ ...p, school_name: v }))}
-              city={form.city}
-              country={form.country}
             />
           </div>
           <div className="space-y-2">

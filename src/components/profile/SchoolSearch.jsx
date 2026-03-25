@@ -5,18 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Search, Loader2, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function SchoolSearch({ value, onChange, city, country }) {
+export default function SchoolSearch({ value, onChange }) {
+  const [location, setLocation] = useState("");
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showList, setShowList] = useState(false);
+  const [searched, setSearched] = useState(false);
 
   const searchSchools = async () => {
-    if (!city && !country) return;
+    if (!location.trim()) return;
     setLoading(true);
     setShowList(false);
+    setSearched(false);
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `List all middle schools and high schools (grades 6-12) in ${[city, country].filter(Boolean).join(", ")}.
+      prompt: `List all middle schools and high schools (grades 6-12) in ${location.trim()}, USA.
 Include public schools, private schools, charter schools, and magnet schools.
 Return only school names as an array. Include at least 15-30 schools if available.`,
       add_context_from_internet: true,
@@ -31,6 +34,7 @@ Return only school names as an array. Include at least 15-30 schools if availabl
 
     setSchools(result.schools || []);
     setShowList(true);
+    setSearched(true);
     setLoading(false);
   };
 
@@ -39,27 +43,37 @@ Return only school names as an array. Include at least 15-30 schools if availabl
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Location search row */}
       <div className="flex gap-2">
         <Input
-          value={value}
-          onChange={e => { onChange(e.target.value); setShowList(schools.length > 0); }}
-          placeholder="Start typing your school name..."
+          value={location}
+          onChange={e => setLocation(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && searchSchools()}
+          placeholder="Enter your city & state (e.g. Austin, TX)"
           className="h-11"
         />
         <Button
           type="button"
           variant="outline"
           onClick={searchSchools}
-          disabled={loading || (!city && !country)}
+          disabled={loading || !location.trim()}
           className="shrink-0 gap-2"
-          title="Find schools near you"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          Find Schools
+          Search
         </Button>
       </div>
 
+      {/* Manual school name input */}
+      <Input
+        value={value}
+        onChange={e => { onChange(e.target.value); setShowList(schools.length > 0); }}
+        placeholder="Type or select your school name..."
+        className="h-11"
+      />
+
+      {/* School dropdown */}
       {showList && filtered.length > 0 && (
         <div className="border border-border rounded-xl bg-card shadow-lg max-h-56 overflow-y-auto z-10 relative">
           {filtered.map((school, i) => (
@@ -79,8 +93,8 @@ Return only school names as an array. Include at least 15-30 schools if availabl
         </div>
       )}
 
-      {showList && filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground px-1">No matching schools found. Try typing your school name above.</p>
+      {searched && filtered.length === 0 && (
+        <p className="text-sm text-muted-foreground px-1">No schools found. Type your school name manually above.</p>
       )}
     </div>
   );
