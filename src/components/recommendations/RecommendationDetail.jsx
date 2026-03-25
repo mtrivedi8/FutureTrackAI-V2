@@ -68,10 +68,16 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
               <p className="text-xs font-medium text-muted-foreground mb-2">Resources</p>
               <div className="space-y-1">
                 {recommendation.resources.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-primary">
-                    <ExternalLink className="w-3 h-3" />
+                  <a
+                    key={i}
+                    href={r.startsWith('http') ? r : `https://${r}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <ExternalLink className="w-3 h-3 shrink-0" />
                     <span>{r}</span>
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>
