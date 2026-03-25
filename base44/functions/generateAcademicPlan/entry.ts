@@ -63,8 +63,10 @@ STUDENT PROFILE:
 - Goals: ${(profile.goals || []).join(', ')}
 - Learning Style: ${profile.preferred_learning_style || 'Mixed'}
 
+The student is currently in grade ${profile.current_grade}.
 Generate 3 distinct career tracks that match this student's profile.
-For EACH track, create a detailed grade-by-grade plan from grade 7 to grade 12.
+For EACH track, create a detailed plan starting from grade ${profile.current_grade} through grade 12.
+IMPORTANT: The FIRST entry should be grade ${profile.current_grade} and focus on the REST OF THIS YEAR + the upcoming SUMMER before grade ${profile.current_grade + 1} (label the summer_activities as "Summer before Grade ${profile.current_grade + 1}"). Then continue grade by grade up to 12.
 
 For each grade, provide:
 - focus: Theme for that year

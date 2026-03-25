@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import GradeTimeline from "@/components/plan/GradeTimeline";
 import GradePlanCard from "@/components/plan/GradePlanCard";
 
-const GRADES = [7, 8, 9, 10, 11, 12];
+
 
 export default function AcademicPlan() {
   const [profile, setProfile] = useState(null);
@@ -89,6 +89,9 @@ export default function AcademicPlan() {
     );
   }
 
+  const startGrade = profile?.current_grade || 7;
+  const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
+
   const tracks = plan?.career_tracks || [];
   const currentTrack = tracks[selectedTrack];
   const gradeData = currentTrack?.grades?.find(g => g.grade === selectedGrade);
@@ -144,7 +147,7 @@ export default function AcademicPlan() {
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
           <h2 className="font-heading text-xl font-bold">Building your roadmap...</h2>
-          <p className="text-muted-foreground">AI is crafting a personalized 7–12 grade plan for you</p>
+          <p className="text-muted-foreground">Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a grade {startGrade}–12 plan for you...</p>
         </div>
       )}
 
@@ -195,7 +198,7 @@ export default function AcademicPlan() {
               <div>
                 <h2 className="font-heading text-lg font-semibold mb-3">Select a Grade Year</h2>
                 <GradeTimeline
-                  grades={GRADES}
+                  grades={grades}
                   selectedGrade={selectedGrade}
                   currentGrade={profile?.current_grade}
                   onSelect={setSelectedGrade}
