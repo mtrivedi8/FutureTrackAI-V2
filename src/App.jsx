@@ -11,6 +11,7 @@ import Onboarding from './pages/Onboarding';
 import Recommendations from './pages/Recommendations';
 import Progress from './pages/Progress';
 import Profile from './pages/Profile';
+import AcademicPlan from './pages/AcademicPlan';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
         <Route path="/recommendations" element={<Recommendations />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/plan" element={<AcademicPlan />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

@@ -1,10 +1,11 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Compass, TrendingUp, User, Sparkles } from "lucide-react";
+import { Home, Compass, TrendingUp, User, Sparkles, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/recommendations", icon: Compass, label: "Explore" },
+  { path: "/plan", icon: GraduationCap, label: "My Plan" },
   { path: "/progress", icon: TrendingUp, label: "Progress" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
