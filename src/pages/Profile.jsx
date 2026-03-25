@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Edit3, Save, Sparkles, Loader2, LogOut } from "lucide-react";
+import { User, Edit3, Save, Sparkles, Loader2, LogOut, School } from "lucide-react";
+import SchoolSearch from "@/components/profile/SchoolSearch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -196,6 +197,44 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
           </div>
         </div>
       </motion.div>
+
+      {/* School & Grade (edit mode) */}
+      {editing && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h2 className="font-heading font-semibold text-lg flex items-center gap-2"><School className="w-5 h-5" /> School Info</h2>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">School Name</label>
+            <SchoolSearch
+              value={form.school_name || ""}
+              onChange={v => setForm(p => ({ ...p, school_name: v }))}
+              city={form.city}
+              country={form.country}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Current Grade</label>
+            <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
+              <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
+              <SelectContent>
+                {[7,8,9,10,11,12].map(g => (
+                  <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </motion.div>
+      )}
+
+      {/* School info display (view mode) */}
+      {!editing && (profile?.school_name || profile?.current_grade) && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-muted/50 px-4 py-3 flex items-center gap-3">
+          <School className="w-5 h-5 text-muted-foreground" />
+          <div>
+            {profile.school_name && <p className="text-sm font-medium">{profile.school_name}</p>}
+            {profile.current_grade && <p className="text-xs text-muted-foreground">Grade {profile.current_grade}</p>}
+          </div>
+        </motion.div>
+      )}
 
       {/* Interests */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-3">
