@@ -1,4 +1,4 @@
-import { BookOpen, Lightbulb, Users, Laptop, Sun, Trophy } from "lucide-react";
+import { BookOpen, Lightbulb, Users, Laptop, Sun, Trophy, Heart, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const gradeLabels = {
@@ -8,25 +8,28 @@ const gradeLabels = {
 
 const sections = [
   {
-    key: "core_classes",
-    label: "Core Classes",
+    key: "school_courses",
+    label: "School Courses",
     icon: BookOpen,
     color: "bg-primary/10 text-primary",
     tagColor: "bg-primary/10 text-primary",
+    badge: "📚 Real School Catalog",
   },
   {
-    key: "electives",
-    label: "Electives",
-    icon: Lightbulb,
-    color: "bg-yellow-500/10 text-yellow-600",
-    tagColor: "bg-yellow-500/10 text-yellow-700",
+    key: "special_programs",
+    label: "Special Programs",
+    icon: GraduationCap,
+    color: "bg-purple-500/10 text-purple-600",
+    tagColor: "bg-purple-500/10 text-purple-700",
+    badge: "⭐ AP / Honors / IB",
   },
   {
     key: "clubs",
-    label: "Clubs",
+    label: "School Clubs",
     icon: Users,
     color: "bg-secondary/10 text-secondary",
     tagColor: "bg-secondary/10 text-secondary",
+    badge: "🏫 School Activities",
   },
   {
     key: "extracurriculars",
@@ -34,6 +37,15 @@ const sections = [
     icon: Trophy,
     color: "bg-accent/10 text-accent",
     tagColor: "bg-accent/10 text-accent",
+    badge: null,
+  },
+  {
+    key: "volunteer_opportunities",
+    label: "Volunteer",
+    icon: Heart,
+    color: "bg-red-500/10 text-red-500",
+    tagColor: "bg-red-500/10 text-red-600",
+    badge: "❤️ Community",
   },
   {
     key: "online_courses",
@@ -41,6 +53,7 @@ const sections = [
     icon: Laptop,
     color: "bg-blue-500/10 text-blue-500",
     tagColor: "bg-blue-500/10 text-blue-600",
+    badge: null,
   },
   {
     key: "summer_activities",
@@ -48,6 +61,7 @@ const sections = [
     icon: Sun,
     color: "bg-orange-500/10 text-orange-500",
     tagColor: "bg-orange-500/10 text-orange-600",
+    badge: "☀️ Summer",
   },
 ];
 
@@ -74,24 +88,24 @@ export default function GradePlanCard({ grade, gradeData }) {
 
       {/* Sections grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sections.map(({ key, label, icon: Icon, color, tagColor }) => {
+        {sections.map(({ key, label, icon: Icon, color, tagColor, badge }) => {
           const items = gradeData[key] || [];
           if (!items.length) return null;
 
           return (
             <div key={key} className="rounded-2xl bg-card border border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-1">
                 <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", color)}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <h3 className="font-heading font-semibold text-sm text-foreground">{label}</h3>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              {badge && (
+                <p className="text-[10px] text-muted-foreground mb-2 ml-9">{badge}</p>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {items.map((item, i) => (
-                  <span
-                    key={i}
-                    className={cn("px-2.5 py-1 rounded-lg text-xs font-medium", tagColor)}
-                  >
+                  <span key={i} className={cn("px-2.5 py-1 rounded-lg text-xs font-medium", tagColor)}>
                     {item}
                   </span>
                 ))}

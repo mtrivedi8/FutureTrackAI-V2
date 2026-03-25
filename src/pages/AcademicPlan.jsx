@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ChevronRight, BookOpen, Users, Trophy, Laptop, Sun, Lightbulb } from "lucide-react";
+import { Sparkles, Loader2, ChevronRight, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -43,78 +43,15 @@ export default function AcademicPlan() {
     if (!profile) return;
     setGenerating(true);
 
-    const prompt = `You are an expert academic counselor and career advisor for middle and high school students.
-
-Student Profile:
-- Name: ${profile.display_name}, Age: ${profile.age}
-- School: ${profile.school_name || "Not specified"}
-- Current Grade: ${profile.current_grade || "7"}th grade
-- Location: ${[profile.city, profile.country].filter(Boolean).join(", ") || "Not specified"}
-- Interests: ${(profile.interests || []).join(", ")}
-- Strengths: ${(profile.strengths || []).join(", ")}
-- Dream Careers: ${(profile.dream_careers || []).join(", ")}
-- Goals: ${(profile.goals || []).join(", ")}
-- Learning Style: ${profile.preferred_learning_style || "Mixed"}
-
-Generate 3 distinct career tracks that match this student's profile.
-For each track, create a detailed grade-by-grade plan from 7th to 12th grade.
-
-For each grade (7 through 12), provide:
-- focus: One sentence describing the main theme for that grade year
-- core_classes: 3-4 specific class names relevant to the track
-- electives: 2-3 elective recommendations
-- extracurriculars: 2-3 activities/sports
-- clubs: 2-3 school clubs
-- online_courses: 2 specific online course recommendations with platform names (e.g., "Python for Beginners - Codecademy")
-- summer_activities: 1-2 summer programs, internships, or projects
-- key_milestone: One major achievement or goal for that grade year
-
-Make the plans specific, realistic, and actionable. Tailor to their location where possible.`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          tracks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                description: { type: "string" },
-                emoji: { type: "string" },
-                college_goals: { type: "string" },
-                grades: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      grade: { type: "number" },
-                      focus: { type: "string" },
-                      core_classes: { type: "array", items: { type: "string" } },
-                      electives: { type: "array", items: { type: "string" } },
-                      extracurriculars: { type: "array", items: { type: "string" } },
-                      clubs: { type: "array", items: { type: "string" } },
-                      online_courses: { type: "array", items: { type: "string" } },
-                      summer_activities: { type: "array", items: { type: "string" } },
-                      key_milestone: { type: "string" },
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
+    const response = await base44.functions.invoke('generateAcademicPlan', { profile });
+    const { tracks, school_info } = response.data;
 
     const user = await base44.auth.me();
     const existing = await base44.entities.CareerPlan.filter({ user_email: user.email });
 
     const planData = {
       user_email: user.email,
-      career_tracks: result.tracks || [],
+      career_tracks: tracks || [],
       selected_track_index: 0,
       school_name: profile.school_name,
       current_grade: profile.current_grade,
@@ -122,7 +59,7 @@ Make the plans specific, realistic, and actionable. Tailor to their location whe
 
     let savedPlan;
     if (existing[0]) {
-      savedPlan = await base44.entities.CareerPlan.update(existing[0].id, planData);
+      await base44.entities.CareerPlan.update(existing[0].id, planData);
       savedPlan = { ...existing[0], ...planData };
     } else {
       savedPlan = await base44.entities.CareerPlan.create(planData);
@@ -130,7 +67,10 @@ Make the plans specific, realistic, and actionable. Tailor to their location whe
 
     setPlan(savedPlan);
     setSelectedTrack(0);
-    toast.success("Your academic plan is ready! 🎓");
+    const msg = school_info?.courses_found
+      ? `Plan ready! Used real courses from ${school_info.district_name || profile.school_name} 🎓`
+      : 'Your academic plan is ready! 🎓';
+    toast.success(msg);
     setGenerating(false);
   };
 
