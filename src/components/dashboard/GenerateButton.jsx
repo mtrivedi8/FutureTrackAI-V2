@@ -14,6 +14,7 @@ export default function GenerateButton({ profile, existingRecs = [], onGenerated
     const existingTitles = existingRecs.map(r => r.title).join(", ");
     const prompt = `You are a career mentor for a ${profile.age}-year-old teenager named ${profile.display_name}.
 
+Location: ${[profile.city, profile.country].filter(Boolean).join(", ") || "Not specified"}
 Their interests: ${(profile.interests || []).join(", ")}
 Their strengths: ${(profile.strengths || []).join(", ")}
 Their goals: ${(profile.goals || []).join(", ")}
@@ -23,8 +24,9 @@ Their learning style: ${profile.preferred_learning_style || "Mixed"}
 ${existingTitles ? `They already have these recommendations (do NOT repeat): ${existingTitles}` : ""}
 
 Generate 3 NEW personalized recommendations. Mix career paths, skills, courses, activities, and projects.
+Tailor suggestions to their location where relevant — mention local opportunities, programs, universities, or organizations available in ${profile.city || profile.country || "their area"} when applicable.
 Each recommendation should be actionable, age-appropriate, and directly related to their interests/goals.
-Include a clear explanation of WHY you're recommending it based on their profile.
+Include a clear explanation of WHY you're recommending it based on their profile and location.
 For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
 
     const result = await base44.integrations.Core.InvokeLLM({

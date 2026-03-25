@@ -89,6 +89,7 @@ export default function Profile() {
     const prompt = `Based on this teen's updated profile and progress, generate 3 new personalized recommendations.
 
 Profile: ${profile.display_name}, age ${profile.age}
+Location: ${[profile.city, profile.country].filter(Boolean).join(", ") || "Not specified"}
 Interests: ${[...(profile.interests || []), ...newInterests].join(", ")}
 Strengths: ${(profile.strengths || []).join(", ")}
 Goals: ${(profile.goals || []).join(", ")}
@@ -100,6 +101,7 @@ New interests: ${newInterests.join(", ") || "None"}
 Recent moods: ${updates.slice(0, 5).map(u => u.mood).join(", ") || "None"}
 
 Adapt your suggestions to reflect their growth. Don't repeat completed or skipped items. Factor in their moods and new skills.
+Tailor suggestions to their location where relevant — mention local opportunities, programs, universities, or organizations available in ${profile.city || profile.country || "their area"} when applicable.
 For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
 
     const result = await base44.integrations.Core.InvokeLLM({
