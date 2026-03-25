@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Edit3, Save, Sparkles, Loader2, LogOut, School } from "lucide-react";
+import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -340,14 +340,37 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
         </div>
       </motion.div>
 
-      {/* Logout */}
-      <div className="pt-4">
+      {/* Danger Zone */}
+      <div className="pt-4 flex items-center gap-4">
         <Button
           variant="ghost"
           className="text-muted-foreground gap-2"
           onClick={() => base44.auth.logout()}
         >
           <LogOut className="w-4 h-4" /> Sign Out
+        </Button>
+        <Button
+          variant="ghost"
+          className="text-destructive hover:text-destructive gap-2"
+          onClick={async () => {
+            if (!confirm("This will delete ALL your data (profile, plan, recommendations, progress) and restart onboarding. Are you sure?")) return;
+            const user = await base44.auth.me();
+            const [profiles, plans, recs, updates] = await Promise.all([
+              base44.entities.TeenProfile.filter({ user_email: user.email }),
+              base44.entities.CareerPlan.filter({ user_email: user.email }),
+              base44.entities.Recommendation.filter({ user_email: user.email }),
+              base44.entities.ProgressUpdate.filter({ user_email: user.email }),
+            ]);
+            await Promise.all([
+              ...profiles.map(r => base44.entities.TeenProfile.delete(r.id)),
+              ...plans.map(r => base44.entities.CareerPlan.delete(r.id)),
+              ...recs.map(r => base44.entities.Recommendation.delete(r.id)),
+              ...updates.map(r => base44.entities.ProgressUpdate.delete(r.id)),
+            ]);
+            navigate("/onboarding");
+          }}
+        >
+          <RotateCcw className="w-4 h-4" /> Start From Scratch
         </Button>
       </div>
     </div>
