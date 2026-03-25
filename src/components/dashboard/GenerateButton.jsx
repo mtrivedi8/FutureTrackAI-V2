@@ -24,7 +24,8 @@ ${existingTitles ? `They already have these recommendations (do NOT repeat): ${e
 
 Generate 3 NEW personalized recommendations. Mix career paths, skills, courses, activities, and projects.
 Each recommendation should be actionable, age-appropriate, and directly related to their interests/goals.
-Include a clear explanation of WHY you're recommending it based on their profile.`;
+Include a clear explanation of WHY you're recommending it based on their profile.
+For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,

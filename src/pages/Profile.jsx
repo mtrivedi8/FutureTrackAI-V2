@@ -99,7 +99,8 @@ Recently gained skills: ${recentSkills.join(", ") || "None"}
 New interests: ${newInterests.join(", ") || "None"}
 Recent moods: ${updates.slice(0, 5).map(u => u.mood).join(", ") || "None"}
 
-Adapt your suggestions to reflect their growth. Don't repeat completed or skipped items. Factor in their moods and new skills.`;
+Adapt your suggestions to reflect their growth. Don't repeat completed or skipped items. Factor in their moods and new skills.
+For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
