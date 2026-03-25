@@ -1,100 +1,111 @@
-import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Search, Loader2, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function SchoolSearch({ value, onChange }) {
-  const [location, setLocation] = useState("");
-  const [schools, setSchools] = useState([]);
+  const [query, setQuery] = useState(value || "");
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showList, setShowList] = useState(false);
   const [searched, setSearched] = useState(false);
+  const debounceRef = useRef(null);
+  const containerRef = useRef(null);
 
-  const searchSchools = async () => {
-    if (!location.trim()) return;
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShowList(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const searchSchools = async (q) => {
+    if (!q || q.length < 3) { setResults([]); setShowList(false); return; }
     setLoading(true);
-    setShowList(false);
     setSearched(false);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `List all middle schools and high schools (grades 6-12) in ${location.trim()}, USA.
-Include public schools, private schools, charter schools, and magnet schools.
-Return only school names as an array. Include at least 15-30 schools if available.`,
-      add_context_from_internet: true,
-      model: "gemini_3_flash",
-      response_json_schema: {
-        type: "object",
-        properties: {
-          schools: { type: "array", items: { type: "string" } }
-        }
-      }
-    });
+    try {
+      // Urban Institute Education Data API — NCES Common Core of Data
+      const res = await fetch(
+        `https://educationdata.urban.org/api/v1/schools/ccd/directory/?search=${encodeURIComponent(q)}&year=2021&level_of_schooling=2,3&per_page=30`
+      );
+      const data = await res.json();
+      const schools = (data.results || []).map(s => ({
+        name: s.school_name,
+        city: s.city_location,
+        state: s.state_code,
+      }));
+      setResults(schools);
+      setShowList(schools.length > 0);
+      setSearched(true);
+    } catch (e) {
+      setResults([]);
+      setSearched(true);
+    }
 
-    setSchools(result.schools || []);
-    setShowList(true);
-    setSearched(true);
     setLoading(false);
   };
 
-  const filtered = schools.filter(s =>
-    !value || s.toLowerCase().includes(value.toLowerCase())
-  );
+  const handleInput = (e) => {
+    const q = e.target.value;
+    setQuery(q);
+    onChange(q); // allow manual entry
+    setShowList(false);
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchSchools(q), 500);
+  };
+
+  const handleSelect = (school) => {
+    const fullName = school.name;
+    setQuery(fullName);
+    onChange(fullName);
+    setShowList(false);
+    setResults([]);
+  };
 
   return (
-    <div className="space-y-3">
-      {/* Location search row */}
-      <div className="flex gap-2">
+    <div className="relative" ref={containerRef}>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
         <Input
-          value={location}
-          onChange={e => setLocation(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && searchSchools()}
-          placeholder="Enter your city & state (e.g. Austin, TX)"
-          className="h-11"
+          value={query}
+          onChange={handleInput}
+          onFocus={() => results.length > 0 && setShowList(true)}
+          placeholder="Type your school name to search..."
+          className="h-11 pl-9 pr-9"
         />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={searchSchools}
-          disabled={loading || !location.trim()}
-          className="shrink-0 gap-2"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          Search
-        </Button>
       </div>
 
-      {/* Manual school name input */}
-      <Input
-        value={value}
-        onChange={e => { onChange(e.target.value); setShowList(schools.length > 0); }}
-        placeholder="Type or select your school name..."
-        className="h-11"
-      />
-
-      {/* School dropdown */}
-      {showList && filtered.length > 0 && (
-        <div className="border border-border rounded-xl bg-card shadow-lg max-h-56 overflow-y-auto z-10 relative">
-          {filtered.map((school, i) => (
+      {showList && results.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 border border-border rounded-xl bg-card shadow-xl max-h-60 overflow-y-auto z-50">
+          {results.map((school, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => { onChange(school); setShowList(false); }}
+              onMouseDown={() => handleSelect(school)}
               className={cn(
-                "w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2",
-                value === school && "bg-primary/10 text-primary font-medium"
+                "w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-3",
+                query === school.name && "bg-primary/10 text-primary font-medium"
               )}
             >
               <School className="w-4 h-4 text-muted-foreground shrink-0" />
-              {school}
+              <div>
+                <p className="font-medium text-foreground">{school.name}</p>
+                <p className="text-xs text-muted-foreground">{school.city}, {school.state}</p>
+              </div>
             </button>
           ))}
         </div>
       )}
 
-      {searched && filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground px-1">No schools found. Type your school name manually above.</p>
+      {searched && results.length === 0 && query.length >= 3 && !loading && (
+        <p className="text-xs text-muted-foreground mt-1 px-1">No schools found — your typed name will be used.</p>
       )}
     </div>
   );
