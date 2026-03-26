@@ -70,8 +70,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
 
   // Determine which schools to show based on grade
   const showMiddle = grade && (grade === 7 || grade === 8);
-  const showHigh = grade && (grade >= 9 && grade <= 12);
-  const showBoth = !grade; // If no grade selected, don't show schools yet
+  const showHigh = grade; // Always show high school once grade is selected
 
   return (
     <div className="space-y-4">
