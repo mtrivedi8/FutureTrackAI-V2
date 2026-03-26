@@ -109,6 +109,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
               onFocus={() => middleSchools.length > 0 && setShowMiddleList(true)}
               placeholder="Type or select your school"
               className="h-11 pl-9 pr-9"
+              autoComplete="off"
             />
             {showMiddleList && middleSchools.length > 0 && (
               <div className="absolute top-12 left-0 right-0 border border-border rounded-xl bg-card shadow-lg max-h-48 overflow-y-auto z-30">
@@ -151,6 +152,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
               onFocus={() => highSchools.length > 0 && setShowHighList(true)}
               placeholder="Type or select your school"
               className="h-11 pl-9 pr-9"
+              autoComplete="off"
             />
             {showHighList && highSchools.length > 0 && (
               <div className="absolute top-12 left-0 right-0 border border-border rounded-xl bg-card shadow-lg max-h-48 overflow-y-auto z-30">
