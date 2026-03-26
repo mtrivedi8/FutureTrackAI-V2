@@ -67,6 +67,27 @@ Deno.serve(async (req) => {
     const stateCode = US_STATES[currentIndex];
     const stateSchools = [];
     
+    // Batch fetch websites for schools in this state
+    const schoolNames = [...new Set([
+      ...publicSchools.filter(s => s.STATE === stateCode).map(s => s.NAME),
+      ...privateSchools.filter(s => s.STATE === stateCode).map(s => s.NAME)
+    ])].slice(0, 30); // Limit to 30 per batch to avoid timeouts
+    
+    let websiteMap = {};
+    if (schoolNames.length > 0) {
+      try {
+        const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Find official website URLs for these schools in ${stateCode}. Return a JSON object with school name as key and website URL as value (empty string if not found): ${JSON.stringify(schoolNames)}`,
+          add_context_from_internet: true,
+          model: 'gemini_3_flash',
+          response_json_schema: { type: 'object', additionalProperties: { type: 'string' } }
+        });
+        websiteMap = result || {};
+      } catch (e) {
+        console.warn('Website lookup failed, continuing without websites:', e.message);
+      }
+    }
+    
     // Public schools for this state
     for (const school of publicSchools) {
       if (school.STATE !== stateCode || !school.NAME || !school.ZIP) continue;
@@ -77,6 +98,7 @@ Deno.serve(async (req) => {
         zipcode: String(school.ZIP).padStart(5, '0'),
         district: school.NMLEAID || '',
         school_type: 'high',
+        website: websiteMap[school.NAME] || '',
       });
     }
     
@@ -90,6 +112,7 @@ Deno.serve(async (req) => {
         zipcode: String(school.ZIP).padStart(5, '0'),
         district: '',
         school_type: 'high',
+        website: websiteMap[school.NAME] || '',
       });
     }
     
