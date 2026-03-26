@@ -87,51 +87,67 @@ export default function AcademicPlan() {
     if (!profile) return;
     if (trackIndex !== null) setGeneratingTrackIndex(trackIndex);
 
-    const user = await base44.auth.me();
-    const currentGrade = profile.current_grade || 9;
+    try {
+      const user = await base44.auth.me();
+      const currentGrade = profile.current_grade || 9;
 
-    // Mark as generating in DB so re-visits know it's in progress
-    const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
-    let generatingPlanId = null;
-    if (existingForMark[0]) {
-    await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: trackIndex !== null });
-    generatingPlanId = existingForMark[0].id;
-    } else {
-    const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
-    generatingPlanId = created.id;
-    }
+      // Mark as generating in DB so re-visits know it's in progress
+      const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
+      let generatingPlanId = null;
+      if (existingForMark[0]) {
+        await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: trackIndex !== null });
+        generatingPlanId = existingForMark[0].id;
+      } else {
+        const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
+        generatingPlanId = created.id;
+      }
 
-    const [recs, updates] = await Promise.all([
-      base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
-      base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
-    ]);
+      const [recs, updates] = await Promise.all([
+        base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
+        base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
+      ]);
 
-    const journey = {
-      completed_recommendations: recs.filter(r => r.status === "Completed").map(r => r.title),
-      in_progress_recommendations: recs.filter(r => r.status === "In Progress" || r.status === "Exploring").map(r => r.title),
-      skills_gained: [...new Set(updates.flatMap(u => u.skills_gained || []))],
-      new_interests: [...new Set(updates.flatMap(u => u.new_interests || []))],
-      recent_milestones: updates.filter(u => u.update_type === "Achievement" || u.update_type === "Milestone").slice(0, 5).map(u => u.title),
-      moods: updates.slice(0, 10).map(u => u.mood).filter(Boolean),
-      adapt_mode: adaptToProgress,
-    };
+      const journey = {
+        completed_recommendations: recs.filter(r => r.status === "Completed").map(r => r.title),
+        in_progress_recommendations: recs.filter(r => r.status === "In Progress" || r.status === "Exploring").map(r => r.title),
+        skills_gained: [...new Set(updates.flatMap(u => u.skills_gained || []))],
+        new_interests: [...new Set(updates.flatMap(u => u.new_interests || []))],
+        recent_milestones: updates.filter(u => u.update_type === "Achievement" || u.update_type === "Milestone").slice(0, 5).map(u => u.title),
+        moods: updates.slice(0, 10).map(u => u.mood).filter(Boolean),
+        adapt_mode: adaptToProgress,
+        regenerate_track_index: trackIndex,
+      };
 
-    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey, regenerate_track_index: trackIndex });
+      const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
 
-    if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
-      toast.error('Monthly usage limit reached. Your credits reset next month.');
-      setUsageBlocked(true);
+      if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
+        toast.error('Monthly usage limit reached. Your credits reset next month.');
+        setUsageBlocked(true);
+        setGeneratingTrackIndex(null);
+        const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+        if (existingPlans[0]) {
+          await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+        }
+        return;
+      }
+
+      // Backend returns immediately; poll DB for completion
+      startPolling(user.email);
+    } catch (err) {
+      console.error('generatePlan error:', err);
+      if (err.response?.status === 429) {
+        toast.error('Monthly usage limit reached. Your credits reset next month.');
+        setUsageBlocked(true);
+      } else {
+        toast.error('Failed to generate plan. Please try again.');
+      }
       setGeneratingTrackIndex(null);
+      const user = await base44.auth.me();
       const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
       if (existingPlans[0]) {
         await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
-        setGeneratingTrackIndex(null);
       }
-      return;
     }
-
-    // Backend returns immediately; poll DB for completion
-    startPolling(user.email);
   };
 
   const handleTrackSelect = async (idx) => {
