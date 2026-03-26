@@ -1,9 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
+const PLAN_COST = 0.25; // USD per plan generation
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Check usage cap before running
+  const month = new Date().toISOString().slice(0, 7);
+  const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: user.email, month });
+  const usageRecord = usageRecords[0];
+  if (usageRecord && (usageRecord.blocked || usageRecord.total_cost >= 5.0)) {
+    return Response.json({ error: 'USAGE_CAP_REACHED' }, { status: 429 });
+  }
 
   const { profile, journey } = await req.json();
 
@@ -143,8 +153,18 @@ For each grade include:
     }
   });
 
+  // Track usage after successful generation
+  const newTotal = (usageRecord?.total_cost || 0) + PLAN_COST;
+  const nowBlocked = newTotal >= 5.0;
+  if (usageRecord) {
+    await base44.asServiceRole.entities.UsageCredit.update(usageRecord.id, { total_cost: newTotal, blocked: nowBlocked });
+  } else {
+    await base44.asServiceRole.entities.UsageCredit.create({ user_email: user.email, month, total_cost: newTotal, blocked: nowBlocked });
+  }
+
   return Response.json({
     tracks: result.tracks || [],
-    school_info: result.school_info || {}
+    school_info: result.school_info || {},
+    usage: { total_cost: newTotal, cap: 5.0, blocked: nowBlocked },
   });
 });

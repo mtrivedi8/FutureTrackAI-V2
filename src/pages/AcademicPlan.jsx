@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw } from "lucide-react";
+import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -19,6 +19,8 @@ export default function AcademicPlan() {
   const [generating, setGenerating] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(0);
   const [selectedGrade, setSelectedGrade] = useState(null);
+  const [usage, setUsage] = useState(null);
+  const [usageBlocked, setUsageBlocked] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -27,11 +29,12 @@ export default function AcademicPlan() {
   const loadData = async () => {
     setLoading(true);
     const user = await base44.auth.me();
-    const [profiles, plans, memberships, settings] = await Promise.all([
+    const [profiles, plans, memberships, settings, usageRecords] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.CareerPlan.filter({ user_email: user.email }),
       base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
       base44.entities.AppSettings.filter({ key: 'payment_enabled' }),
+      base44.entities.UsageCredit.filter({ user_email: user.email, month: new Date().toISOString().slice(0, 7) }),
     ]);
     const paymentEnabled = settings[0] ? settings[0].value === 'true' : true;
     if (paymentEnabled && memberships.length === 0) {
@@ -43,6 +46,10 @@ export default function AcademicPlan() {
     if (plans[0]) {
       setPlan(plans[0]);
       setSelectedTrack(plans[0].selected_track_index || 0);
+    }
+    if (usageRecords[0]) {
+      setUsage(usageRecords[0]);
+      setUsageBlocked(usageRecords[0].blocked || usageRecords[0].total_cost >= 5.0);
     }
     if (p) setSelectedGrade(p.current_grade || 7);
     setLoading(false);
@@ -69,7 +76,19 @@ export default function AcademicPlan() {
     };
 
     const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade }, journey });
-    const { tracks, school_info } = response.data;
+
+    if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
+      toast.error('Monthly usage limit reached. Your credits reset next month.');
+      setUsageBlocked(true);
+      setGenerating(false);
+      return;
+    }
+
+    const { tracks, school_info, usage: newUsage } = response.data;
+    if (newUsage) {
+      setUsage(newUsage);
+      setUsageBlocked(newUsage.blocked);
+    }
 
     const existing = await base44.entities.CareerPlan.filter({ user_email: user.email });
 
@@ -125,6 +144,34 @@ export default function AcademicPlan() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+      {/* Usage meter */}
+      {usage && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 flex items-center gap-3 text-sm ${
+          usageBlocked ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-muted/40'
+        }`}>
+          {usageBlocked ? (
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+          ) : (
+            <Zap className="w-4 h-4 text-primary shrink-0" />
+          )}
+          <div className="flex-1">
+            {usageBlocked ? (
+              <p className="font-medium text-destructive">Monthly usage limit reached — resets next month</p>
+            ) : (
+              <>
+                <p className="text-muted-foreground">AI Credits used this month: <span className="font-semibold text-foreground">${(usage.total_cost || 0).toFixed(2)} / $5.00</span></p>
+                <div className="mt-1 h-1.5 rounded-full bg-border overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${Math.min(100, ((usage.total_cost || 0) / 5.0) * 100)}%` }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -141,7 +188,7 @@ export default function AcademicPlan() {
             {plan && (
               <Button
                 onClick={() => generatePlan(true)}
-                disabled={generating}
+                disabled={generating || usageBlocked}
                 variant="outline"
                 className="gap-2"
               >
@@ -154,7 +201,7 @@ export default function AcademicPlan() {
             )}
             <Button
               onClick={() => generatePlan(false)}
-              disabled={generating}
+              disabled={generating || usageBlocked}
               className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
               {generating ? (

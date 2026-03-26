@@ -43,10 +43,10 @@ export default function Membership() {
         <div className="rounded-2xl border border-border bg-card shadow-xl p-6 space-y-6">
           <div className="text-center">
             <div className="flex items-end justify-center gap-1">
-              <span className="text-5xl font-heading font-bold text-foreground">$9.99</span>
-              <span className="text-muted-foreground mb-2">one-time</span>
+              <span className="text-5xl font-heading font-bold text-foreground">$4.99</span>
+              <span className="text-muted-foreground mb-2">/month</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Generate your complete academic plan — no subscription</p>
+            <p className="text-sm text-muted-foreground mt-1">Includes $3 of AI credits monthly — cancel anytime</p>
           </div>
 
           <div className="space-y-3">
@@ -72,13 +72,15 @@ export default function Membership() {
             {loading ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Redirecting to checkout...</>
             ) : (
-              <><CheckCircle className="w-5 h-5" /> Get My Academic Plan — $9.99</>
+              <><CheckCircle className="w-5 h-5" /> Subscribe — $4.99/month</>
             )}
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Secure payment powered by Base44 Payments. No recurring charges.
-          </p>
+          <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground text-center space-y-1">
+            <p>✅ Includes $3 AI credit/month (covers ~12 plan generations)</p>
+            <p>⚡ Usage resets every month automatically</p>
+            <p>🔒 Secure payment powered by Base44 Payments</p>
+          </div>
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           cart: {
-            items: [{ name: 'MentorAI Membership', quantity: 1, price: '9.99' }],
+            items: [{ name: 'MentorAI Monthly Subscription', quantity: 1, price: '4.99' }],
             customerInfo: {
               firstName: user.full_name?.split(' ')[0] || '',
               lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
