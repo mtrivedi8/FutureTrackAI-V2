@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const PLAN_COST = 0.25;
 
-async function generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult) {
+async function generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult, regenerateTrackIndex = null) {
   const gradeRange = Array.from({ length: 13 - profile.current_grade }, (_, i) => profile.current_grade + i).join(', ');
   const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
   const school_info = {
@@ -34,10 +34,15 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     `wildcard emerging field combining interests unexpectedly`,
   ];
 
-  const tracks = [];
+  // Get existing plan to preserve other tracks if regenerating a specific one
+  const existingPlan = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+  const existingTracks = existingPlan[0]?.career_tracks || [];
+  const tracks = regenerateTrackIndex !== null ? [...existingTracks] : [];
 
   // Generate and save tracks sequentially so they appear in UI as they complete
-  for (let i = 0; i < 3; i++) {
+  const tracksToGenerate = regenerateTrackIndex !== null ? [regenerateTrackIndex] : [0, 1, 2];
+  
+  for (const i of tracksToGenerate) {
     const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track ${i + 1} (${trackHints[i]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
       model: 'gpt_5_mini',
@@ -67,14 +72,14 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       })
     };
 
-    tracks.push(enhancedTrack);
+    tracks[i] = enhancedTrack;
 
     // Save immediately after generating each track
     const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
     const planData = {
       user_email: profile.user_email,
       career_tracks: tracks,
-      selected_track_index: 0,
+      selected_track_index: existing[0]?.selected_track_index || 0,
       school_name: profile.school_name,
       current_grade: profile.current_grade,
       school_info,
@@ -85,7 +90,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     } else {
       await base44.asServiceRole.entities.CareerPlan.create(planData);
     }
-    console.log(`Track ${i + 1} added for ${profile.user_email}`);
+    console.log(`Track ${i + 1} added/updated for ${profile.user_email}`);
   }
 
   // Mark generation complete
@@ -131,7 +136,8 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
         enrollment_process: cache.cached_data.enrollment_process,
       };
       const schoolHighResult = { courses: cache.cached_data.high_courses || [] };
-      await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult);
+      const regenerateIndex = journey?.regenerate_track_index;
+      await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult, regenerateIndex);
       return;
     }
 
@@ -249,7 +255,8 @@ Include ALL available courses from grades 9-12 with complete and accurate inform
     }
 
     console.log(`Cached ${schoolMiddleResult.courses?.length || 0} middle + ${schoolHighResult.courses?.length || 0} high school courses`);
-    await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult);
+    const regenerateIndex = journey?.regenerate_track_index;
+    await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult, regenerateIndex);
 
   } catch (err) {
     console.error('Background generation error:', err.message, err.stack);

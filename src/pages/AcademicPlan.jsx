@@ -200,7 +200,7 @@ export default function AcademicPlan() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl sm:text-3xl font-bold text-foreground">
-              🎓 Academic Roadmap
+              Academic Roadmap
             </h1>
             <p className="text-muted-foreground mt-1">
               {profile?.school_name ? `${profile.school_name} · ` : ""}
@@ -243,7 +243,7 @@ export default function AcademicPlan() {
             <BookOpen className="w-12 h-12 text-primary" />
           </div>
           <div>
-            <h2 className="font-heading text-2xl font-bold mb-2">No plan yet!</h2>
+            <h2 className="font-heading text-2xl font-bold mb-2">Create Your Academic Plan</h2>
             <p className="text-muted-foreground max-w-md">
               Click "Generate My Plan" and AI will create a personalized grade-by-grade academic roadmap with career tracks, classes, clubs, and more.
             </p>
@@ -259,8 +259,8 @@ export default function AcademicPlan() {
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-          <h2 className="font-heading text-xl font-bold">Building your roadmap...</h2>
-          <p className="text-muted-foreground">Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a grade {startGrade}–12 plan for you...</p>
+          <h2 className="font-heading text-xl font-bold">Building your roadmap</h2>
+          <p className="text-muted-foreground">Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a grade {startGrade}–12 plan for you</p>
           <button
             onClick={async () => {
               if (pollingRef.current) clearInterval(pollingRef.current);
@@ -281,7 +281,7 @@ export default function AcademicPlan() {
         <div className="space-y-8">
           {/* Career Track Selector */}
           <div>
-            <h2 className="font-heading text-lg font-semibold mb-3 text-muted-foreground">Choose a Career Track</h2>
+            <h2 className="font-heading text-lg font-semibold mb-3">Choose a Career Track</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {tracks.map((track, idx) => (
                 <div key={idx} className="space-y-2">
@@ -295,7 +295,7 @@ export default function AcademicPlan() {
                           : "border-border bg-card hover:border-primary/40"
                       )}
                     >
-                      <div className="text-2xl mb-2">{track.emoji || "🎯"}</div>
+                      {track.emoji && <div className="text-2xl mb-2" style={{display: 'none'}}>{track.emoji}</div>}
                       <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
                       {selectedTrack === idx && (
@@ -338,7 +338,7 @@ export default function AcademicPlan() {
                 <div className="rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 p-4 flex items-start gap-3">
                   <Trophy className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-primary mb-0.5">College & Career Goal</p>
+                    <p className="text-xs font-medium text-primary mb-0.5">College and Career Goal</p>
                     <p className="text-sm text-foreground">{currentTrack.college_goals}</p>
                   </div>
                 </div>
