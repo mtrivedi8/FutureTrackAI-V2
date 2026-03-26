@@ -56,31 +56,47 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       ...track,
       grades: (track.grades || []).map(g => {
         const gradeNum = g.grade;
-        const gradeCourses = allCourses.filter((c, idx) => {
+        const gradeCourses = allCourses.filter(c => {
           const lvl = (c.level || '').toLowerCase();
           const courseName = (c.name || '').toLowerCase();
           const isMiddleSchool = lvl.includes('middle') || /\bgrade\s+[67]|\b[67](?:th)?\b/.test(courseName);
           const isHighSchool = lvl.includes('high') || /\bgrade\s+(?:9|10|11|12)|\b(?:9|10|11|12)(?:th)?\b/.test(courseName);
+          const isAP = lvl.includes('ap');
+          const isHonors = lvl.includes('honors');
+          const isDual = lvl.includes('dual');
+          const isIB = lvl.includes('ib');
+          const isStandard = !isAP && !isHonors && !isDual && !isIB;
 
-          if (gradeNum <= 8) {
-            return isMiddleSchool || (!isHighSchool && !lvl.includes('ap') && !lvl.includes('ib') && !lvl.includes('honors'));
+          // Grade 7: Only pure middle school courses
+          if (gradeNum === 7) {
+            return isMiddleSchool;
           }
-
-          if (!isHighSchool && !isMiddleSchool) return false;
-          if (isMiddleSchool) return false;
-
-          // Grade-level filtering: distribute courses by progression
+          // Grade 8: Middle school + early transition courses (no AP)
+          if (gradeNum === 8) {
+            return isMiddleSchool || (isHighSchool && isStandard && !isAP);
+          }
+          // Grade 9: Standard + Some Honors (but no AP)
           if (gradeNum === 9) {
-            return !lvl.includes('ap') || lvl.includes('standard');
-          } else if (gradeNum === 10) {
-            // Use hash of course to rotate which courses appear in each grade
-            return idx % 3 !== 0;
-          } else if (gradeNum === 11) {
-            return idx % 3 !== 1;
-          } else {
-            return idx % 3 !== 2;
+            if (isMiddleSchool) return false;
+            return isStandard || (isHonors && courseName.match(/9th|grade 9|freshman/));
           }
-        }).slice(0, 8);
+          // Grade 10: Standard + Honors + Intro to AP
+          if (gradeNum === 10) {
+            if (isMiddleSchool) return false;
+            if (isAP) return courseName.match(/10th|grade 10|sophomore/) ? true : false;
+            return !isMiddleSchool;
+          }
+          // Grade 11: Standard + Honors + AP + Dual Enrollment
+          if (gradeNum === 11) {
+            return !isMiddleSchool && (isStandard || isHonors || isAP || isDual);
+          }
+          // Grade 12: All advanced options
+          if (gradeNum === 12) {
+            return !isMiddleSchool && (isStandard || isHonors || isAP || isDual || isIB);
+          }
+
+          return !isMiddleSchool;
+        });
         return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
       })
     };
