@@ -232,7 +232,7 @@ export default function AcademicPlan() {
             {plan && (
               <Button
                 onClick={() => generatePlan(true)}
-                disabled={generatingTrackIndex !== null || usageBlocked}
+                disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
                 variant="outline"
                 className="gap-2"
               >
@@ -245,7 +245,7 @@ export default function AcademicPlan() {
             )}
             <Button
               onClick={() => generatePlan(false)}
-              disabled={generatingTrackIndex !== null || usageBlocked}
+              disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
               className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
               {generatingTrackIndex !== null ? (
@@ -333,7 +333,7 @@ export default function AcademicPlan() {
                     {selectedTrack === idx && generatingTrackIndex !== idx && (
                      <Button
                         onClick={(e) => { e.stopPropagation(); generatePlan(false, idx); }}
-                        disabled={generatingTrackIndex !== null || usageBlocked}
+                        disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
                         variant="ghost"
                         size="icon"
                         className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-primary"
