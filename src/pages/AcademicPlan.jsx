@@ -127,7 +127,13 @@ export default function AcademicPlan() {
         regenerate_track_index: trackIndex,
       };
 
-      const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
+      let response;
+      try {
+        response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
+      } catch (invokeErr) {
+        console.error('Invoke error:', invokeErr);
+        throw new Error('Failed to reach the plan generator. Please check your connection and try again.');
+      }
 
       if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
         toast.error('Monthly usage limit reached. Your credits reset next month.');
