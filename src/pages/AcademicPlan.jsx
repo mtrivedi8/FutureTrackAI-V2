@@ -52,7 +52,7 @@ export default function AcademicPlan() {
       setSelectedTrack(existingPlan.selected_track_index || 0);
       // If plan is still generating (user left the page), start polling
       if (existingPlan.is_generating) {
-        setGenerating(true);
+        setGeneratingTrackIndex(0);
         startPolling(user.email);
       }
     }
@@ -224,11 +224,11 @@ export default function AcademicPlan() {
             )}
             <Button
               onClick={() => generatePlan(false)}
-              disabled={generating || usageBlocked}
+              disabled={generatingTrackIndex !== null || usageBlocked}
               className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
-              {generating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
+              {generatingTrackIndex !== null ? (
+               <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
               ) : (
                 <><Sparkles className="w-4 h-4" /> {plan ? "Regenerate Plan" : "Generate My Plan"}</>
               )}
