@@ -277,7 +277,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {plan && generatingTrackIndex === null && (
+      {plan && (
         <div className="space-y-8">
           {/* Career Track Selector */}
           <div>
@@ -304,8 +304,13 @@ export default function AcademicPlan() {
                         </div>
                       )}
                     </button>
-                    {selectedTrack === idx && (
-                      <Button
+                    {generatingTrackIndex === idx && (
+                     <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
+                       <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                     </div>
+                    )}
+                    {selectedTrack === idx && generatingTrackIndex !== idx && (
+                     <Button
                         onClick={(e) => { e.stopPropagation(); generatePlan(false, idx); }}
                         disabled={generatingTrackIndex !== null || usageBlocked}
                         variant="ghost"
