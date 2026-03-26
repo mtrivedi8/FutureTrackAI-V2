@@ -218,7 +218,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
       )}
 
       {/* Special Programs */}
-      {gradeData.special_programs?.length > 0 && (
+      {Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600">
