@@ -1,0 +1,34 @@
+{
+  "name": "SchoolDocumentCache",
+  "type": "object",
+  "properties": {
+    "school_name": {
+      "type": "string",
+      "description": "Name of the school"
+    },
+    "zipcode": {
+      "type": "string",
+      "description": "Zip code where school is located"
+    },
+    "cached_data": {
+      "type": "object",
+      "description": "Parsed courses, graduation requirements, and enrollment info"
+    },
+    "document_urls": {
+      "type": "object",
+      "description": "URLs to uploaded documents (school_website, catalog_url, etc.)"
+    },
+    "cached_date": {
+      "type": "string",
+      "description": "ISO date when cache was created"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO date when cache expires (90 days from creation)"
+    }
+  },
+  "required": [
+    "school_name",
+    "zipcode"
+  ]
+}

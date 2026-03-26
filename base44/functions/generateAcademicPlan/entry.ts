@@ -2,20 +2,150 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const PLAN_COST = 0.25;
 
+async function generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult) {
+  const gradeRange = Array.from({ length: 13 - profile.current_grade }, (_, i) => profile.current_grade + i).join(', ');
+  
+  const trackSchema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      description: { type: 'string' },
+      emoji: { type: 'string' },
+      college_goals: { type: 'string' },
+      grades: { type: 'array', items: { type: 'object' } }
+    }
+  };
+
+  const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. School: ${profile.school_name}${profile.city ? ', ' + profile.city : ''}.`;
+
+  const trackHints = [
+    `most aligned with dream careers: ${(profile.dream_careers || []).slice(0, 2).join(', ') || 'technology'}`,
+    `alternative creative/business/arts path`,
+    `wildcard emerging field combining interests unexpectedly`,
+  ];
+
+  const [track1, track2, track3] = await Promise.all([
+    base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 1 (${trackHints[0]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      response_json_schema: { type: 'object', properties: { track: trackSchema } }
+    }).catch(err => { console.error('Track 1 failed:', err.message); return null; }),
+
+    base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 2 (${trackHints[1]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      response_json_schema: { type: 'object', properties: { track: trackSchema } }
+    }).catch(err => { console.error('Track 2 failed:', err.message); return null; }),
+
+    base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 3 (${trackHints[2]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      response_json_schema: { type: 'object', properties: { track: trackSchema } }
+    }).catch(err => { console.error('Track 3 failed:', err.message); return null; }),
+  ]);
+
+  const trackResults = [track1, track2, track3];
+  const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
+
+  const tracks = trackResults
+    .filter(Boolean)
+    .map(r => r.track)
+    .filter(Boolean)
+    .map(track => {
+      if (allCourses.length === 0) return track;
+      return {
+        ...track,
+        grades: (track.grades || []).map(g => {
+          const gradeNum = g.grade;
+          const gradeCourses = allCourses.filter(c => {
+            const lvl = (c.level || '').toLowerCase();
+            const courseName = (c.name || '').toLowerCase();
+            const isMiddleSchool = lvl.includes('middle');
+
+            if (gradeNum <= 8) {
+              if (isMiddleSchool) return true;
+              if (lvl.includes('ap') || lvl.includes('honors') || lvl.includes('ib')) return false;
+              return !/(\b(9|10|11|12)th?\b|grade (9|10|11|12))/i.test(courseName);
+            } else {
+              if (isMiddleSchool) return false;
+              if (/(\b[78]th?\b|grade [78]|^(english|math|science|social studies) [78])/i.test(courseName)) return false;
+              return true;
+            }
+          }).slice(0, 6);
+
+          return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
+        })
+      };
+    });
+
+  const school_info = {
+    school_name: schoolMiddleResult.school_name,
+    school_website: schoolMiddleResult.school_website,
+    catalog_url: schoolMiddleResult.catalog_url,
+    district_name: schoolMiddleResult.district_name,
+    courses_found: allCourses.length,
+    graduation_requirements: schoolMiddleResult.graduation_requirements,
+    enrollment_process: schoolMiddleResult.enrollment_process,
+  };
+
+  const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+  const planData = {
+    user_email: profile.user_email,
+    career_tracks: tracks || [],
+    selected_track_index: 0,
+    school_name: profile.school_name,
+    current_grade: profile.current_grade,
+    school_info,
+    is_generating: false,
+  };
+
+  if (existing[0]) {
+    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
+  } else {
+    await base44.asServiceRole.entities.CareerPlan.create(planData);
+  }
+
+  const month = new Date().toISOString().slice(0, 7);
+  const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: profile.user_email, month });
+  const usageRecord = usageRecords[0];
+  const newTotal = (usageRecord?.total_cost || 0) + PLAN_COST;
+  const nowBlocked = newTotal >= 5.0;
+  if (usageRecord) {
+    await base44.asServiceRole.entities.UsageCredit.update(usageRecord.id, { total_cost: newTotal, blocked: nowBlocked });
+  } else {
+    await base44.asServiceRole.entities.UsageCredit.create({ user_email: profile.user_email, month, total_cost: newTotal, blocked: nowBlocked });
+  }
+
+  console.log(`Plan generation complete for ${profile.user_email}: ${tracks.length} tracks, ${allCourses.length} courses`);
+}
+
 async function runGeneration(base44, profile, journey, existingSchoolWebsite = null) {
   try {
-    const adaptMode = journey?.adapt_mode === true;
+    // Check cache first
+    const existingCache = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
+      school_name: profile.school_name,
+      zipcode: profile.zipcode
+    });
+    const cache = existingCache[0];
+    const now = new Date();
+    const cacheValid = cache && new Date(cache.expires_at) > now;
 
-    const journeyContext = journey ? `
-STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personalize based on this'}):
-- Completed: ${(journey.completed_recommendations || []).join(', ') || 'None'}
-- In progress: ${(journey.in_progress_recommendations || []).join(', ') || 'None'}
-- Skills gained: ${(journey.skills_gained || []).join(', ') || 'None'}
-- New interests: ${(journey.new_interests || []).join(', ') || 'None'}
-- Milestones: ${(journey.recent_milestones || []).join(', ') || 'None'}` : '';
+    if (cacheValid && cache.cached_data) {
+      console.log(`Using cached data for ${profile.school_name} (${profile.zipcode})`);
+      const schoolMiddleResult = { 
+        courses: cache.cached_data.middle_courses || [],
+        school_name: cache.cached_data.school_name,
+        school_website: cache.cached_data.school_website,
+        catalog_url: cache.cached_data.catalog_url,
+        district_name: cache.cached_data.district_name,
+        graduation_requirements: cache.cached_data.graduation_requirements,
+        enrollment_process: cache.cached_data.enrollment_process,
+      };
+      const schoolHighResult = { courses: cache.cached_data.high_courses || [] };
+      await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult);
+      return;
+    }
 
-    const gradeRange = Array.from({ length: 13 - profile.current_grade }, (_, i) => profile.current_grade + i).join(', ');
-
+    // Cache miss or expired — fetch fresh data
+    console.log(`Cache miss/expired for ${profile.school_name} (${profile.zipcode}) — fetching fresh data`);
+    
     const courseSchema = {
       type: 'array',
       items: {
@@ -31,60 +161,8 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       }
     };
 
-    const trackSchema = {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        description: { type: 'string' },
-        emoji: { type: 'string' },
-        college_goals: { type: 'string' },
-        grades: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              grade: { type: 'number' },
-              focus: { type: 'string' },
-              school_courses: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    credits: { type: 'string' },
-                    level: { type: 'string' },
-                    subject_area: { type: 'string' },
-                    required_or_elective: { type: 'string' },
-                    recommended_for_track: { type: 'boolean' },
-                    prerequisites: { type: 'string' }
-                  }
-                }
-              },
-              clubs: { type: 'array', items: { type: 'string' } },
-              special_programs: { type: 'array', items: { type: 'string' } },
-              online_courses: { type: 'array', items: { type: 'string' } },
-              extracurriculars: { type: 'array', items: { type: 'string' } },
-              volunteer_opportunities: { type: 'array', items: { type: 'string' } },
-              summer_activities: { type: 'array', items: { type: 'string' } },
-              key_milestone: { type: 'string' },
-              credit_summary: { type: 'string' }
-            }
-          }
-        }
-      }
-    };
-
-    const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. School: ${profile.school_name}${profile.city ? ', ' + profile.city : ''}.${journeyContext}`;
-
-    const trackHints = [
-      `most aligned with dream careers: ${(profile.dream_careers || []).slice(0, 2).join(', ') || 'technology'}`,
-      `alternative creative/business/arts path`,
-      `wildcard emerging field combining interests unexpectedly`,
-    ];
-
-    // Fire ALL 5 LLM calls in parallel
     const schoolWebsiteHint = existingSchoolWebsite ? `${existingSchoolWebsite} and ` : '';
-    const [schoolMiddleResult, schoolHighResult, ...trackResults] = await Promise.all([
+    const [schoolMiddleResult, schoolHighResult] = await Promise.all([
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `You are a school data researcher. Find COMPLETE and ACCURATE graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''} from their official school and district websites.
 
@@ -118,8 +196,8 @@ Return: school_website (exact URL), catalog_url (PDF or page URL), district_name
             school_website: { type: 'string' },
             catalog_url: { type: 'string' },
             district_name: { type: 'string' },
-            graduation_requirements: { type: 'object', properties: { total_credits: { type: 'number' }, english_credits: { type: 'number' }, math_credits: { type: 'number' }, science_credits: { type: 'number' }, social_studies_credits: { type: 'number' }, pe_health_credits: { type: 'number' }, elective_credits: { type: 'number' }, notes: { type: 'string' } } },
-            enrollment_process: { type: 'object', properties: { how_to_register: { type: 'string' }, registration_timeline: { type: 'string' }, advisor_counselor_info: { type: 'string' }, ap_honors_enrollment: { type: 'string' }, notes: { type: 'string' } } },
+            graduation_requirements: { type: 'object' },
+            enrollment_process: { type: 'object' },
             courses: courseSchema
           }
         }
@@ -148,103 +226,41 @@ Include ALL available courses from grades 9-12 with complete and accurate inform
         model: 'gemini_3_flash',
         response_json_schema: { type: 'object', properties: { courses: courseSchema } }
       }).catch(() => ({ courses: [] })),
-
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 1 (${trackHints[0]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
-        response_json_schema: { type: 'object', properties: { track: trackSchema } }
-      }).catch(err => { console.error('Track 1 failed:', err.message); return null; }),
-
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 2 (${trackHints[1]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
-        response_json_schema: { type: 'object', properties: { track: trackSchema } }
-      }).catch(err => { console.error('Track 2 failed:', err.message); return null; }),
-
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 3 (${trackHints[2]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
-        response_json_schema: { type: 'object', properties: { track: trackSchema } }
-      }).catch(err => { console.error('Track 3 failed:', err.message); return null; }),
     ]);
 
-    const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
-    const school_info = {
-      school_name: schoolMiddleResult.school_name,
-      school_website: existingSchoolWebsite || schoolMiddleResult.school_website,
-      catalog_url: schoolMiddleResult.catalog_url,
-      district_name: schoolMiddleResult.district_name,
-      courses_found: allCourses.length,
-      graduation_requirements: schoolMiddleResult.graduation_requirements,
-      enrollment_process: schoolMiddleResult.enrollment_process,
-    };
-
-    const tracks = trackResults
-      .filter(Boolean)
-      .map(r => r.track)
-      .filter(Boolean)
-      .map(track => {
-        if (allCourses.length === 0) return track;
-        return {
-        ...track,
-        grades: (track.grades || []).map(g => {
-          const gradeNum = g.grade;
-          // Filter courses by actual grade level from the course data
-          const gradeCourses = allCourses.filter(c => {
-            const lvl = (c.level || '').toLowerCase();
-            const courseName = (c.name || '').toLowerCase();
-            const isMiddleSchool = lvl.includes('middle');
-
-            if (gradeNum <= 8) {
-              // Middle school: exclude AP/Honors, but include middle courses and standard courses without high grade numbers
-              if (isMiddleSchool) return true;
-              if (lvl.includes('ap') || lvl.includes('honors') || lvl.includes('ib')) return false;
-              // Exclude courses with grade 9+ in the name
-              return !/(\b(9|10|11|12)th?\b|grade (9|10|11|12))/i.test(courseName);
-            } else {
-              // High school (9-12): exclude middle school courses and middle grade numbers
-              if (isMiddleSchool) return false;
-              if (/(\b[78]th?\b|grade [78]|^(english|math|science|social studies) [78])/i.test(courseName)) return false;
-              return true;
-            }
-          }).slice(0, 6);
-
-          return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
-        })
-        };
-      });
-
-    // Save results to DB
-    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
-    const planData = {
-      user_email: profile.user_email,
-      career_tracks: tracks || [],
-      selected_track_index: 0,
+    // Save to cache for future use
+    const cacheData = {
       school_name: profile.school_name,
-      current_grade: profile.current_grade,
-      school_info,
-      is_generating: false,
+      zipcode: profile.zipcode,
+      cached_data: {
+        school_name: schoolMiddleResult.school_name,
+        school_website: existingSchoolWebsite || schoolMiddleResult.school_website,
+        catalog_url: schoolMiddleResult.catalog_url,
+        district_name: schoolMiddleResult.district_name,
+        graduation_requirements: schoolMiddleResult.graduation_requirements,
+        enrollment_process: schoolMiddleResult.enrollment_process,
+        middle_courses: schoolMiddleResult.courses || [],
+        high_courses: schoolHighResult.courses || [],
+      },
+      document_urls: {
+        school_website: existingSchoolWebsite || schoolMiddleResult.school_website,
+        catalog_url: schoolMiddleResult.catalog_url,
+      },
+      cached_date: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    if (existing[0]) {
-      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
+    if (cache) {
+      await base44.asServiceRole.entities.SchoolDocumentCache.update(cache.id, cacheData);
     } else {
-      await base44.asServiceRole.entities.CareerPlan.create(planData);
+      await base44.asServiceRole.entities.SchoolDocumentCache.create(cacheData);
     }
 
-    // Track usage
-    const month = new Date().toISOString().slice(0, 7);
-    const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: profile.user_email, month });
-    const usageRecord = usageRecords[0];
-    const newTotal = (usageRecord?.total_cost || 0) + PLAN_COST;
-    const nowBlocked = newTotal >= 5.0;
-    if (usageRecord) {
-      await base44.asServiceRole.entities.UsageCredit.update(usageRecord.id, { total_cost: newTotal, blocked: nowBlocked });
-    } else {
-      await base44.asServiceRole.entities.UsageCredit.create({ user_email: profile.user_email, month, total_cost: newTotal, blocked: nowBlocked });
-    }
+    console.log(`Cached ${schoolMiddleResult.courses?.length || 0} middle + ${schoolHighResult.courses?.length || 0} high school courses`);
+    await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult);
 
-    console.log(`Plan generation complete for ${profile.user_email}: ${tracks.length} tracks, ${allCourses.length} courses`);
   } catch (err) {
     console.error('Background generation error:', err.message, err.stack);
-    // Mark as not generating on failure so the UI doesn't spin forever
     const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email }).catch(() => []);
     if (existing[0]) {
       await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: false }).catch(() => {});
@@ -267,7 +283,6 @@ Deno.serve(async (req) => {
 
     const { profile, journey } = await req.json();
 
-    // Mark as generating in DB and get existing school_website
     const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: user.email });
     if (existing[0]) {
       await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: true });
@@ -275,17 +290,14 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.CareerPlan.create({ user_email: user.email, is_generating: true });
     }
 
-    // Fire generation in background and return immediately
     const profileWithEmail = { ...profile, user_email: user.email };
     const existingSchoolWebsite = existing[0]?.school_info?.school_website || null;
     if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
       EdgeRuntime.waitUntil(runGeneration(base44, profileWithEmail, journey, existingSchoolWebsite));
     } else {
-      // Fallback: run async without waiting (dev environment)
       runGeneration(base44, profileWithEmail, journey, existingSchoolWebsite);
     }
 
-    // Return immediately — frontend will poll for completion
     return Response.json({ status: 'generating' });
 
   } catch (error) {
