@@ -243,8 +243,20 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
       {editing && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <h2 className="font-heading font-semibold text-lg flex items-center gap-2"><School className="w-5 h-5" /> School Info</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Current grade</label>
+              <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
+                <SelectContent>
+                  {[7,8,9,10,11,12].map(g => (
+                    <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <SchoolSearch
+              grade={form.current_grade || null}
               zipcode={form.zipcode || ""}
               middleSchoolName={form.middle_school_name || ""}
               highSchoolName={form.high_school_name || ""}
@@ -252,17 +264,6 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
               onMiddleSchoolChange={v => setForm(p => ({ ...p, middle_school_name: v }))}
               onHighSchoolChange={v => setForm(p => ({ ...p, high_school_name: v }))}
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Current Grade</label>
-            <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
-              <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
-              <SelectContent>
-                {[7,8,9,10,11,12].map(g => (
-                  <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </motion.div>
       )}
