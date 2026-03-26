@@ -59,6 +59,8 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
         const gradeCourses = allCourses.filter(c => {
           const lvl = (c.level || '').toLowerCase();
           const courseName = (c.name || '').toLowerCase();
+          const mentionsGrade = /grade\s+\d+|\d+(?:st|nd|rd|th)?\s+grade|\d(?:th)?\s+grade/.test(courseName);
+          const mentionsThisGrade = new RegExp(`grade\s+${gradeNum}|\b${gradeNum}(?:st|nd|rd|th)?\s+grade|\b${gradeNum}(?:th)?\s+grade`).test(courseName);
           const isMiddleSchool = lvl.includes('middle') || /\bgrade\s+[67]|\b[67](?:th)?\b/.test(courseName);
           const isHighSchool = lvl.includes('high') || /\bgrade\s+(?:9|10|11|12)|\b(?:9|10|11|12)(?:th)?\b/.test(courseName);
           const isAP = lvl.includes('ap');
@@ -66,13 +68,13 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
           const isDual = lvl.includes('dual');
           const isIB = lvl.includes('ib');
           const isStandard = !isAP && !isHonors && !isDual && !isIB;
-          if (gradeNum === 7) return isMiddleSchool;
-          if (gradeNum === 8) return isMiddleSchool || (isHighSchool && isStandard && !isAP);
-          if (gradeNum === 9) return !isMiddleSchool && (isStandard || (isHonors && courseName.match(/9th|grade 9/)));
-          if (gradeNum === 10) return !isMiddleSchool && (isStandard || isHonors || (isAP && courseName.match(/10th|grade 10/)));
-          if (gradeNum === 11) return !isMiddleSchool && (isStandard || isHonors || isAP || isDual);
-          if (gradeNum === 12) return !isMiddleSchool && (isStandard || isHonors || isAP || isDual || isIB);
-          return !isMiddleSchool;
+          if (gradeNum === 7) return isMiddleSchool && !isHighSchool;
+          if (gradeNum === 8) return isMiddleSchool && !isHighSchool;
+          if (gradeNum === 9) return isHighSchool && !isMiddleSchool && (mentionsThisGrade || !mentionsGrade);
+          if (gradeNum === 10) return isHighSchool && !isMiddleSchool && (mentionsThisGrade || !mentionsGrade || (isHonors || isAP));
+          if (gradeNum === 11) return isHighSchool && !isMiddleSchool && (mentionsThisGrade || !mentionsGrade || (isHonors || isAP || isDual));
+          if (gradeNum === 12) return isHighSchool && !isMiddleSchool && (mentionsThisGrade || !mentionsGrade || (isHonors || isAP || isDual || isIB));
+          return false;
         }).slice(0, 5);
         return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
       })
