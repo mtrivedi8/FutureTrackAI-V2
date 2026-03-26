@@ -92,6 +92,9 @@ export default function AcademicPlan() {
     // If trackIndex specified, regenerate that track only
     if (trackIndex !== null) {
       setGeneratingTrackIndex(trackIndex);
+    } else {
+      setGeneratingTrackIndex(0);
+    }
 
     try {
       const user = await base44.auth.me();
@@ -427,5 +430,3 @@ export default function AcademicPlan() {
     </div>
   );
 }
-
-export default AcademicPlan;
