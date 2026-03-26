@@ -162,18 +162,26 @@ export default function AcademicPlan() {
           )}
           <div className="flex-1">
             {usageBlocked ? (
-              <p className="font-medium text-destructive">Monthly usage limit reached — resets next month</p>
-            ) : (
-              <>
-                <p className="text-muted-foreground">AI Credits used this month: <span className="font-semibold text-foreground">${(usage.total_cost || 0).toFixed(2)} / $5.00</span></p>
-                <div className="mt-1 h-1.5 rounded-full bg-border overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${Math.min(100, ((usage.total_cost || 0) / 5.0) * 100)}%` }}
-                  />
-                </div>
-              </>
-            )}
+              <p className="font-medium text-destructive">Monthly plan limit reached — resets next month</p>
+            ) : (() => {
+              const plansUsed = Math.round((usage.total_cost || 0) / 0.25);
+              const plansTotal = 20;
+              const remaining = plansTotal - plansUsed;
+              return (
+                <>
+                  <p className="text-muted-foreground">
+                    <span className="font-semibold text-foreground">{plansUsed} of {plansTotal}</span> plan generations used this month
+                    {remaining > 0 && <span className="text-muted-foreground"> · {remaining} remaining</span>}
+                  </p>
+                  <div className="mt-1 h-1.5 rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${Math.min(100, (plansUsed / plansTotal) * 100)}%` }}
+                    />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
