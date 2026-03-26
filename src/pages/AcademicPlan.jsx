@@ -171,7 +171,7 @@ export default function AcademicPlan() {
 
   const tracks = plan?.career_tracks || [];
   const currentTrack = tracks[selectedTrack];
-  const gradeData = currentTrack?.grades?.find(g => g.grade === selectedGrade);
+  const gradeData = currentTrack?.grades?.find(g => Number(g.grade) === Number(selectedGrade)) || (currentTrack?.grades?.[0] || null);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -374,7 +374,7 @@ export default function AcademicPlan() {
 
               {/* Grade Plan Detail */}
               <AnimatePresence mode="wait">
-                {gradeData && (
+                {gradeData ? (
                   <motion.div
                     key={selectedGrade}
                     initial={{ opacity: 0, y: 20 }}
@@ -384,6 +384,10 @@ export default function AcademicPlan() {
                   >
                     <GradePlanCard grade={selectedGrade} gradeData={gradeData} schoolName={profile?.school_name} schoolInfo={plan?.school_info} />
                   </motion.div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>Grade plan data not available</p>
+                  </div>
                 )}
               </AnimatePresence>
             </>
