@@ -42,7 +42,8 @@ export default function Onboarding() {
     avatar_emoji: "🚀",
     zipcode: "",
     city: "",
-    school_name: "",
+    middle_school_name: "",
+    high_school_name: "",
     current_grade: "",
     interests: [],
     strengths: [],
@@ -186,9 +187,11 @@ export default function Onboarding() {
         <div className="space-y-4">
           <SchoolSearch
             zipcode={form.zipcode}
-            schoolName={form.school_name}
+            middleSchoolName={form.middle_school_name}
+            highSchoolName={form.high_school_name}
             onZipChange={v => setForm(p => ({ ...p, zipcode: v }))}
-            onSchoolChange={v => setForm(p => ({ ...p, school_name: v }))}
+            onMiddleSchoolChange={v => setForm(p => ({ ...p, middle_school_name: v }))}
+            onHighSchoolChange={v => setForm(p => ({ ...p, high_school_name: v }))}
           />
           <div>
             <label className="text-sm font-medium mb-2 block">Current grade</label>
