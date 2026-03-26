@@ -35,14 +35,16 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
   const [togglingPayment, setTogglingPayment] = useState(false);
+  const [togglingLimit, setTogglingLimit] = useState(false);
 
   const loadProfile = async () => {
     const u = await base44.auth.me();
     setUser(u);
-    const [profiles, settings] = await Promise.all([
+    const [profiles, allSettings] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: u.email }),
-      base44.entities.AppSettings.filter({ key: 'payment_enabled' }),
+      base44.entities.AppSettings.filter({}),
     ]);
     if (!profiles.length) {
       navigate("/onboarding");
@@ -50,7 +52,10 @@ export default function Profile() {
     }
     setProfile(profiles[0]);
     setForm(profiles[0]);
-    setPaymentEnabled(settings[0] ? settings[0].value === 'true' : true);
+    const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
+    const limitSetting = allSettings.find(s => s.key === 'monthly_limit_enabled');
+    setPaymentEnabled(paymentSetting ? paymentSetting.value === 'true' : true);
+    setMonthlyLimitEnabled(limitSetting ? limitSetting.value !== 'false' : true);
     setLoading(false);
   };
 
@@ -66,6 +71,20 @@ export default function Profile() {
     setPaymentEnabled(newVal);
     toast.success(`Payment ${newVal ? 'enabled' : 'disabled'}`);
     setTogglingPayment(false);
+  };
+
+  const toggleMonthlyLimit = async () => {
+    setTogglingLimit(true);
+    const newVal = !monthlyLimitEnabled;
+    const existing = await base44.entities.AppSettings.filter({ key: 'monthly_limit_enabled' });
+    if (existing[0]) {
+      await base44.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
+    } else {
+      await base44.entities.AppSettings.create({ key: 'monthly_limit_enabled', value: String(newVal) });
+    }
+    setMonthlyLimitEnabled(newVal);
+    toast.success(`Monthly limit ${newVal ? 'enabled' : 'disabled'}`);
+    setTogglingLimit(false);
   };
 
   useEffect(() => { loadProfile(); }, []);
@@ -369,21 +388,39 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
               <ShieldCheck className="w-5 h-5 text-primary" />
               <h3 className="font-heading font-semibold">Admin Controls</h3>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Payment gate</p>
-                <p className="text-xs text-muted-foreground">When disabled, all users can access the Academic Plan for free</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Payment gate</p>
+                  <p className="text-xs text-muted-foreground">When disabled, all users can access the Academic Plan for free</p>
+                </div>
+                <Button
+                  onClick={togglePayment}
+                  disabled={togglingPayment}
+                  variant={paymentEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  className="shrink-0 gap-2"
+                >
+                  {togglingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {paymentEnabled ? '🔒 Enabled' : '🔓 Disabled'}
+                </Button>
               </div>
-              <Button
-                onClick={togglePayment}
-                disabled={togglingPayment}
-                variant={paymentEnabled ? 'default' : 'outline'}
-                size="sm"
-                className="shrink-0 gap-2"
-              >
-                {togglingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {paymentEnabled ? '🔒 Enabled' : '🔓 Disabled'}
-              </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Monthly plan limit</p>
+                  <p className="text-xs text-muted-foreground">When disabled, users get unlimited regenerations</p>
+                </div>
+                <Button
+                  onClick={toggleMonthlyLimit}
+                  disabled={togglingLimit}
+                  variant={monthlyLimitEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  className="shrink-0 gap-2"
+                >
+                  {togglingLimit ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {monthlyLimitEnabled ? '📊 Enabled' : '♾️ Unlimited'}
+                </Button>
+              </div>
             </div>
           </div>
         </motion.div>

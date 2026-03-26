@@ -273,11 +273,16 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const month = new Date().toISOString().slice(0, 7);
-    const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: user.email, month });
-    const usageRecord = usageRecords[0];
-    if (usageRecord && (usageRecord.blocked || usageRecord.total_cost >= 5.0)) {
-      return Response.json({ error: 'USAGE_CAP_REACHED' }, { status: 429 });
+    const allSettings = await base44.asServiceRole.entities.AppSettings.filter({});
+    const monthlyLimitEnabled = allSettings.find(s => s.key === 'monthly_limit_enabled') ? allSettings.find(s => s.key === 'monthly_limit_enabled').value !== 'false' : true;
+
+    if (monthlyLimitEnabled) {
+      const month = new Date().toISOString().slice(0, 7);
+      const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: user.email, month });
+      const usageRecord = usageRecords[0];
+      if (usageRecord && (usageRecord.blocked || usageRecord.total_cost >= 5.0)) {
+        return Response.json({ error: 'USAGE_CAP_REACHED' }, { status: 429 });
+      }
     }
 
     const { profile, journey } = await req.json();
