@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { avatarIcons } from "@/utils/customEmojis";
 import { Input } from "@/components/ui/input";
 import { Sparkles, ArrowRight, ArrowLeft, Rocket, Star, Zap, Heart, School } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
@@ -154,20 +155,23 @@ export default function Onboarding() {
         <div>
           <label className="text-sm font-medium mb-3 block">Choose your avatar</label>
           <div className="grid grid-cols-6 gap-3">
-            {AVATARS.map(emoji => (
-              <button
-                key={emoji}
-                onClick={() => setForm(p => ({ ...p, avatar_emoji: emoji }))}
-                className={cn(
-                  "w-14 h-14 rounded-2xl text-2xl flex items-center justify-center transition-all duration-200",
-                  form.avatar_emoji === emoji
-                    ? "bg-primary/15 ring-2 ring-primary scale-110"
-                    : "bg-muted hover:bg-muted/80"
-                )}
-              >
-                {emoji}
-              </button>
-            ))}
+            {AVATARS.map(emoji => {
+              const Icon = avatarIcons[emoji];
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => setForm(p => ({ ...p, avatar_emoji: emoji }))}
+                  className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 text-slate-700 dark:text-slate-300",
+                    form.avatar_emoji === emoji
+                      ? "bg-primary/15 ring-2 ring-primary scale-110"
+                      : "bg-muted hover:bg-muted/80"
+                  )}
+                >
+                  {Icon && <Icon size={28} />}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

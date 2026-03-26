@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, BookOpen, Lightbulb, Rocket, Wrench } from "lucide-react";
+import { recommendationIcons } from "@/utils/customEmojis";
 
 const typeConfig = {
-  "Career Path": { icon: Briefcase, color: "bg-primary/10 text-primary" },
-  "Skill": { icon: Wrench, color: "bg-secondary/10 text-secondary" },
-  "Course": { icon: BookOpen, color: "bg-blue-500/10 text-blue-500" },
-  "Activity": { icon: Lightbulb, color: "bg-yellow-500/10 text-yellow-500" },
-  "Project": { icon: Rocket, color: "bg-accent/10 text-accent" }
+  "Career Path": { icon: recommendationIcons['Career Path'], color: "bg-primary/10 text-primary" },
+  "Skill": { icon: recommendationIcons['Skill'], color: "bg-secondary/10 text-secondary" },
+  "Course": { icon: recommendationIcons['Course'], color: "bg-blue-500/10 text-blue-500" },
+  "Activity": { icon: recommendationIcons['Activity'], color: "bg-yellow-500/10 text-yellow-500" },
+  "Project": { icon: recommendationIcons['Project'], color: "bg-accent/10 text-accent" }
 };
 
 const statusColors = {
@@ -21,6 +21,7 @@ const statusColors = {
 export default function RecommendationCard({ recommendation, onClick }) {
   const config = typeConfig[recommendation.type] || typeConfig["Skill"];
   const Icon = config.icon;
+  const isCustomIcon = typeof Icon === 'function' && Icon.length === 1;
 
   return (
     <button
@@ -29,7 +30,7 @@ export default function RecommendationCard({ recommendation, onClick }) {
     >
       <div className="flex items-start gap-4">
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", config.color)}>
-          <Icon className="w-5 h-5" />
+          {isCustomIcon ? <Icon size={20} /> : <Icon className="w-5 h-5" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
