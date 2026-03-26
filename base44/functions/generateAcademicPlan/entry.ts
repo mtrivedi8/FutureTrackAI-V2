@@ -2,20 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const PLAN_COST = 0.25;
 
-Deno.serve(async (req) => {
+async function runGeneration(base44, profile, journey) {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const month = new Date().toISOString().slice(0, 7);
-    const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: user.email, month });
-    const usageRecord = usageRecords[0];
-    if (usageRecord && (usageRecord.blocked || usageRecord.total_cost >= 5.0)) {
-      return Response.json({ error: 'USAGE_CAP_REACHED' }, { status: 429 });
-    }
-
-    const { profile, journey } = await req.json();
     const adaptMode = journey?.adapt_mode === true;
 
     const journeyContext = journey ? `
@@ -94,9 +82,8 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       `wildcard emerging field combining interests unexpectedly`,
     ];
 
-    // Fire ALL 5 LLM calls in parallel simultaneously — school research + all 3 tracks at once
+    // Fire ALL 5 LLM calls in parallel
     const [schoolMiddleResult, schoolHighResult, ...trackResults] = await Promise.all([
-      // School call 1: info + middle school courses
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Search for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''} school website, course catalog, graduation requirements, and middle school courses (grades 7-8). Return school_website, catalog_url, district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses.`,
         add_context_from_internet: true,
@@ -115,37 +102,29 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
         }
       }).catch(() => ({ courses: [] })),
 
-      // School call 2: high school courses
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Search for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''} high school courses (grades 9-12). Return up to 60 courses with name, credits, level (Standard/Honors/AP/IB), subject_area, required_or_elective, prerequisites.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
-        response_json_schema: {
-          type: 'object',
-          properties: { courses: courseSchema }
-        }
+        response_json_schema: { type: 'object', properties: { courses: courseSchema } }
       }).catch(() => ({ courses: [] })),
 
-      // Track 1
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 1 (${trackHints[0]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
         response_json_schema: { type: 'object', properties: { track: trackSchema } }
       }).catch(err => { console.error('Track 1 failed:', err.message); return null; }),
 
-      // Track 2
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 2 (${trackHints[1]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
         response_json_schema: { type: 'object', properties: { track: trackSchema } }
       }).catch(err => { console.error('Track 2 failed:', err.message); return null; }),
 
-      // Track 3
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 3 (${trackHints[2]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
         response_json_schema: { type: 'object', properties: { track: trackSchema } }
       }).catch(err => { console.error('Track 3 failed:', err.message); return null; }),
     ]);
 
-    // Merge school courses from both calls
     const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
     const school_info = {
       school_name: schoolMiddleResult.school_name,
@@ -157,7 +136,6 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       enrollment_process: schoolMiddleResult.enrollment_process,
     };
 
-    // If we got real school courses, inject them into each track's grades
     const tracks = trackResults
       .filter(Boolean)
       .map(r => r.track)
@@ -167,7 +145,6 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
         return {
           ...track,
           grades: (track.grades || []).map(g => {
-            // Pick courses appropriate for this grade level
             const gradeNum = g.grade;
             const gradeCourses = allCourses.filter(c => {
               const lvl = (c.level || '').toLowerCase();
@@ -180,20 +157,81 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
         };
       });
 
+    // Save results to DB
+    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+    const planData = {
+      user_email: profile.user_email,
+      career_tracks: tracks || [],
+      selected_track_index: 0,
+      school_name: profile.school_name,
+      current_grade: profile.current_grade,
+      school_info,
+      is_generating: false,
+    };
+
+    if (existing[0]) {
+      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
+    } else {
+      await base44.asServiceRole.entities.CareerPlan.create(planData);
+    }
+
     // Track usage
+    const month = new Date().toISOString().slice(0, 7);
+    const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: profile.user_email, month });
+    const usageRecord = usageRecords[0];
     const newTotal = (usageRecord?.total_cost || 0) + PLAN_COST;
     const nowBlocked = newTotal >= 5.0;
     if (usageRecord) {
       await base44.asServiceRole.entities.UsageCredit.update(usageRecord.id, { total_cost: newTotal, blocked: nowBlocked });
     } else {
-      await base44.asServiceRole.entities.UsageCredit.create({ user_email: user.email, month, total_cost: newTotal, blocked: nowBlocked });
+      await base44.asServiceRole.entities.UsageCredit.create({ user_email: profile.user_email, month, total_cost: newTotal, blocked: nowBlocked });
     }
 
-    return Response.json({
-      tracks,
-      school_info,
-      usage: { total_cost: newTotal, cap: 5.0, blocked: nowBlocked },
-    });
+    console.log(`Plan generation complete for ${profile.user_email}: ${tracks.length} tracks, ${allCourses.length} courses`);
+  } catch (err) {
+    console.error('Background generation error:', err.message, err.stack);
+    // Mark as not generating on failure so the UI doesn't spin forever
+    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email }).catch(() => []);
+    if (existing[0]) {
+      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: false }).catch(() => {});
+    }
+  }
+}
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const month = new Date().toISOString().slice(0, 7);
+    const usageRecords = await base44.asServiceRole.entities.UsageCredit.filter({ user_email: user.email, month });
+    const usageRecord = usageRecords[0];
+    if (usageRecord && (usageRecord.blocked || usageRecord.total_cost >= 5.0)) {
+      return Response.json({ error: 'USAGE_CAP_REACHED' }, { status: 429 });
+    }
+
+    const { profile, journey } = await req.json();
+
+    // Mark as generating in DB
+    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: user.email });
+    if (existing[0]) {
+      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: true });
+    } else {
+      await base44.asServiceRole.entities.CareerPlan.create({ user_email: user.email, is_generating: true });
+    }
+
+    // Fire generation in background and return immediately
+    const profileWithEmail = { ...profile, user_email: user.email };
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(runGeneration(base44, profileWithEmail, journey));
+    } else {
+      // Fallback: run async without waiting (dev environment)
+      runGeneration(base44, profileWithEmail, journey);
+    }
+
+    // Return immediately — frontend will poll for completion
+    return Response.json({ status: 'generating' });
 
   } catch (error) {
     console.error('generateAcademicPlan error:', error.message, error.stack);
