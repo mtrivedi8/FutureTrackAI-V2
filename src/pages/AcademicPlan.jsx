@@ -248,7 +248,7 @@ export default function AcademicPlan() {
               Click "Generate My Plan" and AI will create a personalized grade-by-grade academic roadmap with career tracks, classes, clubs, and more.
             </p>
           </div>
-          <Button onClick={generatePlan} disabled={generating} size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
+          <Button onClick={generatePlan} disabled={generatingTrackIndex !== null} size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
             <Sparkles className="w-5 h-5" /> Generate My Academic Plan
           </Button>
         </div>
@@ -277,7 +277,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {plan && !generating && (
+      {plan && generatingTrackIndex === null && (
         <div className="space-y-8">
           {/* Career Track Selector */}
           <div>
