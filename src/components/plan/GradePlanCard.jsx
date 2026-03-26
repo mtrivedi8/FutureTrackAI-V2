@@ -14,7 +14,7 @@ const levelColors = {
   "Standard": "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-function CourseCard({ course, schoolName }) {
+function CourseCard({ course, schoolName, catalogUrl }) {
   const isObj = typeof course === "object" && course !== null;
   const name = isObj ? course.name : course;
   const credits = isObj ? course.credits : null;
@@ -24,7 +24,7 @@ function CourseCard({ course, schoolName }) {
   const recommended = isObj ? course.recommended_for_track : false;
   const prereqs = isObj ? course.prerequisites : null;
 
-  const searchQuery = encodeURIComponent(name + (schoolName ? " " + schoolName : ""));
+  const href = catalogUrl || `https://www.google.com/search?q=${encodeURIComponent(name + (schoolName ? " " + schoolName + " course catalog" : " course catalog"))}`;
 
   return (
     <div className={cn(
@@ -38,7 +38,7 @@ function CourseCard({ course, schoolName }) {
           <div className="flex items-center gap-1.5 flex-wrap">
             {recommended && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
             <a
-              href={`https://www.google.com/search?q=${searchQuery}`}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-foreground hover:text-primary hover:underline transition-colors text-sm leading-tight"
@@ -211,7 +211,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {courses.map((course, i) => (
-              <CourseCard key={i} course={course} schoolName={schoolName} />
+              <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
             ))}
           </div>
         </div>
