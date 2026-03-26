@@ -37,73 +37,90 @@ ADAPT MODE INSTRUCTIONS:
 - Take the student's recent moods into account when setting the tone of the plan
 - Show clear progression from their current skills and accomplishments` : 'IMPORTANT: Build on skills already gained, avoid repeating completed activities, incorporate new interests, and show progression from where the student currently is.'}` : '';
 
-  // Single combined call: scrape school data AND generate plan in one shot
-  const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-    prompt: `You are an expert academic counselor and school researcher.
-
-TASK 1 - RESEARCH: Search the web for the official course catalog, graduation requirements, and enrollment process for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.country ? ', ' + profile.country : ''}.
+  // Step 1: Research school info with internet search (small, focused call)
+  const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    prompt: `Search the web for the official course catalog and graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.country ? ', ' + profile.country : ''}.
 
 Find:
 - School website URL and course catalog URL
 - ALL courses offered (name, credits, level: Standard/Honors/AP/IB, subject area, required or elective, prerequisites)
 - Graduation credit requirements (total and per subject)
-- Enrollment/registration process (how to register, timeline, counselor info, AP/Honors enrollment requirements, level change process, any portal)
-- Clubs, sports, special programs
+- Enrollment/registration process (how to register, timeline, counselor info, AP/Honors enrollment requirements)
+- Clubs, sports, special programs`,
+    add_context_from_internet: true,
+    model: 'gemini_3_flash',
+    response_json_schema: {
+      type: 'object',
+      properties: {
+        school_name: { type: 'string' },
+        school_website: { type: 'string' },
+        catalog_url: { type: 'string' },
+        district_name: { type: 'string' },
+        courses_found: { type: 'number' },
+        courses: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              credits: { type: 'string' },
+              level: { type: 'string' },
+              subject_area: { type: 'string' },
+              required_or_elective: { type: 'string' },
+              prerequisites: { type: 'string' }
+            }
+          }
+        },
+        graduation_requirements: {
+          type: 'object',
+          properties: {
+            total_credits: { type: 'number' },
+            english_credits: { type: 'number' },
+            math_credits: { type: 'number' },
+            science_credits: { type: 'number' },
+            social_studies_credits: { type: 'number' },
+            pe_health_credits: { type: 'number' },
+            elective_credits: { type: 'number' },
+            notes: { type: 'string' }
+          }
+        },
+        enrollment_process: {
+          type: 'object',
+          properties: {
+            how_to_register: { type: 'string' },
+            registration_timeline: { type: 'string' },
+            advisor_counselor_info: { type: 'string' },
+            ap_honors_enrollment: { type: 'string' },
+            notes: { type: 'string' }
+          }
+        }
+      }
+    }
+  });
 
-TASK 2 - PLAN: Using that real school data, create 3 career tracks for this student:
+  const schoolCoursesSummary = schoolResult.courses?.length > 0
+    ? `Available courses at ${profile.school_name}: ${schoolResult.courses.map(c => `${c.name} (${c.level || 'Standard'}, ${c.subject_area || ''}, ${c.required_or_elective || ''})`).join('; ')}`
+    : `No specific course catalog found for ${profile.school_name}. Use typical high school courses.`;
+
+  // Step 2: Generate the academic plan using school data (no internet needed)
+  const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    prompt: `You are an expert academic counselor. Create 3 career tracks for this student using the real school course data provided.
+
+Student:
 - Name: ${profile.display_name}, Age: ${profile.age}, Grade: ${profile.current_grade}
 - Interests: ${(profile.interests || []).join(', ')}
 - Strengths: ${(profile.strengths || []).join(', ')}
 - Dream Careers: ${(profile.dream_careers || []).join(', ')}
 - Goals: ${(profile.goals || []).join(', ')}${journeyContext}
 
+School: ${profile.school_name}
+${schoolCoursesSummary}
+
 For EACH track, create a grade-by-grade plan from grade ${profile.current_grade} to 12 (inclusive).
-IMPORTANT: Start from grade ${profile.current_grade}, not grade 9. If current grade is 8, include grades 8, 9, 10, 11, 12.
-For EACH grade also include detailed summer_activities for the summer AFTER that grade (e.g., summer programs, internships, camps, volunteer, self-study, jobs relevant to the track).
-For each grade include:
-- focus, key_milestone, credit_summary
-- school_courses: real courses from the catalog (name, credits, level, subject_area, required_or_elective, recommended_for_track, prerequisites)
-- clubs (2-3 real ones), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (1-2)`,
-    add_context_from_internet: true,
-    model: 'gemini_3_flash',
+For each grade include: focus, key_milestone, credit_summary, school_courses (picked from the real course list above), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2).`,
     response_json_schema: {
       type: 'object',
       properties: {
-        school_info: {
-          type: 'object',
-          properties: {
-            school_name: { type: 'string' },
-            school_website: { type: 'string' },
-            catalog_url: { type: 'string' },
-            district_name: { type: 'string' },
-            courses_found: { type: 'number' },
-            graduation_requirements: {
-              type: 'object',
-              properties: {
-                total_credits: { type: 'number' },
-                english_credits: { type: 'number' },
-                math_credits: { type: 'number' },
-                science_credits: { type: 'number' },
-                social_studies_credits: { type: 'number' },
-                pe_health_credits: { type: 'number' },
-                elective_credits: { type: 'number' },
-                notes: { type: 'string' }
-              }
-            },
-            enrollment_process: {
-              type: 'object',
-              properties: {
-                how_to_register: { type: 'string' },
-                registration_timeline: { type: 'string' },
-                advisor_counselor_info: { type: 'string' },
-                ap_honors_enrollment: { type: 'string' },
-                level_change_process: { type: 'string' },
-                registration_portal: { type: 'string' },
-                notes: { type: 'string' }
-              }
-            }
-          }
-        },
         tracks: {
           type: 'array',
           items: {
@@ -152,6 +169,17 @@ For each grade include:
       }
     }
   });
+
+  // Merge school info back
+  result.school_info = {
+    school_name: schoolResult.school_name,
+    school_website: schoolResult.school_website,
+    catalog_url: schoolResult.catalog_url,
+    district_name: schoolResult.district_name,
+    courses_found: schoolResult.courses_found || schoolResult.courses?.length || 0,
+    graduation_requirements: schoolResult.graduation_requirements,
+    enrollment_process: schoolResult.enrollment_process,
+  };
 
   // Track usage after successful generation
   const newTotal = (usageRecord?.total_cost || 0) + PLAN_COST;
