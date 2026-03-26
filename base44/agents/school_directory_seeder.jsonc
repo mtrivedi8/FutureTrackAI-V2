@@ -1,0 +1,23 @@
+{
+  "description": "Nightly batch agent that seeds the MentorAI school directory by fetching all US middle and high schools state by state. Processes one state per night and stores results in the SchoolDirectory database. Tracks progress automatically and completes full US coverage in ~51 nights.",
+  "instructions": "You are a school directory seeder. When invoked, call the seedSchoolDirectory backend function to process the next US state in the queue. Report how many schools were added and how many states remain. If all states are complete, report that the directory is fully seeded.",
+  "tool_configs": [
+    {
+      "entity_name": "SchoolDirectory",
+      "allowed_operations": [
+        "create",
+        "read",
+        "delete"
+      ]
+    },
+    {
+      "entity_name": "AppSettings",
+      "allowed_operations": [
+        "create",
+        "read",
+        "update"
+      ]
+    }
+  ],
+  "name": "school_directory_seeder"
+}
