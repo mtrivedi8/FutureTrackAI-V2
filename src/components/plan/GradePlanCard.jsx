@@ -1,4 +1,5 @@
-import { BookOpen, Lightbulb, Users, Laptop, Sun, Trophy, Heart, GraduationCap, Star, ExternalLink, Info } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, Users, Laptop, Sun, Trophy, Heart, GraduationCap, Star, ExternalLink, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const gradeLabels = {
@@ -29,20 +30,14 @@ function CourseCard({ course, schoolName, catalogUrl }) {
   return (
     <div className={cn(
       "rounded-xl border p-3 text-sm transition-all",
-      recommended
-        ? "border-primary/40 bg-primary/5"
-        : "border-border bg-card"
+      recommended ? "border-primary/40 bg-primary/5" : "border-border bg-card"
     )}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             {recommended && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-foreground hover:text-primary hover:underline transition-colors text-sm leading-tight"
-            >
+            <a href={href} target="_blank" rel="noopener noreferrer"
+              className="font-semibold text-foreground hover:text-primary hover:underline transition-colors text-sm leading-tight">
               {name}
             </a>
             {level && level !== "Standard" && (
@@ -51,7 +46,6 @@ function CourseCard({ course, schoolName, catalogUrl }) {
               </span>
             )}
           </div>
-
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
             {subject && <span className="text-[11px] text-muted-foreground">{subject}</span>}
             {req && (
@@ -68,7 +62,6 @@ function CourseCard({ course, schoolName, catalogUrl }) {
               </span>
             )}
           </div>
-
           {prereqs && prereqs !== "None" && prereqs !== "N/A" && (
             <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
               <Info className="w-3 h-3 shrink-0" /> Prereq: {prereqs}
@@ -81,44 +74,16 @@ function CourseCard({ course, schoolName, catalogUrl }) {
 }
 
 const sections = [
-  {
-    key: "clubs",
-    label: "School Clubs",
-    icon: Users,
-    color: "bg-secondary/10 text-secondary",
-    tagColor: "bg-secondary/10 text-secondary",
-  },
-  {
-    key: "extracurriculars",
-    label: "Extracurriculars",
-    icon: Trophy,
-    color: "bg-accent/10 text-accent",
-    tagColor: "bg-accent/10 text-accent",
-  },
-  {
-    key: "volunteer_opportunities",
-    label: "Volunteer",
-    icon: Heart,
-    color: "bg-red-500/10 text-red-500",
-    tagColor: "bg-red-500/10 text-red-600",
-  },
-  {
-    key: "online_courses",
-    label: "Online Courses",
-    icon: Laptop,
-    color: "bg-blue-500/10 text-blue-500",
-    tagColor: "bg-blue-500/10 text-blue-600",
-  },
-  {
-    key: "summer_activities",
-    label: "Summer Activities",
-    icon: Sun,
-    color: "bg-orange-500/10 text-orange-500",
-    tagColor: "bg-orange-500/10 text-orange-600",
-  },
+  { key: "clubs", label: "School Clubs", icon: Users, color: "bg-secondary/10 text-secondary", tagColor: "bg-secondary/10 text-secondary" },
+  { key: "extracurriculars", label: "Extracurriculars", icon: Trophy, color: "bg-accent/10 text-accent", tagColor: "bg-accent/10 text-accent" },
+  { key: "volunteer_opportunities", label: "Volunteer", icon: Heart, color: "bg-red-500/10 text-red-500", tagColor: "bg-red-500/10 text-red-600" },
+  { key: "online_courses", label: "Online Courses", icon: Laptop, color: "bg-blue-500/10 text-blue-500", tagColor: "bg-blue-500/10 text-blue-600" },
+  { key: "summer_activities", label: "Summer Activities", icon: Sun, color: "bg-orange-500/10 text-orange-500", tagColor: "bg-orange-500/10 text-orange-600" },
 ];
 
 export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo }) {
+  const [enrollmentOpen, setEnrollmentOpen] = useState(false);
+
   if (!gradeData) return null;
 
   const courses = gradeData.school_courses || [];
@@ -166,7 +131,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
-      {/* Graduation Requirements (if available) */}
+      {/* Graduation Requirements */}
       {schoolInfo?.graduation_requirements && schoolInfo.graduation_requirements.total_credits && (
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
@@ -194,32 +159,42 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
-      {/* Enrollment Process */}
+      {/* Enrollment Process — Collapsible */}
       {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary" /> Course Enrollment Process
-          </h3>
-          <div className="space-y-2">
-            {[
-              { label: "How to Register", val: schoolInfo.enrollment_process.how_to_register },
-              { label: "Timeline", val: schoolInfo.enrollment_process.registration_timeline },
-              { label: "Counselor / Advisor", val: schoolInfo.enrollment_process.advisor_counselor_info },
-              { label: "AP / Honors Enrollment", val: schoolInfo.enrollment_process.ap_honors_enrollment },
-              { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
-              { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
-              { label: "Notes", val: schoolInfo.enrollment_process.notes },
-            ].filter(r => r.val).map(r => (
-              <div key={r.label} className="flex gap-2 text-xs">
-                <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
-                <span className="text-muted-foreground">{r.val}</span>
-              </div>
-            ))}
-          </div>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <button
+            onClick={() => setEnrollmentOpen(o => !o)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
+          >
+            <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" /> Course Enrollment Process
+            </h3>
+            {enrollmentOpen
+              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </button>
+          {enrollmentOpen && (
+            <div className="px-4 pb-4 space-y-2">
+              {[
+                { label: "How to Register", val: schoolInfo.enrollment_process.how_to_register },
+                { label: "Timeline", val: schoolInfo.enrollment_process.registration_timeline },
+                { label: "Counselor / Advisor", val: schoolInfo.enrollment_process.advisor_counselor_info },
+                { label: "AP / Honors Enrollment", val: schoolInfo.enrollment_process.ap_honors_enrollment },
+                { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
+                { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
+                { label: "Notes", val: schoolInfo.enrollment_process.notes },
+              ].filter(r => r.val).map(r => (
+                <div key={r.label} className="flex gap-2 text-xs">
+                  <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
+                  <span className="text-muted-foreground">{r.val}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* School Courses — Rich Cards */}
+      {/* School Courses */}
       {courses.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -265,12 +240,11 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
-      {/* Other sections (clubs, extracurriculars, etc.) */}
+      {/* Other sections */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map(({ key, label, icon: Icon, color, tagColor }) => {
           const items = Array.isArray(gradeData[key]) ? gradeData[key] : [];
           if (!items.length) return null;
-
           return (
             <div key={key} className="rounded-2xl bg-card border border-border p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -281,13 +255,10 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {items.map((item, i) => (
-                  <a
-                    key={i}
+                  <a key={i}
                     href={`https://www.google.com/search?q=${encodeURIComponent(item + (schoolName ? " " + schoolName : ""))}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn("px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70 transition-opacity cursor-pointer", tagColor)}
-                  >
+                    target="_blank" rel="noopener noreferrer"
+                    className={cn("px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70 transition-opacity cursor-pointer", tagColor)}>
                     {item}
                   </a>
                 ))}
