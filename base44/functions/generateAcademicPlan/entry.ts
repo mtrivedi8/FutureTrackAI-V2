@@ -86,7 +86,29 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
     const schoolWebsiteHint = existingSchoolWebsite ? `${existingSchoolWebsite} and ` : '';
     const [schoolMiddleResult, schoolHighResult, ...trackResults] = await Promise.all([
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Using the school website ${schoolWebsiteHint}search for the official school information for "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}". Find the official school website, official course catalog/handbook (PDF or page), graduation requirements, and list all middle school courses (grades 7-8). Prioritize official school district sources. Return school_website (official domain), catalog_url (official course catalog link), district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses with accurate names.`,
+        prompt: `You are a school data researcher. Find COMPLETE and ACCURATE graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''} from their official school and district websites.
+
+Thoroughly search through:
+1. Official school website course catalog and handbook
+2. District policy documents
+3. Graduation requirements page
+4. All official PDFs and documents available
+
+Extract EXACT credit requirements for EACH of these categories:
+- Total credits required to graduate
+- English/Language Arts credits
+- Math credits
+- Science credits (including lab requirements)
+- Social Studies/History credits
+- Physical Education / Health credits
+- Foreign Language credits (if required)
+- Technology/Computer credits (if required)
+- Arts/Elective credits
+- Any other specific requirements
+
+Also list ALL available middle school courses (grades 7-8) with exact names, credits, and level from the official catalog.
+
+Return: school_website (exact URL), catalog_url (PDF or page URL), district_name, graduation_requirements (object with all credit types found), and courses array with all middle school offerings.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: {
@@ -104,7 +126,24 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       }).catch(() => ({ courses: [] })),
 
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Using the school website ${schoolWebsiteHint}search for all official high school courses (grades 9-12) for "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}" high school. Find courses from the school's official website or course catalog. Return up to 60 courses with accurate names, credits, level (Standard/Honors/AP/IB), subject_area (Math, English, Science, etc), required_or_elective, prerequisites. Prioritize official sources only.`,
+        prompt: `You are a school data researcher. Find COMPLETE course listings for high school (grades 9-12) at "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''}.
+
+Thoroughly search through:
+1. Official school website course catalog
+2. All course offering documents and PDFs
+3. District course listings
+4. Current year course descriptions
+5. All program offerings (AP, Honors, IB, Dual Enrollment)
+
+For EACH course, provide:
+- Exact course name as listed in catalog
+- Credits awarded
+- Level (Standard, Honors, AP, IB, Dual Enrollment, etc.)
+- Subject area (English, Math, Science, Social Studies, etc.)
+- Required or Elective status
+- Prerequisites (if any)
+
+Include ALL available courses from grades 9-12 with complete and accurate information from official sources. Aim for 80+ courses if available.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: { type: 'object', properties: { courses: courseSchema } }
