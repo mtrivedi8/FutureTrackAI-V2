@@ -30,6 +30,10 @@
     "district": {
       "type": "string",
       "description": "School district name"
+    },
+    "website": {
+      "type": "string",
+      "description": "Official school website URL"
     }
   },
   "required": [
