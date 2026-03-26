@@ -128,11 +128,20 @@ export default function AcademicPlan() {
       };
 
       let response;
-      try {
-        response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
-      } catch (invokeErr) {
-        console.error('Invoke error:', invokeErr);
-        throw new Error('Failed to reach the plan generator. Please check your connection and try again.');
+      let retries = 0;
+      const maxRetries = 3;
+      while (retries < maxRetries) {
+        try {
+          response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
+          break;
+        } catch (invokeErr) {
+          retries++;
+          console.error(`Invoke attempt ${retries} failed:`, invokeErr.message);
+          if (retries >= maxRetries) {
+            throw new Error('Failed to reach the plan generator after multiple attempts. Please check your connection and try again.');
+          }
+          await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
+        }
       }
 
       if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
