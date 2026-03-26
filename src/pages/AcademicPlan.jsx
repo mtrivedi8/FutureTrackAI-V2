@@ -43,10 +43,23 @@ export default function AcademicPlan() {
     if (!profile) return;
     setGenerating(true);
 
-    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade } });
+    const user = await base44.auth.me();
+    const [recs, updates] = await Promise.all([
+      base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
+      base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
+    ]);
+
+    const journey = {
+      completed_recommendations: recs.filter(r => r.status === "Completed").map(r => r.title),
+      in_progress_recommendations: recs.filter(r => r.status === "In Progress" || r.status === "Exploring").map(r => r.title),
+      skills_gained: [...new Set(updates.flatMap(u => u.skills_gained || []))],
+      new_interests: [...new Set(updates.flatMap(u => u.new_interests || []))],
+      recent_milestones: updates.filter(u => u.update_type === "Achievement" || u.update_type === "Milestone").slice(0, 5).map(u => u.title),
+    };
+
+    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade }, journey });
     const { tracks, school_info } = response.data;
 
-    const user = await base44.auth.me();
     const existing = await base44.entities.CareerPlan.filter({ user_email: user.email });
 
     const planData = {

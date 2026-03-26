@@ -5,7 +5,18 @@ Deno.serve(async (req) => {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profile } = await req.json();
+  const { profile, journey } = await req.json();
+
+  const journeyContext = journey ? `
+
+STUDENT'S JOURNEY SO FAR (personalize the plan based on this):
+- Completed activities: ${(journey.completed_recommendations || []).join(', ') || 'None yet'}
+- Currently exploring: ${(journey.in_progress_recommendations || []).join(', ') || 'None'}
+- Skills already gained: ${(journey.skills_gained || []).join(', ') || 'None listed'}
+- Newly discovered interests: ${(journey.new_interests || []).join(', ') || 'None'}
+- Recent milestones: ${(journey.recent_milestones || []).join(', ') || 'None'}
+
+IMPORTANT: Build on skills already gained, avoid repeating completed activities, incorporate new interests, and show progression from where the student currently is.` : '';
 
   // Single combined call: scrape school data AND generate plan in one shot
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -25,7 +36,7 @@ TASK 2 - PLAN: Using that real school data, create 3 career tracks for this stud
 - Interests: ${(profile.interests || []).join(', ')}
 - Strengths: ${(profile.strengths || []).join(', ')}
 - Dream Careers: ${(profile.dream_careers || []).join(', ')}
-- Goals: ${(profile.goals || []).join(', ')}
+- Goals: ${(profile.goals || []).join(', ')}${journeyContext}
 
 For EACH track, create a grade-by-grade plan from grade ${profile.current_grade} to 12.
 For each grade include:
