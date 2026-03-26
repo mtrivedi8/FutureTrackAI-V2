@@ -88,12 +88,10 @@ export default function AcademicPlan() {
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
     if (!profile) return;
-    // Set loading state: specific track index (0-2) or 'all' for all-tracks regeneration
+    
+    // If trackIndex specified, regenerate that track only
     if (trackIndex !== null) {
       setGeneratingTrackIndex(trackIndex);
-    } else {
-      setGeneratingTrackIndex('all');
-    }
 
     try {
       const user = await base44.auth.me();
@@ -135,6 +133,30 @@ export default function AcademicPlan() {
         const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
         if (existingPlans[0]) {
           await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+        }
+        return;
+      }
+
+      // If regenerating all tracks, continue to next track after this one completes
+      if (trackIndex === null) {
+        // Wait for this track to complete, then regenerate next
+        await new Promise(resolve => {
+          const checkInterval = setInterval(async () => {
+            const plans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+            if (plans[0] && !plans[0].is_generating) {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 2000);
+        });
+        
+        // Regenerate next track (0 → 1 → 2)
+        const currentTrackNum = journey?.regenerate_track_index || 0;
+        if (currentTrackNum < 2) {
+          await generatePlan(adaptToProgress, currentTrackNum + 1);
+        } else {
+          toast.success('All tracks regenerated! 🎓');
+          setGeneratingTrackIndex(null);
         }
         return;
       }
@@ -405,3 +427,5 @@ export default function AcademicPlan() {
     </div>
   );
 }
+
+export default AcademicPlan;
