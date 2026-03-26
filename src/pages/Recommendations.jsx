@@ -5,6 +5,7 @@ import RecommendationDetail from "../components/recommendations/RecommendationDe
 import GenerateButton from "../components/dashboard/GenerateButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Compass } from "lucide-react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 const FILTERS = ["All", "New", "Exploring", "In Progress", "Completed", "Skipped"];
@@ -16,15 +17,74 @@ export default function Recommendations() {
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const generateRecs = async (profile, existingRecs) => {
+    const existingTitles = existingRecs.map(r => r.title).join(", ");
+    const prompt = `You are a career mentor for a ${profile.age}-year-old teenager named ${profile.display_name}.
+
+Location: ${[profile.city, profile.country].filter(Boolean).join(", ") || "Not specified"}
+Their interests: ${(profile.interests || []).join(", ")}
+Their strengths: ${(profile.strengths || []).join(", ")}
+Their goals: ${(profile.goals || []).join(", ")}
+Their dream careers: ${(profile.dream_careers || []).join(", ")}
+Their learning style: ${profile.preferred_learning_style || "Mixed"}
+
+${existingTitles ? `They already have these recommendations (do NOT repeat): ${existingTitles}` : ""}
+
+Generate 3 NEW personalized recommendations. Mix career paths, skills, courses, activities, and projects.
+Tailor suggestions to their location where relevant.
+For resources, provide 2-3 REAL working URLs. Only valid https:// URLs.`;
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendations: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: ["Career Path", "Skill", "Course", "Activity", "Project"] },
+                title: { type: "string" },
+                description: { type: "string" },
+                why_recommended: { type: "string" },
+                difficulty_level: { type: "string", enum: ["Beginner", "Intermediate", "Advanced"] },
+                estimated_duration: { type: "string" },
+                resources: { type: "array", items: { type: "string" } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const recs = result.recommendations || [];
+    for (const rec of recs) {
+      await base44.entities.Recommendation.create({ ...rec, user_email: profile.user_email, status: "New" });
+    }
+    return recs;
+  };
+
+  const loadData = async (autoGenerate = false) => {
     const user = await base44.auth.me();
     const profiles = await base44.entities.TeenProfile.filter({ user_email: user.email });
-    if (profiles.length) setProfile(profiles[0]);
+    const p = profiles[0] || null;
+    if (p) setProfile(p);
     const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
-    setRecommendations(recs);
+
+    // Auto-generate on first visit if no recommendations exist
+    if (autoGenerate && p && recs.length === 0) {
+      setLoading(true);
+      await generateRecs(p, []);
+      const fresh = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
+      setRecommendations(fresh);
+      toast.success("Your first recommendations are ready!");
+    } else {
+      setRecommendations(recs);
+    }
+
     setLoading(false);
 
-    // Check for id in URL
     const urlParams = new URLSearchParams(window.location.search);
     const recId = urlParams.get("id");
     if (recId) {
@@ -33,7 +93,7 @@ export default function Recommendations() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(true); }, []);
 
   const filtered = filter === "All" ? recommendations : recommendations.filter(r => r.status === filter);
 
