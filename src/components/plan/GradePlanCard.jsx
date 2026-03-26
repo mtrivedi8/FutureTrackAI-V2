@@ -186,13 +186,16 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                 { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
                 { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
                 { label: "Notes", val: schoolInfo.enrollment_process.notes },
-              ].filter(r => r.val).map(r => (
-                <div key={r.label} className="flex gap-2 text-xs">
-                  <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
-                  <span className="text-muted-foreground">{r.val}</span>
+              ].filter(r => r.val).map(r => {
+                const display = typeof r.val === 'object' ? JSON.stringify(r.val) : r.val;
+                return (
+                  <div key={r.label} className="flex gap-2 text-xs">
+                    <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
+                    <span className="text-muted-foreground">{display}</span>
+                  </div>
+                );
+                })}
                 </div>
-              ))}
-            </div>
           )}
         </div>
       )}
