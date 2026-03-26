@@ -44,7 +44,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   
   for (const i of tracksToGenerate) {
     const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track ${i + 1} (${trackHints[i]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      prompt: `Career track ${i + 1} (${trackHints[i]}) for ${profile.display_name}. Grades ${gradeRange}. For each grade: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1). Return under key "track".`,
       model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error(`Track ${i + 1} failed:`, err.message); return null; });
@@ -66,37 +66,14 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
           const isDual = lvl.includes('dual');
           const isIB = lvl.includes('ib');
           const isStandard = !isAP && !isHonors && !isDual && !isIB;
-
-          // Grade 7: Only pure middle school courses
-          if (gradeNum === 7) {
-            return isMiddleSchool;
-          }
-          // Grade 8: Middle school + early transition courses (no AP)
-          if (gradeNum === 8) {
-            return isMiddleSchool || (isHighSchool && isStandard && !isAP);
-          }
-          // Grade 9: Standard + Some Honors (but no AP)
-          if (gradeNum === 9) {
-            if (isMiddleSchool) return false;
-            return isStandard || (isHonors && courseName.match(/9th|grade 9|freshman/));
-          }
-          // Grade 10: Standard + Honors + Intro to AP
-          if (gradeNum === 10) {
-            if (isMiddleSchool) return false;
-            if (isAP) return courseName.match(/10th|grade 10|sophomore/) ? true : false;
-            return !isMiddleSchool;
-          }
-          // Grade 11: Standard + Honors + AP + Dual Enrollment
-          if (gradeNum === 11) {
-            return !isMiddleSchool && (isStandard || isHonors || isAP || isDual);
-          }
-          // Grade 12: All advanced options
-          if (gradeNum === 12) {
-            return !isMiddleSchool && (isStandard || isHonors || isAP || isDual || isIB);
-          }
-
+          if (gradeNum === 7) return isMiddleSchool;
+          if (gradeNum === 8) return isMiddleSchool || (isHighSchool && isStandard && !isAP);
+          if (gradeNum === 9) return !isMiddleSchool && (isStandard || (isHonors && courseName.match(/9th|grade 9/)));
+          if (gradeNum === 10) return !isMiddleSchool && (isStandard || isHonors || (isAP && courseName.match(/10th|grade 10/)));
+          if (gradeNum === 11) return !isMiddleSchool && (isStandard || isHonors || isAP || isDual);
+          if (gradeNum === 12) return !isMiddleSchool && (isStandard || isHonors || isAP || isDual || isIB);
           return !isMiddleSchool;
-        });
+        }).slice(0, 5);
         return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
       })
     };
@@ -189,31 +166,9 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     };
 
     const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are a school data researcher. Find COMPLETE course listings and graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''} from official sources.
-
-Fetch and organize:
-
-GRADUATION REQUIREMENTS:
-- Total credits required
-- English/Language Arts, Math, Science, Social Studies, PE/Health, Foreign Language, Technology, Arts/Elective requirements
-
-MIDDLE SCHOOL COURSES (Grades 7-8):
-- All available middle school courses with names, credits, and level
-
-HIGH SCHOOL COURSES (Grades 9-12):
-- ALL available high school courses (aim for 80+) with:
-  - Exact course name as listed in catalog
-  - Credits awarded
-  - Level (Standard, Honors, AP, IB, Dual Enrollment)
-  - Subject area
-  - Required or Elective status
-  - Prerequisites
-
-Also extract school_website URL, catalog_url, district_name, and enrollment_process info if available.
-
-Return separate arrays for middle_courses and high_courses.`,
+      prompt: `Get middle school (grades 7-8) and high school (grades 9-12) course catalog for "${profile.school_name}"${profile.zipcode ? ' zip ' + profile.zipcode : ''}. Include: course names, credits, level (Standard/Honors/AP/IB/Dual), subject area. Extract: graduation requirements, school_website URL, catalog_url, enrollment_process. Return as middle_courses and high_courses arrays.`,
       add_context_from_internet: true,
-      model: 'gemini_3_flash',
+      model: 'gpt_5_mini',
       response_json_schema: {
         type: 'object',
         properties: {
