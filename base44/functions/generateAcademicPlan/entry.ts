@@ -56,7 +56,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       ...track,
       grades: (track.grades || []).map(g => {
         const gradeNum = g.grade;
-        const gradeCourses = allCourses.filter(c => {
+        const gradeCourses = allCourses.filter((c, idx) => {
           const lvl = (c.level || '').toLowerCase();
           const courseName = (c.name || '').toLowerCase();
           const isMiddleSchool = lvl.includes('middle') || /\bgrade\s+[67]|\b[67](?:th)?\b/.test(courseName);
@@ -64,12 +64,21 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
 
           if (gradeNum <= 8) {
             return isMiddleSchool || (!isHighSchool && !lvl.includes('ap') && !lvl.includes('ib') && !lvl.includes('honors'));
-          } else if (gradeNum === 9) {
-            return !isMiddleSchool && (isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+          }
+
+          if (!isHighSchool && !isMiddleSchool) return false;
+          if (isMiddleSchool) return false;
+
+          // Grade-level filtering: distribute courses by progression
+          if (gradeNum === 9) {
+            return !lvl.includes('ap') || lvl.includes('standard');
           } else if (gradeNum === 10) {
-            return !isMiddleSchool && (courseName.includes('grade 10') || courseName.includes('10th') || isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+            // Use hash of course to rotate which courses appear in each grade
+            return idx % 3 !== 0;
+          } else if (gradeNum === 11) {
+            return idx % 3 !== 1;
           } else {
-            return !isMiddleSchool && (courseName.includes('grade ' + gradeNum) || courseName.includes(gradeNum + 'th') || isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+            return idx % 3 !== 2;
           }
         }).slice(0, 8);
         return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
