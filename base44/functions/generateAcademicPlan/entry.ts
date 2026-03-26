@@ -57,17 +57,34 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
           const gradeCourses = allCourses.filter(c => {
             const lvl = (c.level || '').toLowerCase();
             const courseName = (c.name || '').toLowerCase();
-            const isMiddleSchool = lvl.includes('middle');
+            const isMiddleSchool = lvl.includes('middle') || /grade [67]|[67]th/.test(courseName);
+            const hasGradeMarker = /grade \d+|\d+th grade|grades? (7|8|9|10|11|12)/.test(courseName);
+            const isAPI = lvl.includes('ap') || lvl.includes('ib');
 
+            // Reject courses explicitly for other grades
+            const rejectPatterns = {
+              7: /grade [^7]|\b(6|8|9|10|11|12)th?\b|\bgrade (6|8|9|10|11|12)\b/i,
+              8: /\b(6|7|9|10|11|12)th?\b|\bgrade (6|7|9|10|11|12)\b/i,
+              9: /\b(7|8)th?\b|\bgrade (7|8)\b|\bmiddle school\b/i,
+              10: /\b(7|8)th?\b|\bgrade (7|8)\b|\bmiddle school\b/i,
+              11: /\b(7|8)th?\b|\bgrade (7|8)\b|\bmiddle school\b/i,
+              12: /\b(7|8)th?\b|\bgrade (7|8)\b|\bmiddle school\b/i,
+            };
+            
+            if (rejectPatterns[gradeNum] && rejectPatterns[gradeNum].test(courseName)) return false;
+            
+            // Middle school courses for grades 7-8
             if (gradeNum <= 8) {
               if (isMiddleSchool) return true;
-              if (lvl.includes('ap') || lvl.includes('honors') || lvl.includes('ib')) return false;
-              return !/(\b(9|10|11|12)th?\b|grade (9|10|11|12))/i.test(courseName);
-            } else {
-              if (isMiddleSchool) return false;
-              if (/(\b[78]th?\b|grade [78]|^(english|math|science|social studies) [78])/i.test(courseName)) return false;
+              if (isAPI) return false;
+              if (hasGradeMarker) return /grade [78]|[78]th/.test(courseName);
               return true;
             }
+            
+            // High school courses for grades 9-12
+            if (isMiddleSchool) return false;
+            if (hasGradeMarker) return /grade [9-9]|\b(9|10|11|12)th/.test(courseName);
+            return true;
           }).slice(0, 6);
 
           return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
