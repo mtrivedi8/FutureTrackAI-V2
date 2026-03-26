@@ -26,9 +26,17 @@
       "type": "string",
       "description": "City of residence"
     },
+    "middle_school_name": {
+      "type": "string",
+      "description": "Name of the middle school (if applicable)"
+    },
+    "high_school_name": {
+      "type": "string",
+      "description": "Name of the high school (if applicable)"
+    },
     "school_name": {
       "type": "string",
-      "description": "Name of the school the teen attends"
+      "description": "Current/primary school name (deprecated - use middle_school_name or high_school_name)"
     },
     "current_grade": {
       "type": "number",

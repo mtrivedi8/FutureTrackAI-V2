@@ -246,9 +246,11 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
           <div className="space-y-2">
             <SchoolSearch
               zipcode={form.zipcode || ""}
-              schoolName={form.school_name || ""}
+              middleSchoolName={form.middle_school_name || ""}
+              highSchoolName={form.high_school_name || ""}
               onZipChange={v => setForm(p => ({ ...p, zipcode: v }))}
-              onSchoolChange={v => setForm(p => ({ ...p, school_name: v }))}
+              onMiddleSchoolChange={v => setForm(p => ({ ...p, middle_school_name: v }))}
+              onHighSchoolChange={v => setForm(p => ({ ...p, high_school_name: v }))}
             />
           </div>
           <div className="space-y-2">
@@ -266,12 +268,13 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
       )}
 
       {/* School info display (view mode) */}
-      {!editing && (profile?.school_name || profile?.current_grade) && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-muted/50 px-4 py-3 flex items-center gap-3">
-          <School className="w-5 h-5 text-muted-foreground" />
-          <div>
-            {profile.school_name && <p className="text-sm font-medium">{profile.school_name}</p>}
-            {profile.current_grade && <p className="text-xs text-muted-foreground">Grade {profile.current_grade}</p>}
+      {!editing && (profile?.middle_school_name || profile?.high_school_name || profile?.current_grade) && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-muted/50 px-4 py-3 flex items-start gap-3">
+          <School className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            {profile.middle_school_name && <p className="text-sm font-medium">📚 {profile.middle_school_name}</p>}
+            {profile.high_school_name && <p className="text-sm font-medium">🎓 {profile.high_school_name}</p>}
+            {profile.current_grade && <p className="text-xs text-muted-foreground">Current Grade: {profile.current_grade}</p>}
           </div>
         </motion.div>
       )}

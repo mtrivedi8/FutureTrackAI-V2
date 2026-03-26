@@ -1,29 +1,42 @@
 import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
-import { Loader2, School, MapPin } from "lucide-react";
+import { Loader2, School, MapPin, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function SchoolSearch({ zipcode, schoolName, onZipChange, onSchoolChange }) {
-  const [schools, setSchools] = useState([]);
+export default function SchoolSearch({ zipcode, middleSchoolName, highSchoolName, onZipChange, onMiddleSchoolChange, onHighSchoolChange }) {
+  const [middleSchools, setMiddleSchools] = useState([]);
+  const [highSchools, setHighSchools] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showList, setShowList] = useState(false);
+  const [showMiddleList, setShowMiddleList] = useState(false);
+  const [showHighList, setShowHighList] = useState(false);
   const [zipError, setZipError] = useState(null);
   const debounceRef = useRef(null);
-  const containerRef = useRef(null);
 
   const lookupZip = async (zip) => {
-    if (!/^\d{5}$/.test(zip)) { setSchools([]); setShowList(false); return; }
+    if (!/^\d{5}$/.test(zip)) { 
+      setMiddleSchools([]);
+      setHighSchools([]);
+      setShowMiddleList(false);
+      setShowHighList(false);
+      return;
+    }
     setLoading(true);
     setZipError(null);
     try {
       const res = await base44.functions.invoke('lookupSchoolsByZip', { zipcode: zip });
       const list = res.data?.schools || [];
-      setSchools(list);
-      setShowList(list.length > 0);
-      if (list.length === 0) setZipError('No schools found for this zip code. You can type your school name manually below.');
+      const middle = list.filter(s => s.school_type === 'middle' || s.school_type === 'middle_high');
+      const high = list.filter(s => s.school_type === 'high' || s.school_type === 'middle_high');
+      setMiddleSchools(middle);
+      setHighSchools(high);
+      setShowMiddleList(middle.length > 0);
+      setShowHighList(high.length > 0);
+      if (middle.length === 0 && high.length === 0) {
+        setZipError('No schools found. You can type school names manually below.');
+      }
     } catch {
-      setZipError('Could not fetch schools. Please type your school name manually.');
+      setZipError('Could not fetch schools. Please type school names manually.');
     }
     setLoading(false);
   };
@@ -31,24 +44,32 @@ export default function SchoolSearch({ zipcode, schoolName, onZipChange, onSchoo
   const handleZipInput = (e) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 5);
     onZipChange(val);
-    onSchoolChange('');
-    setShowList(false);
+    onMiddleSchoolChange('');
+    onHighSchoolChange('');
+    setShowMiddleList(false);
+    setShowHighList(false);
     clearTimeout(debounceRef.current);
     if (val.length === 5) {
       debounceRef.current = setTimeout(() => lookupZip(val), 400);
     } else {
-      setSchools([]);
+      setMiddleSchools([]);
+      setHighSchools([]);
       setZipError(null);
     }
   };
 
-  const handleSelect = (school) => {
-    onSchoolChange(school.school_name);
-    setShowList(false);
+  const handleMiddleSelect = (school) => {
+    onMiddleSchoolChange(school.school_name);
+    setShowMiddleList(false);
+  };
+
+  const handleHighSelect = (school) => {
+    onHighSchoolChange(school.school_name);
+    setShowHighList(false);
   };
 
   return (
-    <div className="space-y-3" ref={containerRef}>
+    <div className="space-y-4">
       {/* Zip Code Input */}
       <div>
         <label className="text-sm font-medium mb-2 block">Your zip code</label>
@@ -66,42 +87,83 @@ export default function SchoolSearch({ zipcode, schoolName, onZipChange, onSchoo
         {zipError && <p className="text-xs text-muted-foreground mt-1">{zipError}</p>}
       </div>
 
-      {/* School Dropdown */}
-      {showList && schools.length > 0 && (
-        <div className="border border-border rounded-xl bg-card shadow-lg max-h-56 overflow-y-auto">
-          {schools.map((school, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => handleSelect(school)}
-              className={cn(
-                "w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors flex items-center gap-3 border-b border-border last:border-0",
-                schoolName === school.school_name && "bg-primary/10 text-primary font-medium"
-              )}
-            >
-              <School className="w-4 h-4 text-muted-foreground shrink-0" />
-              <div>
-                <p className="font-medium text-foreground">{school.school_name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{school.school_type?.replace('_', ' ')} school · {school.city}, {school.state}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Manual school name input */}
+      {/* Middle School */}
       <div>
-        <label className="text-sm font-medium mb-2 block">
-          School name {schools.length > 0 ? <span className="text-muted-foreground font-normal">(or pick from list above)</span> : ''}
-        </label>
+        <label className="text-sm font-medium mb-2 block">Middle School (Grades 7-8)</label>
         <div className="relative">
-          <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-20" />
+          {middleSchools.length > 0 && <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />}
           <Input
-            value={schoolName}
-            onChange={e => onSchoolChange(e.target.value)}
-            placeholder="Type or confirm your school name"
-            className="h-11 pl-9"
+            value={middleSchoolName}
+            onChange={e => {
+              onMiddleSchoolChange(e.target.value);
+              if (e.target.value.length > 0) setShowMiddleList(true);
+            }}
+            onFocus={() => middleSchools.length > 0 && setShowMiddleList(true)}
+            placeholder="Type or select middle school"
+            className="h-11 pl-9 pr-9"
           />
+          {showMiddleList && middleSchools.length > 0 && (
+            <div className="absolute top-12 left-0 right-0 border border-border rounded-xl bg-card shadow-lg max-h-48 overflow-y-auto z-30">
+              {middleSchools.map((school, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleMiddleSelect(school)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors flex items-center gap-3 border-b border-border last:border-0",
+                    middleSchoolName === school.school_name && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <School className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="font-medium text-foreground">{school.school_name}</p>
+                    <p className="text-xs text-muted-foreground">{school.city}, {school.state}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* High School */}
+      <div>
+        <label className="text-sm font-medium mb-2 block">High School (Grades 9-12)</label>
+        <div className="relative">
+          <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-20" />
+          {highSchools.length > 0 && <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />}
+          <Input
+            value={highSchoolName}
+            onChange={e => {
+              onHighSchoolChange(e.target.value);
+              if (e.target.value.length > 0) setShowHighList(true);
+            }}
+            onFocus={() => highSchools.length > 0 && setShowHighList(true)}
+            placeholder="Type or select high school"
+            className="h-11 pl-9 pr-9"
+          />
+          {showHighList && highSchools.length > 0 && (
+            <div className="absolute top-12 left-0 right-0 border border-border rounded-xl bg-card shadow-lg max-h-48 overflow-y-auto z-30">
+              {highSchools.map((school, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleHighSelect(school)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors flex items-center gap-3 border-b border-border last:border-0",
+                    highSchoolName === school.school_name && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <School className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="font-medium text-foreground">{school.school_name}</p>
+                    <p className="text-xs text-muted-foreground">{school.city}, {school.state}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
