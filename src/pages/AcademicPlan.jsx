@@ -59,16 +59,16 @@ export default function AcademicPlan() {
 
     let savedPlan;
     if (existing[0]) {
-      await base44.entities.CareerPlan.update(existing[0].id, planData);
-      savedPlan = { ...existing[0], ...planData };
+      await base44.entities.CareerPlan.update(existing[0].id, { ...planData, school_info });
+      savedPlan = { ...existing[0], ...planData, school_info };
     } else {
-      savedPlan = await base44.entities.CareerPlan.create(planData);
+      savedPlan = await base44.entities.CareerPlan.create({ ...planData, school_info });
     }
 
     setPlan(savedPlan);
     setSelectedTrack(0);
-    const msg = school_info?.courses_found
-      ? `Plan ready! Used real courses from ${school_info.district_name || profile.school_name} 🎓`
+    const msg = school_info?.courses_found > 0
+      ? `Plan ready! Found ${school_info.courses_found} real courses from ${school_info.district_name || profile.school_name} 🎓`
       : 'Your academic plan is ready! 🎓';
     toast.success(msg);
     setGenerating(false);
@@ -216,7 +216,7 @@ export default function AcademicPlan() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <GradePlanCard grade={selectedGrade} gradeData={gradeData} schoolName={profile?.school_name} />
+                    <GradePlanCard grade={selectedGrade} gradeData={gradeData} schoolName={profile?.school_name} schoolInfo={plan?.school_info} />
                   </motion.div>
                 )}
               </AnimatePresence>
