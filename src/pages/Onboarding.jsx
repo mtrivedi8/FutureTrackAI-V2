@@ -85,7 +85,7 @@ export default function Onboarding() {
       onboarding_completed: true,
     });
     setLoading(false);
-    navigate("/");
+    navigate("/recommendations");
   };
 
   const steps = [
