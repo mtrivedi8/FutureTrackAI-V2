@@ -254,7 +254,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {generatingTrackIndex !== null && (
+      {!plan && generatingTrackIndex !== null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -285,37 +285,42 @@ export default function AcademicPlan() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {tracks.map((track, idx) => (
                 <div key={idx} className="space-y-2">
-                  <button
-                    onClick={() => handleTrackSelect(idx)}
-                    className={cn(
-                      "w-full text-left p-4 rounded-2xl border transition-all duration-200",
-                      selectedTrack === idx
-                        ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                        : "border-border bg-card hover:border-primary/40"
-                    )}
-                  >
-                    <div className="text-2xl mb-2">{track.emoji || "🎯"}</div>
-                    <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
+                  <div className="relative">
+                    <button
+                      onClick={() => handleTrackSelect(idx)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-2xl border transition-all duration-200",
+                        selectedTrack === idx
+                          ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                          : "border-border bg-card hover:border-primary/40"
+                      )}
+                    >
+                      <div className="text-2xl mb-2">{track.emoji || "🎯"}</div>
+                      <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
+                      {selectedTrack === idx && (
+                        <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
+                          Active Track <ChevronRight className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
                     {selectedTrack === idx && (
-                      <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
-                        Active Track <ChevronRight className="w-3 h-3" />
-                      </div>
+                      <Button
+                        onClick={(e) => { e.stopPropagation(); generatePlan(false, idx); }}
+                        disabled={generatingTrackIndex !== null || usageBlocked}
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-primary"
+                        title="Regenerate this track"
+                      >
+                        {generatingTrackIndex === idx ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-3 h-3" />
+                        )}
+                      </Button>
                     )}
-                  </button>
-                  <Button
-                    onClick={() => generatePlan(false, idx)}
-                    disabled={generatingTrackIndex !== null || usageBlocked}
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                  >
-                    {generatingTrackIndex === idx ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Regenerating...</>
-                    ) : (
-                      <><RefreshCw className="w-3 h-3" /> Regenerate</>
-                    )}
-                  </Button>
+                  </div>
                 </div>
               ))}
             </div>
