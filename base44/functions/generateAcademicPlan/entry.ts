@@ -150,14 +150,20 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
           // Filter courses by actual grade level from the course data
           const gradeCourses = allCourses.filter(c => {
             const lvl = (c.level || '').toLowerCase();
+            const courseName = (c.name || '').toLowerCase();
             const isMiddleSchool = lvl.includes('middle');
 
             if (gradeNum <= 8) {
-              // Middle school: only middle-level courses, no AP/Honors
-              return isMiddleSchool || (!lvl.includes('ap') && !lvl.includes('honors') && !lvl.includes('ib'));
+              // Middle school: exclude AP/Honors, but include middle courses and standard courses without high grade numbers
+              if (isMiddleSchool) return true;
+              if (lvl.includes('ap') || lvl.includes('honors') || lvl.includes('ib')) return false;
+              // Exclude courses with grade 9+ in the name
+              return !/(\b(9|10|11|12)th?\b|grade (9|10|11|12))/i.test(courseName);
             } else {
-              // High school (9-12): exclude middle school courses
-              return !isMiddleSchool;
+              // High school (9-12): exclude middle school courses and middle grade numbers
+              if (isMiddleSchool) return false;
+              if (/(\b[78]th?\b|grade [78]|^(english|math|science|social studies) [78])/i.test(courseName)) return false;
+              return true;
             }
           }).slice(0, 6);
 
