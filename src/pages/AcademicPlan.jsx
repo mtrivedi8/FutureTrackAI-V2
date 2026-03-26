@@ -112,7 +112,7 @@ export default function AcademicPlan() {
   }
 
   const currentGrade = profile?.current_grade || 9;
-  const startGrade = currentGrade <= 8 ? 9 : currentGrade;
+  const startGrade = currentGrade;
   const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
 
   const tracks = plan?.career_tracks || [];

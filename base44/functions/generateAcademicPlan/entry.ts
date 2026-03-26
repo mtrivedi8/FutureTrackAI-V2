@@ -38,7 +38,9 @@ TASK 2 - PLAN: Using that real school data, create 3 career tracks for this stud
 - Dream Careers: ${(profile.dream_careers || []).join(', ')}
 - Goals: ${(profile.goals || []).join(', ')}${journeyContext}
 
-For EACH track, create a grade-by-grade plan from grade ${profile.current_grade} to 12.
+For EACH track, create a grade-by-grade plan from grade ${profile.current_grade} to 12 (inclusive).
+IMPORTANT: Start from grade ${profile.current_grade}, not grade 9. If current grade is 8, include grades 8, 9, 10, 11, 12.
+For EACH grade also include detailed summer_activities for the summer AFTER that grade (e.g., summer programs, internships, camps, volunteer, self-study, jobs relevant to the track).
 For each grade include:
 - focus, key_milestone, credit_summary
 - school_courses: real courses from the catalog (name, credits, level, subject_area, required_or_elective, recommended_for_track, prerequisites)
