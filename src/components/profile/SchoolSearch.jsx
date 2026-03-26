@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, School } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,16 +30,8 @@ export default function SchoolSearch({ value, onChange }) {
     setSearched(false);
 
     try {
-      // Urban Institute Education Data API — NCES Common Core of Data
-      const res = await fetch(
-        `https://educationdata.urban.org/api/v1/schools/ccd/directory/?search=${encodeURIComponent(q)}&year=2021&level_of_schooling=2,3&per_page=30`
-      );
-      const data = await res.json();
-      const schools = (data.results || []).map(s => ({
-        name: s.school_name,
-        city: s.city_location,
-        state: s.state_code,
-      }));
+      const res = await base44.functions.invoke('searchSchools', { query: q });
+      const schools = res.data?.schools || [];
       setResults(schools);
       setShowList(schools.length > 0);
       setSearched(true);
