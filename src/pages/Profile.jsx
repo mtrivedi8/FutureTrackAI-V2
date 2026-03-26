@@ -225,10 +225,11 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <h2 className="font-heading font-semibold text-lg flex items-center gap-2"><School className="w-5 h-5" /> School Info</h2>
           <div className="space-y-2">
-            <label className="text-sm font-medium">School Name</label>
             <SchoolSearch
-              value={form.school_name || ""}
-              onChange={v => setForm(p => ({ ...p, school_name: v }))}
+              zipcode={form.zipcode || ""}
+              schoolName={form.school_name || ""}
+              onZipChange={v => setForm(p => ({ ...p, zipcode: v }))}
+              onSchoolChange={v => setForm(p => ({ ...p, school_name: v }))}
             />
           </div>
           <div className="space-y-2">
