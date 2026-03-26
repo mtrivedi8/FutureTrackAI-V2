@@ -28,6 +28,10 @@
     "school_info": {
       "type": "object",
       "description": "School catalog info including catalog_url, school_website, courses_found, graduation_requirements"
+    },
+    "is_generating": {
+      "type": "boolean",
+      "description": "Whether a plan generation is currently in progress"
     }
   },
   "required": [

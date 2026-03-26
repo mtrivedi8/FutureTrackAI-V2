@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,11 @@ export default function AcademicPlan() {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [usage, setUsage] = useState(null);
   const [usageBlocked, setUsageBlocked] = useState(false);
+  const pollingRef = useRef(null);
 
   useEffect(() => {
     loadData();
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
   const loadData = async () => {
@@ -43,9 +45,15 @@ export default function AcademicPlan() {
     }
     const p = profiles[0];
     setProfile(p);
-    if (plans[0]) {
-      setPlan(plans[0]);
-      setSelectedTrack(plans[0].selected_track_index || 0);
+    const existingPlan = plans[0];
+    if (existingPlan) {
+      setPlan(existingPlan);
+      setSelectedTrack(existingPlan.selected_track_index || 0);
+      // If plan is still generating (user left the page), start polling
+      if (existingPlan.is_generating) {
+        setGenerating(true);
+        startPolling(user.email);
+      }
     }
     if (usageRecords[0]) {
       setUsage(usageRecords[0]);
@@ -55,11 +63,38 @@ export default function AcademicPlan() {
     setLoading(false);
   };
 
+  const startPolling = (userEmail) => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = setInterval(async () => {
+      const plans = await base44.entities.CareerPlan.filter({ user_email: userEmail });
+      const p = plans[0];
+      if (p && !p.is_generating && p.career_tracks?.length > 0) {
+        clearInterval(pollingRef.current);
+        setPlan(p);
+        setSelectedTrack(p.selected_track_index || 0);
+        setGenerating(false);
+        toast.success('Your academic plan is ready! 🎓');
+      }
+    }, 4000);
+  };
+
   const generatePlan = async (adaptToProgress = false) => {
     if (!profile) return;
     setGenerating(true);
 
     const user = await base44.auth.me();
+
+    // Mark as generating in DB so re-visits know it's in progress
+    const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
+    let generatingPlanId = null;
+    if (existingForMark[0]) {
+      await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: true });
+      generatingPlanId = existingForMark[0].id;
+    } else {
+      const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: true });
+      generatingPlanId = created.id;
+    }
+
     const [recs, updates] = await Promise.all([
       base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
       base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
@@ -81,6 +116,9 @@ export default function AcademicPlan() {
       toast.error('Monthly usage limit reached. Your credits reset next month.');
       setUsageBlocked(true);
       setGenerating(false);
+      // Clear generating flag in DB
+      const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+      if (existingPlans[0]) await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
       return;
     }
 
@@ -98,6 +136,7 @@ export default function AcademicPlan() {
       selected_track_index: 0,
       school_name: profile.school_name,
       current_grade: profile.current_grade,
+      is_generating: false,
     };
 
     let savedPlan;
