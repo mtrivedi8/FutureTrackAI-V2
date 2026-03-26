@@ -29,8 +29,9 @@ export default function AcademicPlan() {
   }, []);
 
   const loadData = async () => {
-    setLoading(true);
-    const user = await base44.auth.me();
+    try {
+      setLoading(true);
+      const user = await base44.auth.me();
     const [profiles, plans, memberships, settings, usageRecords] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.CareerPlan.filter({ user_email: user.email }),
@@ -61,6 +62,10 @@ export default function AcademicPlan() {
     }
     if (p) setSelectedGrade(p.current_grade || 7);
     setLoading(false);
+    } catch (err) {
+      console.error('AcademicPlan loadData error:', err);
+      setLoading(false);
+    }
   };
 
   const startPolling = (userEmail) => {
