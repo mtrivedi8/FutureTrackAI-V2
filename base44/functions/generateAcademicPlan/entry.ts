@@ -146,13 +146,15 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
           ...track,
           grades: (track.grades || []).map(g => {
             const gradeNum = g.grade;
-            const gradeCourses = allCourses.filter(c => {
+            const filtered = allCourses.filter(c => {
               const lvl = (c.level || '').toLowerCase();
               const isMiddleSchool = lvl.includes('middle');
               if (gradeNum >= 9) return !isMiddleSchool;
               if (gradeNum <= 8) return !lvl.includes('ap') && !lvl.includes('honors');
               return true;
-            }).slice(0, 6);
+            });
+            const startIdx = Math.max(0, (gradeNum - 9) * 6);
+            const gradeCourses = filtered.slice(startIdx, startIdx + 6);
             return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
           })
         };
