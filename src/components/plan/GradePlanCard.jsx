@@ -97,7 +97,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
             <h2 className="font-heading text-2xl font-bold text-foreground">{gradeLabels[grade]}</h2>
             <p className="text-muted-foreground mt-1 text-sm">{gradeData.focus}</p>
             {gradeData.credit_summary && (
-              <p className="text-xs text-primary font-medium mt-1">📊 {gradeData.credit_summary}</p>
+              <p className="text-xs text-primary font-medium mt-1">📊 {typeof gradeData.credit_summary === 'object' ? JSON.stringify(gradeData.credit_summary) : gradeData.credit_summary}</p>
             )}
           </div>
           {gradeData.key_milestone && (
@@ -146,12 +146,12 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
               { label: "Social Studies", val: schoolInfo.graduation_requirements.social_studies_credits },
               { label: "PE / Health", val: schoolInfo.graduation_requirements.pe_health_credits },
               { label: "Electives", val: schoolInfo.graduation_requirements.elective_credits },
-            ].filter(r => r.val != null).map(r => {
-              const display = typeof r.val === 'object' ? JSON.stringify(r.val) : r.val;
+            ].filter(r => r.val != null && (typeof r.val === 'string' || typeof r.val === 'number')).map(r => {
+              const display = String(r.val);
               return (
                 <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
                   <p className="text-xs text-muted-foreground">{r.label}</p>
-                  <p className="text-sm font-bold text-foreground">{display} cr</p>
+                  <p className="text-sm font-bold text-foreground">{display} {typeof r.val === 'number' ? 'cr' : ''}</p>
                 </div>
               );
             })}
