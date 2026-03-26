@@ -4,7 +4,17 @@ const PLAN_COST = 0.25;
 
 async function generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult) {
   const gradeRange = Array.from({ length: 13 - profile.current_grade }, (_, i) => profile.current_grade + i).join(', ');
-  
+  const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
+  const school_info = {
+    school_name: schoolMiddleResult.school_name,
+    school_website: schoolMiddleResult.school_website,
+    catalog_url: schoolMiddleResult.catalog_url,
+    district_name: schoolMiddleResult.district_name,
+    courses_found: allCourses.length,
+    graduation_requirements: schoolMiddleResult.graduation_requirements,
+    enrollment_process: schoolMiddleResult.enrollment_process,
+  };
+
   const trackSchema = {
     type: 'object',
     properties: {
@@ -24,84 +34,64 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     `wildcard emerging field combining interests unexpectedly`,
   ];
 
-  const [track1, track2, track3] = await Promise.all([
-    base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 1 (${trackHints[0]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+  const tracks = [];
+
+  // Generate and save tracks sequentially so they appear in UI as they complete
+  for (let i = 0; i < 3; i++) {
+    const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track ${i + 1} (${trackHints[i]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
       model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
-    }).catch(err => { console.error('Track 1 failed:', err.message); return null; }),
+    }).catch(err => { console.error(`Track ${i + 1} failed:`, err.message); return null; });
 
-    base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 2 (${trackHints[1]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
-      model: 'gpt_5_mini',
-      response_json_schema: { type: 'object', properties: { track: trackSchema } }
-    }).catch(err => { console.error('Track 2 failed:', err.message); return null; }),
+    if (!trackData || !trackData.track) continue;
+    
+    const track = trackData.track;
+    const enhancedTrack = {
+      ...track,
+      grades: (track.grades || []).map(g => {
+        const gradeNum = g.grade;
+        const gradeCourses = allCourses.filter(c => {
+          const lvl = (c.level || '').toLowerCase();
+          const courseName = (c.name || '').toLowerCase();
+          const isMiddleSchool = lvl.includes('middle') || /\bgrade [67]|\b[67]th\b/.test(courseName);
+          const isHighSchool = lvl.includes('high') || /\bgrade [9]|\bgrade [0-9]{2}|\b(9|10|11|12)th?\b/.test(courseName);
+          
+          if (gradeNum <= 8) {
+            return isMiddleSchool || (!isHighSchool && !lvl.includes('ap') && !lvl.includes('ib') && !lvl.includes('honors'));
+          } else {
+            return !isMiddleSchool && (isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+          }
+        }).slice(0, 8);
+        return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
+      })
+    };
 
-    base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 3 (${trackHints[2]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
-      model: 'gpt_5_mini',
-      response_json_schema: { type: 'object', properties: { track: trackSchema } }
-    }).catch(err => { console.error('Track 3 failed:', err.message); return null; }),
-  ]);
+    tracks.push(enhancedTrack);
 
-  const trackResults = [track1, track2, track3];
-  const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
+    // Save immediately after generating each track
+    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+    const planData = {
+      user_email: profile.user_email,
+      career_tracks: tracks,
+      selected_track_index: 0,
+      school_name: profile.school_name,
+      current_grade: profile.current_grade,
+      school_info,
+      is_generating: true,
+    };
+    if (existing[0]) {
+      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
+    } else {
+      await base44.asServiceRole.entities.CareerPlan.create(planData);
+    }
+    console.log(`Track ${i + 1} added for ${profile.user_email}`);
+  }
 
-  const tracks = trackResults
-    .filter(Boolean)
-    .map(r => r.track)
-    .filter(Boolean)
-    .map(track => {
-      if (allCourses.length === 0) return track;
-      return {
-        ...track,
-        grades: (track.grades || []).map(g => {
-          const gradeNum = g.grade;
-          const gradeCourses = allCourses.filter(c => {
-            const lvl = (c.level || '').toLowerCase();
-            const courseName = (c.name || '').toLowerCase();
-            const isMiddleSchool = lvl.includes('middle') || /\bgrade [67]|\b[67]th\b/.test(courseName);
-
-            if (gradeNum <= 8) {
-              if (isMiddleSchool) return true;
-              if (lvl.includes('ap') || lvl.includes('ib')) return false;
-              return !/\bgrade [9-9]|\b(9|10|11|12)th?\b/.test(courseName);
-            } else {
-              if (isMiddleSchool) return false;
-              return true;
-            }
-          }).slice(0, 6);
-
-          return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
-        })
-      };
-    });
-
-  const school_info = {
-    school_name: schoolMiddleResult.school_name,
-    school_website: schoolMiddleResult.school_website,
-    catalog_url: schoolMiddleResult.catalog_url,
-    district_name: schoolMiddleResult.district_name,
-    courses_found: allCourses.length,
-    graduation_requirements: schoolMiddleResult.graduation_requirements,
-    enrollment_process: schoolMiddleResult.enrollment_process,
-  };
-
+  // Mark generation complete
   const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
-  const planData = {
-    user_email: profile.user_email,
-    career_tracks: tracks || [],
-    selected_track_index: 0,
-    school_name: profile.school_name,
-    current_grade: profile.current_grade,
-    school_info,
-    is_generating: false,
-  };
-
   if (existing[0]) {
-    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
-  } else {
-    await base44.asServiceRole.entities.CareerPlan.create(planData);
+    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: false });
   }
 
   const month = new Date().toISOString().slice(0, 7);
