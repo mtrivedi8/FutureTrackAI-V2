@@ -7,16 +7,25 @@ Deno.serve(async (req) => {
 
   const { profile, journey } = await req.json();
 
+  const adaptMode = journey?.adapt_mode === true;
+
   const journeyContext = journey ? `
 
-STUDENT'S JOURNEY SO FAR (personalize the plan based on this):
+STUDENT'S JOURNEY SO FAR (${adaptMode ? 'CRITICAL: heavily personalize the plan based on this progress' : 'personalize the plan based on this'}):
 - Completed activities: ${(journey.completed_recommendations || []).join(', ') || 'None yet'}
 - Currently exploring: ${(journey.in_progress_recommendations || []).join(', ') || 'None'}
 - Skills already gained: ${(journey.skills_gained || []).join(', ') || 'None listed'}
 - Newly discovered interests: ${(journey.new_interests || []).join(', ') || 'None'}
 - Recent milestones: ${(journey.recent_milestones || []).join(', ') || 'None'}
-
-IMPORTANT: Build on skills already gained, avoid repeating completed activities, incorporate new interests, and show progression from where the student currently is.` : '';
+- Recent moods: ${(journey.moods || []).join(', ') || 'None'}
+${adaptMode ? `
+ADAPT MODE INSTRUCTIONS:
+- Adjust the career tracks to reflect the student's demonstrated interests and skills
+- Accelerate recommendations in areas where they have already gained skills
+- Introduce new directions based on their newly discovered interests
+- Skip or de-emphasize activities they have already completed
+- Take the student's recent moods into account when setting the tone of the plan
+- Show clear progression from their current skills and accomplishments` : 'IMPORTANT: Build on skills already gained, avoid repeating completed activities, incorporate new interests, and show progression from where the student currently is.'}` : '';
 
   // Single combined call: scrape school data AND generate plan in one shot
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({

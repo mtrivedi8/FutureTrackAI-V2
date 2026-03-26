@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy } from "lucide-react";
+import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -48,7 +48,7 @@ export default function AcademicPlan() {
     setLoading(false);
   };
 
-  const generatePlan = async () => {
+  const generatePlan = async (adaptToProgress = false) => {
     if (!profile) return;
     setGenerating(true);
 
@@ -64,6 +64,8 @@ export default function AcademicPlan() {
       skills_gained: [...new Set(updates.flatMap(u => u.skills_gained || []))],
       new_interests: [...new Set(updates.flatMap(u => u.new_interests || []))],
       recent_milestones: updates.filter(u => u.update_type === "Achievement" || u.update_type === "Milestone").slice(0, 5).map(u => u.title),
+      moods: updates.slice(0, 10).map(u => u.mood).filter(Boolean),
+      adapt_mode: adaptToProgress,
     };
 
     const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade }, journey });
@@ -89,9 +91,11 @@ export default function AcademicPlan() {
 
     setPlan(savedPlan);
     setSelectedTrack(0);
-    const msg = school_info?.courses_found > 0
-      ? `Plan ready! Found ${school_info.courses_found} real courses from ${school_info.district_name || profile.school_name} 🎓`
-      : 'Your academic plan is ready! 🎓';
+    const msg = adaptToProgress
+      ? `Plan updated based on your progress! 🚀`
+      : school_info?.courses_found > 0
+        ? `Plan ready! Found ${school_info.courses_found} real courses from ${school_info.district_name || profile.school_name} 🎓`
+        : 'Your academic plan is ready! 🎓';
     toast.success(msg);
     setGenerating(false);
   };
@@ -133,17 +137,33 @@ export default function AcademicPlan() {
               Grade {startGrade} → College
             </p>
           </div>
-          <Button
-            onClick={generatePlan}
-            disabled={generating}
-            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
-          >
-            {generating ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
-            ) : (
-              <><Sparkles className="w-4 h-4" /> {plan ? "Regenerate Plan" : "Generate My Plan"}</>
+          <div className="flex gap-2 flex-wrap">
+            {plan && (
+              <Button
+                onClick={() => generatePlan(true)}
+                disabled={generating}
+                variant="outline"
+                className="gap-2"
+              >
+                {generating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
+                )}
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={() => generatePlan(false)}
+              disabled={generating}
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+            >
+              {generating ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
+              ) : (
+                <><Sparkles className="w-4 h-4" /> {plan ? "Regenerate Plan" : "Generate My Plan"}</>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
