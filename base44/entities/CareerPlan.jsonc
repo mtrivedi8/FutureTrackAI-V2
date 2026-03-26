@@ -1,0 +1,36 @@
+{
+  "name": "CareerPlan",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the teen"
+    },
+    "career_tracks": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of career track objects with grade-by-grade plans"
+    },
+    "selected_track_index": {
+      "type": "number",
+      "description": "Index of the currently selected career track"
+    },
+    "school_name": {
+      "type": "string",
+      "description": "Name of the school"
+    },
+    "current_grade": {
+      "type": "number",
+      "description": "Current grade (7-12)"
+    },
+    "school_info": {
+      "type": "object",
+      "description": "School catalog info including catalog_url, school_website, courses_found, graduation_requirements"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}
