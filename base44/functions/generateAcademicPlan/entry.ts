@@ -144,20 +144,25 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       .map(track => {
         if (allCourses.length === 0) return track;
         return {
-          ...track,
-          grades: (track.grades || []).map(g => {
-            const gradeNum = g.grade;
-            const filtered = allCourses.filter(c => {
-              const lvl = (c.level || '').toLowerCase();
-              const isMiddleSchool = lvl.includes('middle');
-              if (gradeNum >= 9) return !isMiddleSchool;
-              if (gradeNum <= 8) return !lvl.includes('ap') && !lvl.includes('honors');
-              return true;
-            });
-            const startIdx = Math.max(0, (gradeNum - 9) * 6);
-            const gradeCourses = filtered.slice(startIdx, startIdx + 6);
-            return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
-          })
+        ...track,
+        grades: (track.grades || []).map(g => {
+          const gradeNum = g.grade;
+          // Filter courses by actual grade level from the course data
+          const gradeCourses = allCourses.filter(c => {
+            const lvl = (c.level || '').toLowerCase();
+            const isMiddleSchool = lvl.includes('middle');
+
+            if (gradeNum <= 8) {
+              // Middle school: only middle-level courses, no AP/Honors
+              return isMiddleSchool || (!lvl.includes('ap') && !lvl.includes('honors') && !lvl.includes('ib'));
+            } else {
+              // High school (9-12): exclude middle school courses
+              return !isMiddleSchool;
+            }
+          }).slice(0, 6);
+
+          return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
+        })
         };
       });
 
