@@ -86,7 +86,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
 
   if (!gradeData) return null;
 
-  const courses = gradeData.school_courses || [];
+  const courses = Array.isArray(gradeData.school_courses) ? gradeData.school_courses : [];
 
   return (
     <div className="space-y-5">
