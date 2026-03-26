@@ -27,7 +27,7 @@ export default function Layout() {
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-lg text-foreground">MentorAI</h1>
+              <h1 className="font-heading font-bold text-lg text-foreground">FutureTrackAI</h1>
               <p className="text-xs text-muted-foreground">Your career guide</p>
             </div>
           </Link>
