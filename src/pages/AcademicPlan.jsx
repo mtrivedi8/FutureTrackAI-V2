@@ -232,7 +232,7 @@ export default function AcademicPlan() {
             {plan && (
               <Button
                 onClick={() => generatePlan(true)}
-                disabled={generatingTrackIndex !== null}
+                disabled={generatingTrackIndex !== null || usageBlocked}
                 variant="outline"
                 className="gap-2"
               >
@@ -245,7 +245,7 @@ export default function AcademicPlan() {
             )}
             <Button
               onClick={() => generatePlan(false)}
-              disabled={generatingTrackIndex !== null}
+              disabled={generatingTrackIndex !== null || usageBlocked}
               className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
               {generatingTrackIndex !== null ? (
