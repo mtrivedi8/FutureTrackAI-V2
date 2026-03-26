@@ -85,9 +85,9 @@ export default function AcademicPlan() {
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
     if (!profile) return;
-    // When regenerating all tracks (trackIndex === null), show a loading state but don't set specific track
+    // Only set generatingTrackIndex for single track regeneration; all-tracks uses polling to detect completion
     if (trackIndex !== null) setGeneratingTrackIndex(trackIndex);
-    else if (!plan) setGeneratingTrackIndex(0); // Show loading for initial generation
+    else if (!plan) setGeneratingTrackIndex(-1); // Dummy state to show loading on initial generation only
 
     try {
       const user = await base44.auth.me();
