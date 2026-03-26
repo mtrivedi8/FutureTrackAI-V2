@@ -39,6 +39,7 @@ export default function Onboarding() {
     display_name: "",
     age: "",
     avatar_emoji: "🚀",
+    zipcode: "",
     city: "",
     school_name: "",
     current_grade: "",
@@ -176,25 +177,15 @@ export default function Onboarding() {
       <div className="space-y-6">
         <div className="text-center">
           <h2 className="font-heading text-2xl font-bold mb-2">Your school 🏫</h2>
-          <p className="text-muted-foreground">Tell us where you go to school so we can find real courses for you</p>
+          <p className="text-muted-foreground">Enter your zip code and we'll find real courses from your school</p>
         </div>
         <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Your town / city</label>
-            <Input
-              placeholder="e.g., Austin, TX"
-              value={form.city}
-              onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
-              className="h-11"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">School name</label>
-            <SchoolSearch
-              value={form.school_name}
-              onChange={v => setForm(p => ({ ...p, school_name: v }))}
-            />
-          </div>
+          <SchoolSearch
+            zipcode={form.zipcode}
+            schoolName={form.school_name}
+            onZipChange={v => setForm(p => ({ ...p, zipcode: v }))}
+            onSchoolChange={v => setForm(p => ({ ...p, school_name: v }))}
+          />
           <div>
             <label className="text-sm font-medium mb-2 block">Current grade</label>
             <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>

@@ -1,0 +1,40 @@
+{
+  "name": "SchoolDirectory",
+  "type": "object",
+  "properties": {
+    "zipcode": {
+      "type": "string",
+      "description": "US zip code"
+    },
+    "school_name": {
+      "type": "string",
+      "description": "Name of the school"
+    },
+    "school_type": {
+      "type": "string",
+      "enum": [
+        "middle",
+        "high",
+        "middle_high"
+      ],
+      "description": "Type of school"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State abbreviation"
+    },
+    "district": {
+      "type": "string",
+      "description": "School district name"
+    }
+  },
+  "required": [
+    "zipcode",
+    "school_name",
+    "school_type"
+  ]
+}

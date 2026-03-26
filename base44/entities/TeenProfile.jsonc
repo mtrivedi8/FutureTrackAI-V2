@@ -1,0 +1,89 @@
+{
+  "name": "TeenProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user this profile belongs to"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Teen's preferred display name"
+    },
+    "age": {
+      "type": "number",
+      "description": "Teen's age"
+    },
+    "zipcode": {
+      "type": "string",
+      "description": "US zip code"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country of residence"
+    },
+    "city": {
+      "type": "string",
+      "description": "City of residence"
+    },
+    "school_name": {
+      "type": "string",
+      "description": "Name of the school the teen attends"
+    },
+    "current_grade": {
+      "type": "number",
+      "description": "Current grade level (7-12)"
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of interests"
+    },
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of personal strengths"
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Career and life goals"
+    },
+    "preferred_learning_style": {
+      "type": "string",
+      "enum": [
+        "Visual",
+        "Hands-on",
+        "Reading",
+        "Social",
+        "Mixed"
+      ],
+      "description": "Preferred way of learning"
+    },
+    "dream_careers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Dream career paths"
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "description": "Whether the onboarding is complete"
+    },
+    "avatar_emoji": {
+      "type": "string",
+      "description": "Chosen avatar emoji"
+    }
+  },
+  "required": [
+    "user_email",
+    "display_name"
+  ]
+}

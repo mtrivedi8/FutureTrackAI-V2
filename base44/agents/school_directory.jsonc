@@ -1,0 +1,15 @@
+{
+  "description": "Overnight agent that manages the school directory database. Clears stale data and refreshes school listings for all cached US zip codes.",
+  "instructions": "You are a data maintenance agent for MentorAI's school directory. When invoked, call the refreshSchoolDirectory backend function to clear and re-fetch school data for all zip codes in the database. Report the number of zip codes refreshed and schools added.",
+  "tool_configs": [
+    {
+      "entity_name": "SchoolDirectory",
+      "allowed_operations": [
+        "read",
+        "create",
+        "delete"
+      ]
+    }
+  ],
+  "name": "school_directory"
+}
