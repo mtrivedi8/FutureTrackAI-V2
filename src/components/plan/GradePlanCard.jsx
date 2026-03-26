@@ -146,12 +146,15 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
               { label: "Social Studies", val: schoolInfo.graduation_requirements.social_studies_credits },
               { label: "PE / Health", val: schoolInfo.graduation_requirements.pe_health_credits },
               { label: "Electives", val: schoolInfo.graduation_requirements.elective_credits },
-            ].filter(r => r.val != null).map(r => (
-              <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
-                <p className="text-xs text-muted-foreground">{r.label}</p>
-                <p className="text-sm font-bold text-foreground">{r.val} cr</p>
-              </div>
-            ))}
+            ].filter(r => r.val != null).map(r => {
+              const display = typeof r.val === 'object' ? JSON.stringify(r.val) : r.val;
+              return (
+                <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
+                  <p className="text-xs text-muted-foreground">{r.label}</p>
+                  <p className="text-sm font-bold text-foreground">{display} cr</p>
+                </div>
+              );
+            })}
           </div>
           {schoolInfo.graduation_requirements.notes && (
             <p className="text-xs text-muted-foreground mt-2">{schoolInfo.graduation_requirements.notes}</p>
