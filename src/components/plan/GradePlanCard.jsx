@@ -153,14 +153,13 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                   <p className="text-xs text-muted-foreground">{r.label}</p>
                   <p className="text-sm font-bold text-foreground">{display} cr</p>
                 </div>
-                );
-                })}
-                </div>
-                )}
-                </div>
-                )}
+              );
+            })}
+            </div>
+            )}
+            </div>
 
-      {/* Enrollment Process — Collapsible */}
+            {/* Enrollment Process — Collapsible */}
       {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <button
@@ -192,8 +191,8 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                     <span className="text-muted-foreground">{display}</span>
                   </div>
                 );
-                })}
-                </div>
+              })}
+              </div>
           )}
         </div>
       )}
