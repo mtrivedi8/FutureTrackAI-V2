@@ -83,7 +83,7 @@ export default function AcademicPlan() {
     }, 4000);
   };
 
-  const generatePlan = async (adaptToProgress = false) => {
+  const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
     if (!profile) return;
     setGenerating(true);
 
@@ -116,7 +116,7 @@ export default function AcademicPlan() {
       adapt_mode: adaptToProgress,
     };
 
-    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
+    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey, regenerate_track_index: trackIndex });
 
     if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
       toast.error('Monthly usage limit reached. Your credits reset next month.');
@@ -206,18 +206,32 @@ export default function AcademicPlan() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {plan && (
-              <Button
-                onClick={() => generatePlan(true)}
-                disabled={generating || usageBlocked}
-                variant="outline"
-                className="gap-2"
-              >
-                {generating ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
-                ) : (
-                  <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
-                )}
-              </Button>
+              <>
+                <Button
+                  onClick={() => generatePlan(false, selectedTrack)}
+                  disabled={generating || usageBlocked}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  {generating ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                  ) : (
+                    <><RefreshCw className="w-4 h-4" /> Regenerate Track</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => generatePlan(true)}
+                  disabled={generating || usageBlocked}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  {generating ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                  ) : (
+                    <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
+                  )}
+                </Button>
+              </>
             )}
             <Button
               onClick={() => generatePlan(false)}
