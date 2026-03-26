@@ -24,7 +24,7 @@ export default function Layout() {
         <div className="p-6">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
-              <img src="https://media.base44.com/images/public/69c463e044e3d6bf7ee94b35/50ba16964_Gemini_Generated_Image_5itd815itd815itd.png" alt="FutureTrackAI" className="w-full h-full object-cover" />
+              <img src="https://media.base44.com/images/public/69c463e044e3d6bf7ee94b35/5913825d1_Gemini_Generated_Image_5itd815itd815itd.png" alt="FutureTrackAI" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-heading font-bold text-lg text-foreground">FutureTrackAI</h1>
