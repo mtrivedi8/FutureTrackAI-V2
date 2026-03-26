@@ -83,6 +83,7 @@ export default function AcademicPlan() {
     setGenerating(true);
 
     const user = await base44.auth.me();
+    const currentGrade = profile.current_grade || 9;
 
     // Mark as generating in DB so re-visits know it's in progress
     const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
@@ -110,7 +111,7 @@ export default function AcademicPlan() {
       adapt_mode: adaptToProgress,
     };
 
-    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade }, journey });
+    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
 
     if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
       toast.error('Monthly usage limit reached. Your credits reset next month.');
