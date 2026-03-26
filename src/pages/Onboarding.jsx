@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, ArrowRight, ArrowLeft, Rocket, Star, Zap, Heart } from "lucide-react";
+import { Sparkles, ArrowRight, ArrowLeft, Rocket, Star, Zap, Heart, School } from "lucide-react";
+import SchoolSearch from "@/components/profile/SchoolSearch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,6 +39,9 @@ export default function Onboarding() {
     display_name: "",
     age: "",
     avatar_emoji: "🚀",
+    city: "",
+    school_name: "",
+    current_grade: "",
     interests: [],
     strengths: [],
     preferred_learning_style: "",
@@ -166,7 +171,45 @@ export default function Onboarding() {
         </div>
       </div>
     ),
-    // Step 2: Interests
+    // Step 2: School Info
+    () => (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="font-heading text-2xl font-bold mb-2">Your school 🏫</h2>
+          <p className="text-muted-foreground">Tell us where you go to school so we can find real courses for you</p>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Your town / city</label>
+            <Input
+              placeholder="e.g., Austin, TX"
+              value={form.city}
+              onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+              className="h-11"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">School name</label>
+            <SchoolSearch
+              value={form.school_name}
+              onChange={v => setForm(p => ({ ...p, school_name: v }))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Current grade</label>
+            <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
+              <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
+              <SelectContent>
+                {[7,8,9,10,11,12].map(g => (
+                  <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    ),
+    // Step 3: Interests
     () => (
       <div className="space-y-6">
         <div className="text-center">
@@ -309,10 +352,11 @@ export default function Onboarding() {
     switch (step) {
       case 0: return true;
       case 1: return form.display_name.trim() && form.age;
-      case 2: return form.interests.length >= 3;
-      case 3: return form.strengths.length >= 1;
-      case 4: return form.preferred_learning_style;
-      case 5: return true;
+      case 2: return true; // school info optional
+      case 3: return form.interests.length >= 3;
+      case 4: return form.strengths.length >= 1;
+      case 5: return form.preferred_learning_style;
+      case 6: return true;
       default: return true;
     }
   };
