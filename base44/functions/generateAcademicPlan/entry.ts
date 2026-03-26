@@ -59,13 +59,17 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
         const gradeCourses = allCourses.filter(c => {
           const lvl = (c.level || '').toLowerCase();
           const courseName = (c.name || '').toLowerCase();
-          const isMiddleSchool = lvl.includes('middle') || /\bgrade [67]|\b[67]th\b/.test(courseName);
-          const isHighSchool = lvl.includes('high') || /\bgrade [9]|\bgrade [0-9]{2}|\b(9|10|11|12)th?\b/.test(courseName);
-          
+          const isMiddleSchool = lvl.includes('middle') || /\bgrade\s+[67]|\b[67](?:th)?\b/.test(courseName);
+          const isHighSchool = lvl.includes('high') || /\bgrade\s+(?:9|10|11|12)|\b(?:9|10|11|12)(?:th)?\b/.test(courseName);
+
           if (gradeNum <= 8) {
             return isMiddleSchool || (!isHighSchool && !lvl.includes('ap') && !lvl.includes('ib') && !lvl.includes('honors'));
-          } else {
+          } else if (gradeNum === 9) {
             return !isMiddleSchool && (isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+          } else if (gradeNum === 10) {
+            return !isMiddleSchool && (courseName.includes('grade 10') || courseName.includes('10th') || isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
+          } else {
+            return !isMiddleSchool && (courseName.includes('grade ' + gradeNum) || courseName.includes(gradeNum + 'th') || isHighSchool || lvl.includes('standard') || lvl.includes('honors') || lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual'));
           }
         }).slice(0, 8);
         return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
