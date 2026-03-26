@@ -16,7 +16,7 @@ export default function AcademicPlan() {
   const [profile, setProfile] = useState(null);
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [generatingTrackIndex, setGeneratingTrackIndex] = useState(null);
   const [selectedTrack, setSelectedTrack] = useState(0);
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [usage, setUsage] = useState(null);
@@ -77,15 +77,15 @@ export default function AcademicPlan() {
         clearInterval(pollingRef.current);
         setPlan(p);
         setSelectedTrack(p.selected_track_index || 0);
-        setGenerating(false);
-        toast.success('Your academic plan is ready! 🎓');
+        setGeneratingTrackIndex(null);
+        toast.success('Track updated! 🎓');
       }
     }, 4000);
   };
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
     if (!profile) return;
-    setGenerating(true);
+    if (trackIndex !== null) setGeneratingTrackIndex(trackIndex);
 
     const user = await base44.auth.me();
     const currentGrade = profile.current_grade || 9;
@@ -94,11 +94,11 @@ export default function AcademicPlan() {
     const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
     let generatingPlanId = null;
     if (existingForMark[0]) {
-      await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: true });
-      generatingPlanId = existingForMark[0].id;
+    await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: trackIndex !== null });
+    generatingPlanId = existingForMark[0].id;
     } else {
-      const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: true });
-      generatingPlanId = created.id;
+    const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
+    generatingPlanId = created.id;
     }
 
     const [recs, updates] = await Promise.all([
@@ -121,9 +121,12 @@ export default function AcademicPlan() {
     if (response.status === 429 || response.data?.error === 'USAGE_CAP_REACHED') {
       toast.error('Monthly usage limit reached. Your credits reset next month.');
       setUsageBlocked(true);
-      setGenerating(false);
+      setGeneratingTrackIndex(null);
       const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
-      if (existingPlans[0]) await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+      if (existingPlans[0]) {
+        await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+        setGeneratingTrackIndex(null);
+      }
       return;
     }
 
@@ -206,32 +209,18 @@ export default function AcademicPlan() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {plan && (
-              <>
-                <Button
-                  onClick={() => generatePlan(false, selectedTrack)}
-                  disabled={generating || usageBlocked}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  {generating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
-                  ) : (
-                    <><RefreshCw className="w-4 h-4" /> Regenerate Track</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => generatePlan(true)}
-                  disabled={generating || usageBlocked}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  {generating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
-                  ) : (
-                    <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
-                  )}
-                </Button>
-              </>
+              <Button
+                onClick={() => generatePlan(true)}
+                disabled={generatingTrackIndex !== null || usageBlocked}
+                variant="outline"
+                className="gap-2"
+              >
+                {generatingTrackIndex !== null ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
+                )}
+              </Button>
             )}
             <Button
               onClick={() => generatePlan(false)}
@@ -248,7 +237,7 @@ export default function AcademicPlan() {
         </div>
       </div>
 
-      {!plan && !generating && (
+      {!plan && generatingTrackIndex === null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <BookOpen className="w-12 h-12 text-primary" />
@@ -265,7 +254,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {generating && (
+      {generatingTrackIndex !== null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -275,7 +264,7 @@ export default function AcademicPlan() {
           <button
             onClick={async () => {
               if (pollingRef.current) clearInterval(pollingRef.current);
-              setGenerating(false);
+              setGeneratingTrackIndex(null);
               const user = await base44.auth.me();
               const plans = await base44.entities.CareerPlan.filter({ user_email: user.email });
               if (plans[0]) await base44.entities.CareerPlan.update(plans[0].id, { is_generating: false });
@@ -295,25 +284,39 @@ export default function AcademicPlan() {
             <h2 className="font-heading text-lg font-semibold mb-3 text-muted-foreground">Choose a Career Track</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {tracks.map((track, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleTrackSelect(idx)}
-                  className={cn(
-                    "text-left p-4 rounded-2xl border transition-all duration-200",
-                    selectedTrack === idx
-                      ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                      : "border-border bg-card hover:border-primary/40"
-                  )}
-                >
-                  <div className="text-2xl mb-2">{track.emoji || "🎯"}</div>
-                  <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
-                  {selectedTrack === idx && (
-                    <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
-                      Active Track <ChevronRight className="w-3 h-3" />
-                    </div>
-                  )}
-                </button>
+                <div key={idx} className="space-y-2">
+                  <button
+                    onClick={() => handleTrackSelect(idx)}
+                    className={cn(
+                      "w-full text-left p-4 rounded-2xl border transition-all duration-200",
+                      selectedTrack === idx
+                        ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <div className="text-2xl mb-2">{track.emoji || "🎯"}</div>
+                    <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
+                    {selectedTrack === idx && (
+                      <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
+                        Active Track <ChevronRight className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+                  <Button
+                    onClick={() => generatePlan(false, idx)}
+                    disabled={generatingTrackIndex !== null || usageBlocked}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                  >
+                    {generatingTrackIndex === idx ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Regenerating...</>
+                    ) : (
+                      <><RefreshCw className="w-3 h-3" /> Regenerate</>
+                    )}
+                  </Button>
+                </div>
               ))}
             </div>
           </div>
