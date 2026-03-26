@@ -39,17 +39,17 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   const existingTracks = existingPlan[0]?.career_tracks || [];
   const tracks = regenerateTrackIndex !== null ? [...existingTracks] : [];
 
-  // Generate and save tracks sequentially so they appear in UI as they complete
+  // Generate all tracks in parallel
   const tracksToGenerate = regenerateTrackIndex !== null ? [regenerateTrackIndex] : [0, 1, 2];
   
-  for (const i of tracksToGenerate) {
+  const trackPromises = tracksToGenerate.map(async (i) => {
     const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Career track ${i + 1} (${trackHints[i]}) for ${profile.display_name}. Grades ${gradeRange}. For each grade: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1). Return under key "track".`,
       model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error(`Track ${i + 1} failed:`, err.message); return null; });
 
-    if (!trackData || !trackData.track) continue;
+    if (!trackData || !trackData.track) return null;
     
     const track = trackData.track;
     const enhancedTrack = {
@@ -78,31 +78,38 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       })
     };
 
-    tracks[i] = enhancedTrack;
+    return { index: i, track: enhancedTrack };
+  });
 
-    // Save immediately after generating each track
-    const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
-    const planData = {
-      user_email: profile.user_email,
-      career_tracks: tracks,
-      selected_track_index: existing[0]?.selected_track_index || 0,
-      school_name: profile.school_name,
-      current_grade: profile.current_grade,
-      school_info,
-      is_generating: true,
-    };
-    if (existing[0]) {
-      await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
-    } else {
-      await base44.asServiceRole.entities.CareerPlan.create(planData);
-    }
-    console.log(`Track ${i + 1} added/updated for ${profile.user_email}`);
+  // Wait for all track generations in parallel
+  const results = await Promise.all(trackPromises);
+  
+  // Save all tracks at once
+  results.forEach(result => {
+    if (result) tracks[result.index] = result.track;
+  });
+
+  const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+  const planData = {
+    user_email: profile.user_email,
+    career_tracks: tracks,
+    selected_track_index: existing[0]?.selected_track_index || 0,
+    school_name: profile.school_name,
+    current_grade: profile.current_grade,
+    school_info,
+    is_generating: true,
+  };
+  if (existing[0]) {
+    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
+  } else {
+    await base44.asServiceRole.entities.CareerPlan.create(planData);
   }
+  console.log(`All tracks generated in parallel for ${profile.user_email}`);
 
   // Mark generation complete
-  const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
-  if (existing[0]) {
-    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: false });
+  const existing2 = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+  if (existing2[0]) {
+    await base44.asServiceRole.entities.CareerPlan.update(existing2[0].id, { is_generating: false });
   }
 
   const month = new Date().toISOString().slice(0, 7);
