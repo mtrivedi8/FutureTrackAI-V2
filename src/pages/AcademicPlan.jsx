@@ -27,12 +27,14 @@ export default function AcademicPlan() {
   const loadData = async () => {
     setLoading(true);
     const user = await base44.auth.me();
-    const [profiles, plans, memberships] = await Promise.all([
+    const [profiles, plans, memberships, settings] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.CareerPlan.filter({ user_email: user.email }),
       base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      base44.entities.AppSettings.filter({ key: 'payment_enabled' }),
     ]);
-    if (memberships.length === 0) {
+    const paymentEnabled = settings[0] ? settings[0].value === 'true' : true;
+    if (paymentEnabled && memberships.length === 0) {
       navigate('/membership');
       return;
     }

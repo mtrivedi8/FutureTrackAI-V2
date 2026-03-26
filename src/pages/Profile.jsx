@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw } from "lucide-react";
+import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,22 +28,44 @@ const AVATARS = ["🚀", "🌟", "🎨", "🔬", "🎵", "⚡", "🌍", "💡", 
 export default function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [togglingPayment, setTogglingPayment] = useState(false);
 
   const loadProfile = async () => {
-    const user = await base44.auth.me();
-    const profiles = await base44.entities.TeenProfile.filter({ user_email: user.email });
+    const u = await base44.auth.me();
+    setUser(u);
+    const [profiles, settings] = await Promise.all([
+      base44.entities.TeenProfile.filter({ user_email: u.email }),
+      base44.entities.AppSettings.filter({ key: 'payment_enabled' }),
+    ]);
     if (!profiles.length) {
       navigate("/onboarding");
       return;
     }
     setProfile(profiles[0]);
     setForm(profiles[0]);
+    setPaymentEnabled(settings[0] ? settings[0].value === 'true' : true);
     setLoading(false);
+  };
+
+  const togglePayment = async () => {
+    setTogglingPayment(true);
+    const newVal = !paymentEnabled;
+    const existing = await base44.entities.AppSettings.filter({ key: 'payment_enabled' });
+    if (existing[0]) {
+      await base44.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
+    } else {
+      await base44.entities.AppSettings.create({ key: 'payment_enabled', value: String(newVal) });
+    }
+    setPaymentEnabled(newVal);
+    toast.success(`Payment ${newVal ? 'enabled' : 'disabled'}`);
+    setTogglingPayment(false);
   };
 
   useEffect(() => { loadProfile(); }, []);
@@ -337,6 +359,34 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
           </Button>
         </div>
       </motion.div>
+
+      {/* Admin: Payment Toggle */}
+      {user?.role === 'admin' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div className="rounded-2xl border border-border p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <h3 className="font-heading font-semibold">Admin Controls</h3>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Payment gate</p>
+                <p className="text-xs text-muted-foreground">When disabled, all users can access the Academic Plan for free</p>
+              </div>
+              <Button
+                onClick={togglePayment}
+                disabled={togglingPayment}
+                variant={paymentEnabled ? 'default' : 'outline'}
+                size="sm"
+                className="shrink-0 gap-2"
+              >
+                {togglingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {paymentEnabled ? '🔒 Enabled' : '🔓 Disabled'}
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Danger Zone */}
       <div className="pt-4 flex items-center gap-4">
