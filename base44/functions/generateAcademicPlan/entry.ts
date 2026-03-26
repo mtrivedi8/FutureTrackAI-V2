@@ -18,6 +18,7 @@ IMPORTANT:
 - For each course, include: the exact course name as listed, the credit value (e.g., 0.5, 1.0), whether it's required or elective, and the level (Standard, Honors, AP, IB, Dual Enrollment).
 - Extract graduation credit requirements (total credits needed, credits per subject area).
 - Extract clubs, sports teams, and special programs (AP, IB, STEM, Dual Enrollment, etc.).
+- Extract the ENROLLMENT / COURSE SELECTION PROCESS: how and when students register for courses, who they meet with (counselor, advisor), deadlines, how to request level changes, how to enroll in AP or Honors courses (any prerequisites or teacher recommendations required), and any registration portals or forms used.
 - Return the actual source URLs where you found each piece of information.`,
     add_context_from_internet: true,
     model: 'gemini_3_flash',
@@ -59,6 +60,18 @@ IMPORTANT:
               required_or_elective: { type: 'string' },
               prerequisites: { type: 'string' }
             }
+          }
+        },
+        enrollment_process: {
+          type: 'object',
+          properties: {
+            how_to_register: { type: 'string' },
+            registration_timeline: { type: 'string' },
+            advisor_counselor_info: { type: 'string' },
+            ap_honors_enrollment: { type: 'string' },
+            level_change_process: { type: 'string' },
+            registration_portal: { type: 'string' },
+            notes: { type: 'string' }
           }
         },
         clubs: { type: 'array', items: { type: 'string' } },
@@ -175,7 +188,9 @@ For each grade provide:
       school_website: catalogSearch.school_website,
       catalog_url: catalogSearch.catalog_url,
       graduation_requirements: catalogSearch.graduation_requirements,
+      enrollment_process: catalogSearch.enrollment_process,
       data_sources: catalogSearch.data_sources || [],
+      enrollment_process: catalogSearch.enrollment_process,
       courses_found: (catalogSearch.courses_all || []).length,
     }
   });

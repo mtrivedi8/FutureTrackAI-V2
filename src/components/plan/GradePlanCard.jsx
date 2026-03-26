@@ -194,6 +194,31 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
+      {/* Enrollment Process */}
+      {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary" /> Course Enrollment Process
+          </h3>
+          <div className="space-y-2">
+            {[
+              { label: "How to Register", val: schoolInfo.enrollment_process.how_to_register },
+              { label: "Timeline", val: schoolInfo.enrollment_process.registration_timeline },
+              { label: "Counselor / Advisor", val: schoolInfo.enrollment_process.advisor_counselor_info },
+              { label: "AP / Honors Enrollment", val: schoolInfo.enrollment_process.ap_honors_enrollment },
+              { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
+              { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
+              { label: "Notes", val: schoolInfo.enrollment_process.notes },
+            ].filter(r => r.val).map(r => (
+              <div key={r.label} className="flex gap-2 text-xs">
+                <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
+                <span className="text-muted-foreground">{r.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* School Courses — Rich Cards */}
       {courses.length > 0 && (
         <div className="space-y-3">
