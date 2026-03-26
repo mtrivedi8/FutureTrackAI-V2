@@ -101,7 +101,7 @@ export default function Onboarding() {
         </motion.div>
         <div>
           <h1 className="font-heading text-4xl font-bold text-foreground mb-3">
-            Welcome to MentorAI
+            Welcome to FutureTrackAI
           </h1>
           <p className="text-muted-foreground text-lg max-w-md">
             Your personal AI mentor for exploring careers and building skills. Let's discover what makes you unique! ✨
