@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy } from "lucide-react";
@@ -11,6 +12,7 @@ import GradePlanCard from "@/components/plan/GradePlanCard";
 
 
 export default function AcademicPlan() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,10 +27,15 @@ export default function AcademicPlan() {
   const loadData = async () => {
     setLoading(true);
     const user = await base44.auth.me();
-    const [profiles, plans] = await Promise.all([
+    const [profiles, plans, memberships] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.CareerPlan.filter({ user_email: user.email }),
+      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
     ]);
+    if (memberships.length === 0) {
+      navigate('/membership');
+      return;
+    }
     const p = profiles[0];
     setProfile(p);
     if (plans[0]) {

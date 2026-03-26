@@ -1,0 +1,86 @@
+import { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Loader2, CheckCircle, GraduationCap, Brain, BookOpen } from "lucide-react";
+
+const features = [
+  { icon: GraduationCap, text: "Personalized grade-by-grade academic roadmap" },
+  { icon: Brain, text: "3 AI-generated career tracks tailored to your interests" },
+  { icon: BookOpen, text: "Real course catalog data from your actual school" },
+  { icon: Sparkles, text: "Extracurriculars, clubs & summer activity suggestions" },
+];
+
+export default function Membership() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+    const response = await base44.functions.invoke('createCheckout', {});
+    const { redirectUrl, error: err } = response.data;
+    if (err || !redirectUrl) {
+      setError(err || 'Failed to start checkout. Please try again.');
+      setLoading(false);
+      return;
+    }
+    window.location.href = redirectUrl;
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="font-heading text-3xl font-bold text-foreground">Unlock Your Academic Plan</h1>
+          <p className="text-muted-foreground mt-2">Get a personalized roadmap from your current grade to college</p>
+        </div>
+
+        {/* Pricing Card */}
+        <div className="rounded-2xl border border-border bg-card shadow-xl p-6 space-y-6">
+          <div className="text-center">
+            <div className="flex items-end justify-center gap-1">
+              <span className="text-5xl font-heading font-bold text-foreground">$9.99</span>
+              <span className="text-muted-foreground mb-2">one-time</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">Generate your complete academic plan — no subscription</p>
+          </div>
+
+          <div className="space-y-3">
+            {features.map(({ icon: Icon, text }, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm text-foreground">{text}</span>
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive text-center bg-destructive/10 rounded-lg p-3">{error}</p>
+          )}
+
+          <Button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="w-full h-12 text-base gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+          >
+            {loading ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Redirecting to checkout...</>
+            ) : (
+              <><CheckCircle className="w-5 h-5" /> Get My Academic Plan — $9.99</>
+            )}
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Secure payment powered by Base44 Payments. No recurring charges.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
