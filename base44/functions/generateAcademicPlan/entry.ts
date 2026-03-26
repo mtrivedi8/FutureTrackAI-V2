@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const PLAN_COST = 0.25;
 
-async function runGeneration(base44, profile, journey) {
+async function runGeneration(base44, profile, journey, existingSchoolWebsite = null) {
   try {
     const adaptMode = journey?.adapt_mode === true;
 
@@ -83,9 +83,10 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
     ];
 
     // Fire ALL 5 LLM calls in parallel
+    const schoolWebsiteHint = existingSchoolWebsite ? `${existingSchoolWebsite} and ` : '';
     const [schoolMiddleResult, schoolHighResult, ...trackResults] = await Promise.all([
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Search for the official website of "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}". Find the official school website, official course catalog/handbook (PDF or page), graduation requirements, and list all middle school courses (grades 7-8). Prioritize official school district sources. Return school_website (official domain), catalog_url (official course catalog link), district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses with accurate names.`,
+        prompt: `Using the school website ${schoolWebsiteHint}search for the official school information for "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}". Find the official school website, official course catalog/handbook (PDF or page), graduation requirements, and list all middle school courses (grades 7-8). Prioritize official school district sources. Return school_website (official domain), catalog_url (official course catalog link), district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses with accurate names.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: {
@@ -103,7 +104,7 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       }).catch(() => ({ courses: [] })),
 
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Search for the official course catalog of "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}" high school. Find all official high school courses (grades 9-12) from the school's official website or course catalog. Return up to 60 courses with accurate names, credits, level (Standard/Honors/AP/IB), subject_area (Math, English, Science, etc), required_or_elective, prerequisites. Prioritize official sources only.`,
+        prompt: `Using the school website ${schoolWebsiteHint}search for all official high school courses (grades 9-12) for "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}" high school. Find courses from the school's official website or course catalog. Return up to 60 courses with accurate names, credits, level (Standard/Honors/AP/IB), subject_area (Math, English, Science, etc), required_or_elective, prerequisites. Prioritize official sources only.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: { type: 'object', properties: { courses: courseSchema } }
@@ -128,7 +129,7 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
     const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
     const school_info = {
       school_name: schoolMiddleResult.school_name,
-      school_website: schoolMiddleResult.school_website,
+      school_website: existingSchoolWebsite || schoolMiddleResult.school_website,
       catalog_url: schoolMiddleResult.catalog_url,
       district_name: schoolMiddleResult.district_name,
       courses_found: allCourses.length,
@@ -216,7 +217,7 @@ Deno.serve(async (req) => {
 
     const { profile, journey } = await req.json();
 
-    // Mark as generating in DB
+    // Mark as generating in DB and get existing school_website
     const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: user.email });
     if (existing[0]) {
       await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, { is_generating: true });
@@ -226,11 +227,12 @@ Deno.serve(async (req) => {
 
     // Fire generation in background and return immediately
     const profileWithEmail = { ...profile, user_email: user.email };
+    const existingSchoolWebsite = existing[0]?.school_info?.school_website || null;
     if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-      EdgeRuntime.waitUntil(runGeneration(base44, profileWithEmail, journey));
+      EdgeRuntime.waitUntil(runGeneration(base44, profileWithEmail, journey, existingSchoolWebsite));
     } else {
       // Fallback: run async without waiting (dev environment)
-      runGeneration(base44, profileWithEmail, journey);
+      runGeneration(base44, profileWithEmail, journey, existingSchoolWebsite);
     }
 
     // Return immediately — frontend will poll for completion
