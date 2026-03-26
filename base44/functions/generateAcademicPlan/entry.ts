@@ -163,72 +163,54 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
       }
     };
 
-    const schoolWebsiteHint = existingSchoolWebsite ? `${existingSchoolWebsite} and ` : '';
-    const [schoolMiddleResult, schoolHighResult] = await Promise.all([
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are a school data researcher. Find COMPLETE and ACCURATE graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''} from their official school and district websites.
+    const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are a school data researcher. Find COMPLETE course listings and graduation requirements for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''} from official sources.
 
-Thoroughly search through:
-1. Official school website course catalog and handbook
-2. District policy documents
-3. Graduation requirements page
-4. All official PDFs and documents available
+Fetch and organize:
 
-Extract EXACT credit requirements for EACH of these categories:
-- Total credits required to graduate
-- English/Language Arts credits
-- Math credits
-- Science credits (including lab requirements)
-- Social Studies/History credits
-- Physical Education / Health credits
-- Foreign Language credits (if required)
-- Technology/Computer credits (if required)
-- Arts/Elective credits
-- Any other specific requirements
+GRADUATION REQUIREMENTS:
+- Total credits required
+- English/Language Arts, Math, Science, Social Studies, PE/Health, Foreign Language, Technology, Arts/Elective requirements
 
-Also list ALL available middle school courses (grades 7-8) with exact names, credits, and level from the official catalog.
+MIDDLE SCHOOL COURSES (Grades 7-8):
+- All available middle school courses with names, credits, and level
 
-Return: school_website (exact URL), catalog_url (PDF or page URL), district_name, graduation_requirements (object with all credit types found), and courses array with all middle school offerings.`,
-        add_context_from_internet: true,
-        model: 'gemini_3_flash',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            school_name: { type: 'string' },
-            school_website: { type: 'string' },
-            catalog_url: { type: 'string' },
-            district_name: { type: 'string' },
-            graduation_requirements: { type: 'object' },
-            enrollment_process: { type: 'object' },
-            courses: courseSchema
-          }
+HIGH SCHOOL COURSES (Grades 9-12):
+- ALL available high school courses (aim for 80+) with:
+  - Exact course name as listed in catalog
+  - Credits awarded
+  - Level (Standard, Honors, AP, IB, Dual Enrollment)
+  - Subject area
+  - Required or Elective status
+  - Prerequisites
+
+Also extract school_website URL, catalog_url, district_name, and enrollment_process info if available.
+
+Return separate arrays for middle_courses and high_courses.`,
+      add_context_from_internet: true,
+      model: 'gemini_3_flash',
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          school_name: { type: 'string' },
+          school_website: { type: 'string' },
+          catalog_url: { type: 'string' },
+          district_name: { type: 'string' },
+          graduation_requirements: { type: 'object' },
+          enrollment_process: { type: 'object' },
+          middle_courses: courseSchema,
+          high_courses: courseSchema
         }
-      }).catch(() => ({ courses: [] })),
-
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are a school data researcher. Find COMPLETE course listings for high school (grades 9-12) at "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''}${profile.zipcode ? ' (zip ' + profile.zipcode + ')' : ''}.
-
-Thoroughly search through:
-1. Official school website course catalog
-2. All course offering documents and PDFs
-3. District course listings
-4. Current year course descriptions
-5. All program offerings (AP, Honors, IB, Dual Enrollment)
-
-For EACH course, provide:
-- Exact course name as listed in catalog
-- Credits awarded
-- Level (Standard, Honors, AP, IB, Dual Enrollment, etc.)
-- Subject area (English, Math, Science, Social Studies, etc.)
-- Required or Elective status
-- Prerequisites (if any)
-
-Include ALL available courses from grades 9-12 with complete and accurate information from official sources. Aim for 80+ courses if available.`,
-        add_context_from_internet: true,
-        model: 'gemini_3_flash',
-        response_json_schema: { type: 'object', properties: { courses: courseSchema } }
-      }).catch(() => ({ courses: [] })),
-    ]);
+      }
+    }).catch(() => ({ middle_courses: [], high_courses: [] }));
+    
+    const schoolMiddleResult = { 
+      ...schoolResult,
+      courses: schoolResult.middle_courses || []
+    };
+    const schoolHighResult = {
+      courses: schoolResult.high_courses || []
+    };
 
     // Save to cache for future use
     const cacheData = {
