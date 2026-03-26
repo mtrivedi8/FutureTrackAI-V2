@@ -155,11 +155,11 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                 </div>
               );
             })}
-            </div>
-            )}
-            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Enrollment Process — Collapsible */}
+      {/* Enrollment Process — Collapsible */}
       {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <button
@@ -192,7 +192,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                   </div>
                 );
               })}
-              </div>
+            </div>
           )}
         </div>
       )}
