@@ -80,7 +80,7 @@ export default function AcademicPlan() {
         setGeneratingTrackIndex(null);
         toast.success('Track updated! 🎓');
       }
-    }, 4000);
+    }, 8000);
   };
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {

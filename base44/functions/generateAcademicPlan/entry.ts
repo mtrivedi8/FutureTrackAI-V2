@@ -27,16 +27,19 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   const [track1, track2, track3] = await Promise.all([
     base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 1 (${trackHints[0]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error('Track 1 failed:', err.message); return null; }),
 
     base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 2 (${trackHints[1]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error('Track 2 failed:', err.message); return null; }),
 
     base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `You are an expert academic counselor. ${studentBase}\nCreate career track 3 (${trackHints[2]}) with a grade-by-grade plan for grades ${gradeRange}. Each grade needs: focus, key_milestone, credit_summary, school_courses (typical for this school type), clubs (2-3), special_programs, online_courses (2), extracurriculars (2-3), volunteer_opportunities (1-2), summer_activities (2). Return under key "track".`,
+      model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error('Track 3 failed:', err.message); return null; }),
   ]);
