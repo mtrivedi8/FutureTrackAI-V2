@@ -21,12 +21,59 @@ export default function Dashboard() {
       navigate("/onboarding");
       return;
     }
-    setProfile(profiles[0]);
-    const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50);
+    const p = profiles[0];
+    setProfile(p);
+    const [recs, updates] = await Promise.all([
+      base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50),
+      base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50),
+    ]);
     setRecommendations(recs);
-    const updates = await base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50);
     setProgressUpdates(updates);
     setLoading(false);
+
+    // Auto-generate suggestions on first visit
+    if (recs.length === 0) {
+      autoGenerateRecs(p, user.email);
+    }
+  };
+
+  const autoGenerateRecs = async (p, email) => {
+    const prompt = `You are a career mentor for a ${p.age}-year-old teenager named ${p.display_name}.
+Location: ${[p.city, p.country].filter(Boolean).join(", ") || "Not specified"}
+Interests: ${(p.interests || []).join(", ")}
+Strengths: ${(p.strengths || []).join(", ")}
+Goals: ${(p.goals || []).join(", ")}
+Dream careers: ${(p.dream_careers || []).join(", ")}
+Learning style: ${p.preferred_learning_style || "Mixed"}
+Generate 3 personalized recommendations. Mix career paths, skills, courses, activities, and projects. Tailor to their location. Include real working URLs.`;
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          recommendations: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: ["Career Path", "Skill", "Course", "Activity", "Project"] },
+                title: { type: "string" },
+                description: { type: "string" },
+                why_recommended: { type: "string" },
+                difficulty_level: { type: "string", enum: ["Beginner", "Intermediate", "Advanced"] },
+                estimated_duration: { type: "string" },
+                resources: { type: "array", items: { type: "string" } },
+              },
+            },
+          },
+        },
+      },
+    });
+    for (const rec of result.recommendations || []) {
+      await base44.entities.Recommendation.create({ ...rec, user_email: email, status: "New" });
+    }
+    const fresh = await base44.entities.Recommendation.filter({ user_email: email }, "-created_date", 50);
+    setRecommendations(fresh);
   };
 
   useEffect(() => { loadData(); }, []);

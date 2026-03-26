@@ -43,7 +43,7 @@ export default function AcademicPlan() {
     if (!profile) return;
     setGenerating(true);
 
-    const response = await base44.functions.invoke('generateAcademicPlan', { profile });
+    const response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: startGrade } });
     const { tracks, school_info } = response.data;
 
     const user = await base44.auth.me();
@@ -89,7 +89,8 @@ export default function AcademicPlan() {
     );
   }
 
-  const startGrade = profile?.current_grade || 7;
+  const currentGrade = profile?.current_grade || 9;
+  const startGrade = currentGrade <= 8 ? 9 : currentGrade;
   const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
 
   const tracks = plan?.career_tracks || [];
@@ -107,7 +108,7 @@ export default function AcademicPlan() {
             </h1>
             <p className="text-muted-foreground mt-1">
               {profile?.school_name ? `${profile.school_name} · ` : ""}
-              Grade {profile?.current_grade || "7"} → College
+              Grade {startGrade} → College
             </p>
           </div>
           <Button
