@@ -85,7 +85,7 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
     // Fire ALL 5 LLM calls in parallel
     const [schoolMiddleResult, schoolHighResult, ...trackResults] = await Promise.all([
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Search for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''} school website, course catalog, graduation requirements, and middle school courses (grades 7-8). Return school_website, catalog_url, district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses.`,
+        prompt: `Search for the official website of "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}". Find the official school website, official course catalog/handbook (PDF or page), graduation requirements, and list all middle school courses (grades 7-8). Prioritize official school district sources. Return school_website (official domain), catalog_url (official course catalog link), district_name, graduation_requirements object (total_credits, english_credits, math_credits, science_credits, social_studies_credits, pe_health_credits, elective_credits, notes), enrollment_process object (how_to_register, registration_timeline, advisor_counselor_info, ap_honors_enrollment, notes), and up to 40 middle school courses with accurate names.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: {
@@ -103,7 +103,7 @@ STUDENT PROGRESS (${adaptMode ? 'CRITICAL: heavily adapt the plan' : 'personaliz
       }).catch(() => ({ courses: [] })),
 
       base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Search for "${profile.school_name}"${profile.city ? ' in ' + profile.city : ''} high school courses (grades 9-12). Return up to 60 courses with name, credits, level (Standard/Honors/AP/IB), subject_area, required_or_elective, prerequisites.`,
+        prompt: `Search for the official course catalog of "${profile.school_name}"${profile.city ? ', ' + profile.city : ''}${profile.zipcode ? ', zip ' + profile.zipcode : ''}" high school. Find all official high school courses (grades 9-12) from the school's official website or course catalog. Return up to 60 courses with accurate names, credits, level (Standard/Honors/AP/IB), subject_area (Math, English, Science, etc), required_or_elective, prerequisites. Prioritize official sources only.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
         response_json_schema: { type: 'object', properties: { courses: courseSchema } }
