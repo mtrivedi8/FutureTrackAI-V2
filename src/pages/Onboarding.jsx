@@ -95,9 +95,9 @@ export default function Onboarding() {
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 3, repeat: Infinity }}
-          className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-2xl shadow-primary/30"
+          className="w-24 h-24 rounded-3xl shadow-2xl shadow-primary/30 overflow-hidden"
         >
-          <Sparkles className="w-12 h-12 text-white" />
+          <img src="https://media.base44.com/images/public/69c463e044e3d6bf7ee94b35/6d1d181d6_Gemini_Generated_Image_5itd815itd815itd.png" alt="FutureTrackAI" className="w-full h-full object-cover" />
         </motion.div>
         <div>
           <h1 className="font-heading text-4xl font-bold text-foreground mb-3">
