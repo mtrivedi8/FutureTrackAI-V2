@@ -6,7 +6,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   const gradeRange = Array.from({ length: 13 - profile.current_grade }, (_, i) => profile.current_grade + i).join(', ');
   const allCourses = [...(schoolMiddleResult.courses || []), ...(schoolHighResult.courses || [])];
   const school_info = {
-    school_name: schoolMiddleResult.school_name,
+    school_name: schoolMiddleResult.school_name || profile.middle_school_name || profile.high_school_name || profile.school_name || 'Your School',
     school_website: schoolMiddleResult.school_website,
     catalog_url: schoolMiddleResult.catalog_url,
     district_name: schoolMiddleResult.district_name,
@@ -26,7 +26,8 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     }
   };
 
-  const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. School: ${profile.school_name}${profile.city ? ', ' + profile.city : ''}.`;
+  const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'your school';
+  const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. School: ${schoolName}${profile.city ? ', ' + profile.city : ''}.`;
 
   const trackHints = [
     `most aligned with dream careers: ${(profile.dream_careers || []).slice(0, 2).join(', ') || 'technology'}`,
@@ -127,8 +128,9 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
 async function runGeneration(base44, profile, journey, existingSchoolWebsite = null) {
   try {
     // Check cache first
+    const schoolNameForCache = profile.middle_school_name || profile.high_school_name || profile.school_name || 'school';
     const existingCache = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
-      school_name: profile.school_name,
+      school_name: schoolNameForCache,
       zipcode: profile.zipcode
     });
     const cache = existingCache[0];
@@ -171,9 +173,9 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     };
 
     const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Get middle school (grades 7-8) and high school (grades 9-12) course catalog for "${profile.school_name}"${profile.zipcode ? ' zip ' + profile.zipcode : ''}. Include: course names, credits, level (Standard/Honors/AP/IB/Dual), subject area. Extract: graduation requirements, school_website URL, catalog_url, enrollment_process. Return as middle_courses and high_courses arrays.`,
+      prompt: `Get middle school (grades 7-8) and high school (grades 9-12) course catalog for "${profile.middle_school_name || profile.high_school_name || profile.school_name}"${profile.zipcode ? ' zip ' + profile.zipcode : ''}. Include: course names, credits, level (Standard/Honors/AP/IB/Dual), subject area. Extract: graduation requirements, school_website URL, catalog_url, enrollment_process. Return as middle_courses and high_courses arrays.`,
       add_context_from_internet: true,
-      model: 'gpt_5_mini',
+      model: 'gemini_3_flash',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -199,10 +201,10 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
 
     // Save to cache for future use
     const cacheData = {
-      school_name: profile.school_name,
+      school_name: profile.middle_school_name || profile.high_school_name || profile.school_name || 'school',
       zipcode: profile.zipcode,
       cached_data: {
-        school_name: schoolMiddleResult.school_name,
+        school_name: schoolMiddleResult.school_name || profile.middle_school_name || profile.high_school_name || profile.school_name || 'Your School',
         school_website: existingSchoolWebsite || schoolMiddleResult.school_website,
         catalog_url: schoolMiddleResult.catalog_url,
         district_name: schoolMiddleResult.district_name,
