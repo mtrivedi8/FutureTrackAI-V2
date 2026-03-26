@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap } from "lucide-react";
+import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -244,6 +244,19 @@ export default function AcademicPlan() {
           </div>
           <h2 className="font-heading text-xl font-bold">Building your roadmap...</h2>
           <p className="text-muted-foreground">Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a grade {startGrade}–12 plan for you...</p>
+          <button
+            onClick={async () => {
+              if (pollingRef.current) clearInterval(pollingRef.current);
+              setGenerating(false);
+              const user = await base44.auth.me();
+              const plans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+              if (plans[0]) await base44.entities.CareerPlan.update(plans[0].id, { is_generating: false });
+              toast.info('Plan generation cancelled.');
+            }}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors mt-2"
+          >
+            <XCircle className="w-4 h-4" /> Cancel generation
+          </button>
         </div>
       )}
 
