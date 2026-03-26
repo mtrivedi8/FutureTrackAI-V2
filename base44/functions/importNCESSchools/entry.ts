@@ -3,6 +3,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 const PUBLIC_SCHOOLS_URL = 'https://data-nces.opendata.arcgis.com/api/download/v1/items/0e8df2dcbbc54e13833344e2ca8c0fa4/csv?layers=0';
 const PRIVATE_SCHOOLS_URL = 'https://data-nces.opendata.arcgis.com/api/download/v1/items/1c004a108b18460bba1ddb29ec1f7982/csv?layers=0';
 
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
+];
+
 function parseCSV(text) {
   const lines = text.split('\n');
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -37,9 +45,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
+    // Get current state progress
+    const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'school_import_state_index' });
+    const currentIndex = settings[0] ? parseInt(settings[0].value) || 0 : 0;
+
+    if (currentIndex >= US_STATES.length) {
+      return Response.json({ status: 'complete', message: 'All states imported' });
+    }
+
     console.log('Fetching NCES school data...');
     
-    // Fetch both public and private school data in parallel
+    // Fetch both public and private school data
     const [publicSchools, privateSchools] = await Promise.all([
       fetchAndParseCSV(PUBLIC_SCHOOLS_URL),
       fetchAndParseCSV(PRIVATE_SCHOOLS_URL),
@@ -47,61 +63,81 @@ Deno.serve(async (req) => {
 
     console.log(`Fetched ${publicSchools.length} public schools and ${privateSchools.length} private schools`);
 
-    // Transform and normalize data
-    const schoolsToImport = [];
+    // Process single state
+    const stateCode = US_STATES[currentIndex];
+    const stateSchools = [];
     
-    // Process public schools
+    // Public schools for this state
     for (const school of publicSchools) {
-      if (!school.NAME || !school.ZIP) continue;
-      schoolsToImport.push({
+      if (school.STATE !== stateCode || !school.NAME || !school.ZIP) continue;
+      stateSchools.push({
         school_name: school.NAME,
         city: school.CITY || '',
-        state: school.STATE || '',
+        state: stateCode,
         zipcode: String(school.ZIP).padStart(5, '0'),
         district: school.NMLEAID || '',
         school_type: 'high',
       });
     }
-
-    // Process private schools
+    
+    // Private schools for this state
     for (const school of privateSchools) {
-      if (!school.NAME || !school.ZIP) continue;
-      schoolsToImport.push({
+      if (school.STATE !== stateCode || !school.NAME || !school.ZIP) continue;
+      stateSchools.push({
         school_name: school.NAME,
         city: school.CITY || '',
-        state: school.STATE || '',
+        state: stateCode,
         zipcode: String(school.ZIP).padStart(5, '0'),
         district: '',
         school_type: 'high',
       });
     }
-
-    // Remove duplicates
+    
+    // Remove duplicates within state
     const seen = new Set();
-    const uniqueSchools = schoolsToImport.filter(s => {
+    const uniqueState = stateSchools.filter(s => {
       const key = `${s.school_name}|${s.zipcode}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-
-    console.log(`Importing ${uniqueSchools.length} unique schools...`);
-
-    // Clear existing data and bulk insert
-    const existing = await base44.asServiceRole.entities.SchoolDirectory.filter({});
-    for (const record of existing) {
-      await base44.asServiceRole.entities.SchoolDirectory.delete(record.id);
+    
+    // Insert state schools in smaller batches with delays
+    let stateImported = 0;
+    if (uniqueState.length > 0) {
+      const batchSize = 20;
+      for (let i = 0; i < uniqueState.length; i += batchSize) {
+        const batch = uniqueState.slice(i, i + batchSize);
+        try {
+          await base44.asServiceRole.entities.SchoolDirectory.bulkCreate(batch);
+          stateImported += batch.length;
+        } catch (e) {
+          console.warn(`Batch ${Math.floor(i / batchSize) + 1} failed for ${stateCode}, stopping`);
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      console.log(`Imported ${stateImported} schools for ${stateCode}`);
     }
+    
+    // Update progress
+    const nextIndex = currentIndex + 1;
+    if (settings[0]) {
+      await base44.asServiceRole.entities.AppSettings.update(settings[0].id, { value: String(nextIndex) });
+    } else {
+      await base44.asServiceRole.entities.AppSettings.create({ key: 'school_import_state_index', value: String(nextIndex) });
+    }
+    
+    const remaining = US_STATES.length - nextIndex;
 
-    await base44.asServiceRole.entities.SchoolDirectory.bulkCreate(uniqueSchools);
-
-    console.log(`Successfully imported ${uniqueSchools.length} schools`);
+    console.log(`Imported ${stateImported} schools for state ${currentIndex + 1}/${US_STATES.length}`);
 
     return Response.json({ 
       status: 'success', 
-      schools_imported: uniqueSchools.length,
-      public_schools: publicSchools.length,
-      private_schools: privateSchools.length,
+      state: stateCode,
+      schools_imported: stateImported,
+      progress: `${currentIndex + 1}/${US_STATES.length}`,
+      states_remaining: remaining,
     });
   } catch (error) {
     console.error('importNCESSchools error:', error.message);
