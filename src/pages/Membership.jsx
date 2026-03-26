@@ -41,12 +41,16 @@ export default function Membership() {
 
         {/* Pricing Card */}
         <div className="rounded-2xl border border-border bg-card shadow-xl p-6 space-y-6">
-          <div className="text-center">
-            <div className="flex items-end justify-center gap-1">
+          <div className="text-center space-y-2">
+            <div className="flex items-end justify-center gap-2">
               <span className="text-5xl font-heading font-bold text-foreground">$4.99</span>
               <span className="text-muted-foreground mb-2">/month</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Includes $3 of AI credits monthly — cancel anytime</p>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-muted-foreground line-through">$9.99/month regular price</span>
+              <span className="inline-block bg-accent/20 text-accent px-2.5 py-1 rounded-full text-xs font-semibold">Introductory</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Includes $3 of AI credits monthly — cancel anytime</p>
           </div>
 
           <div className="space-y-3">
@@ -72,7 +76,7 @@ export default function Membership() {
             {loading ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Redirecting to checkout...</>
             ) : (
-              <><CheckCircle className="w-5 h-5" /> Subscribe — $4.99/month</>
+              <><CheckCircle className="w-5 h-5" /> Subscribe Now — $4.99/month</>
             )}
           </Button>
 
