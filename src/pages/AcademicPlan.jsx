@@ -85,9 +85,12 @@ export default function AcademicPlan() {
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
     if (!profile) return;
-    // Only set generatingTrackIndex for single track regeneration; all-tracks uses polling to detect completion
-    if (trackIndex !== null) setGeneratingTrackIndex(trackIndex);
-    else if (!plan) setGeneratingTrackIndex(-1); // Dummy state to show loading on initial generation only
+    // Set loading state: specific track index (0-2) or 'all' for all-tracks regeneration
+    if (trackIndex !== null) {
+      setGeneratingTrackIndex(trackIndex);
+    } else {
+      setGeneratingTrackIndex('all');
+    }
 
     try {
       const user = await base44.auth.me();
@@ -242,7 +245,7 @@ export default function AcademicPlan() {
             )}
             <Button
               onClick={() => generatePlan(false)}
-              disabled={generatingTrackIndex >= 0 || usageBlocked}
+              disabled={generatingTrackIndex !== null || usageBlocked}
               className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
               {generatingTrackIndex !== null ? (
