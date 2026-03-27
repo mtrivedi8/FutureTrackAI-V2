@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
 
     // Get all unique zipcodes from SchoolDirectory
     const allSchools = await base44.asServiceRole.entities.SchoolDirectory.list('-updated_date', 10000);
-    const uniqueZipcodes = [...new Set(allSchools.map(s => s.zipcode))].slice(0, 50); // Process 50 per run
+    const uniqueZipcodes = [...new Set(allSchools.map(s => s.zipcode))].slice(0, 15); // Process 15 per run (reduced to avoid timeout)
 
     console.log(`Processing ${uniqueZipcodes.length} unique zipcodes for document discovery`);
 
@@ -25,16 +25,20 @@ Deno.serve(async (req) => {
       const schoolName = schoolsInZip[0].school_name;
       const city = schoolsInZip[0].city || '';
 
-      // Check if cache already exists and is recent
+      // Check if cache already exists and is recent and valid
       const existingCache = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
         school_name: schoolName,
         zipcode: zipcode
       });
 
       const cache = existingCache[0];
+      const now = new Date();
       if (cache && cache.document_urls && Object.keys(cache.document_urls).length > 0) {
-        console.log(`Cache already has documents for ${schoolName} (${zipcode}) — skipping`);
-        continue;
+        const expiresAt = new Date(cache.expires_at);
+        if (expiresAt > now) {
+          console.log(`Cache still valid for ${schoolName} (${zipcode}) — skipping`);
+          continue;
+        }
       }
 
       console.log(`Fetching documents for ${schoolName} (${zipcode})...`);
@@ -124,8 +128,8 @@ Return ONLY direct URLs to official documents/pages. Verify each URL is current 
       processed++;
       console.log(`Saved ${urlCount} document URLs for ${schoolName}`);
 
-      // Rate limit
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Rate limit to avoid overwhelming LLM
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     return Response.json({
