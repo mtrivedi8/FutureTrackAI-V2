@@ -200,6 +200,7 @@ export default function Onboarding() {
         <div className="text-center">
           <h2 className="font-heading text-2xl font-bold mb-2">Your school 🏫</h2>
           <p className="text-muted-foreground">Enter your zip code and we'll find real courses from your school</p>
+          <p className="text-xs text-destructive font-medium mt-1">* Zip code is required</p>
         </div>
         <SchoolSearch
           grade={form.current_grade || null}
@@ -300,6 +301,7 @@ export default function Onboarding() {
         <div className="text-center">
           <h2 className="font-heading text-2xl font-bold mb-2">Dream big! 🌟</h2>
           <p className="text-muted-foreground">What are your goals and dream careers?</p>
+          <p className="text-xs text-destructive font-medium mt-1">* Add at least one goal or dream career</p>
         </div>
         <div>
           <label className="text-sm font-medium mb-2 block">Your goals</label>
@@ -356,11 +358,11 @@ export default function Onboarding() {
       case 0: return true;
       case 1: return form.display_name.trim() && form.age;
       case 2: return form.current_grade; // grade required to show schools
-      case 3: return true; // school info optional
+      case 3: return form.zipcode.trim().length === 5; // zipcode required
       case 4: return form.interests.length >= 3;
       case 5: return form.strengths.length >= 1;
       case 6: return form.preferred_learning_style;
-      case 7: return true;
+      case 7: return form.dream_careers.length >= 1 || form.goals.length >= 1;
       default: return true;
     }
   };
