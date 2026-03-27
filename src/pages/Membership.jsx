@@ -50,7 +50,7 @@ export default function Membership() {
               <span className="text-sm text-muted-foreground line-through">$9.99/month regular price</span>
               <span className="inline-block bg-accent/20 text-accent px-2.5 py-1 rounded-full text-xs font-semibold">Introductory</span>
             </div>
-            <p className="text-sm text-muted-foreground">Includes $3 of AI credits monthly — cancel anytime</p>
+            <p className="text-sm text-muted-foreground">Up to 20 career plan generations per month — cancel anytime</p>
           </div>
 
           <div className="space-y-3">
@@ -81,7 +81,7 @@ export default function Membership() {
           </Button>
 
           <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground text-center space-y-1">
-            <p>✅ Includes $3 AI credit/month (covers ~12 plan generations)</p>
+            <p>✅ Up to 20 AI career plan generations per month</p>
             <p>⚡ Usage resets every month automatically</p>
             <p>🔒 Secure payment powered by Base44 Payments</p>
           </div>
