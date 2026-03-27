@@ -19,6 +19,7 @@ export default function AcademicPlan() {
   const [generatingTrackIndex, setGeneratingTrackIndex] = useState(null);
   const [selectedTrack, setSelectedTrack] = useState(0);
   const [selectedGrade, setSelectedGrade] = useState(null);
+  const [expandedTrack, setExpandedTrack] = useState(null);
   const [usage, setUsage] = useState(null);
   const [usageBlocked, setUsageBlocked] = useState(false);
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
@@ -337,7 +338,15 @@ export default function AcademicPlan() {
                     >
                       {track.emoji && <div className="text-2xl mb-2" style={{display: 'none'}}>{track.emoji}</div>}
                       <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
+                      <p className={`text-xs text-muted-foreground mt-1 ${expandedTrack === idx ? '' : 'line-clamp-2'}`}>{track.description}</p>
+                      {track.description && track.description.length > 80 && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setExpandedTrack(expandedTrack === idx ? null : idx); }}
+                          className="text-[10px] text-primary font-medium mt-1 hover:underline"
+                        >
+                          {expandedTrack === idx ? 'See less' : 'See more'}
+                        </button>
+                      )}
                       {selectedTrack === idx && (
                         <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
                           Active Track <ChevronRight className="w-3 h-3" />
