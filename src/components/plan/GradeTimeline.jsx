@@ -68,12 +68,7 @@ export default function GradeTimeline({ grades, selectedGrade, currentGrade, onS
                 )}
               </div>
 
-              {/* Focus preview */}
-              {gradeInfo?.key_milestone && isSelected && (
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-36 text-center">
-                  <p className="text-[10px] text-primary font-medium line-clamp-2">{gradeInfo.key_milestone}</p>
-                </div>
-              )}
+
             </div>
           );
         })}

@@ -92,18 +92,18 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
     <div className="space-y-5">
       {/* Header */}
       <div className="rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 p-5">
-        <div className="flex items-start justify-between flex-wrap gap-3">
-          <div>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h2 className="font-heading text-2xl font-bold text-foreground">{gradeLabels[grade]}</h2>
-            <p className="text-muted-foreground mt-1 text-sm">{gradeData.focus}</p>
-            {gradeData.credit_summary && (
-              <p className="text-xs text-primary font-medium mt-1">📊 {typeof gradeData.credit_summary === 'object' ? JSON.stringify(gradeData.credit_summary) : gradeData.credit_summary}</p>
-            )}
+            <span className="text-xs font-medium bg-primary/20 text-primary px-2.5 py-1 rounded-full">{gradeData.focus}</span>
           </div>
           {gradeData.key_milestone && (
-            <div className="bg-white/60 dark:bg-card/60 rounded-xl p-3 max-w-xs">
-              <p className="text-xs font-medium text-primary mb-1">🏆 Key Milestone</p>
-              <p className="text-sm text-foreground">{gradeData.key_milestone}</p>
+            <div className="flex items-start gap-2 bg-white/70 dark:bg-card/70 border border-primary/20 rounded-xl px-4 py-3">
+              <span className="text-lg leading-none mt-0.5">🏆</span>
+              <div>
+                <p className="text-[11px] font-semibold text-primary uppercase tracking-wide mb-0.5">Key Milestone</p>
+                <p className="text-sm text-foreground leading-snug">{gradeData.key_milestone}</p>
+              </div>
             </div>
           )}
         </div>
