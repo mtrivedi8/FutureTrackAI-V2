@@ -38,6 +38,7 @@ export default function Profile() {
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
   const [togglingPayment, setTogglingPayment] = useState(false);
   const [togglingLimit, setTogglingLimit] = useState(false);
+  const [allSettings, setAllSettings] = useState([]);
 
   const loadProfile = async () => {
     const u = await base44.auth.me();
@@ -56,6 +57,7 @@ export default function Profile() {
     const limitSetting = allSettings.find(s => s.key === 'monthly_limit_enabled');
     setPaymentEnabled(paymentSetting ? paymentSetting.value === 'true' : true);
     setMonthlyLimitEnabled(limitSetting ? limitSetting.value !== 'false' : true);
+    setAllSettings(allSettings);
     setLoading(false);
   };
 
@@ -423,6 +425,30 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
                 >
                   {togglingLimit ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   {monthlyLimitEnabled ? '📊 Enabled' : '♾️ Unlimited'}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Debug logging</p>
+                  <p className="text-xs text-muted-foreground">Enable verbose logs for plan generation</p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    const current = allSettings.find(s => s.key === 'debug_logging');
+                    const newValue = current?.value === 'true' ? 'false' : 'true';
+                    if (current) {
+                      await base44.entities.AppSettings.update(current.id, { value: newValue });
+                    } else {
+                      await base44.entities.AppSettings.create({ key: 'debug_logging', value: newValue });
+                    }
+                    const updated = await base44.entities.AppSettings.filter({});
+                    setAllSettings(updated);
+                  }}
+                  variant={allSettings.find(s => s.key === 'debug_logging')?.value === 'true' ? 'default' : 'outline'}
+                  size="sm"
+                  className="shrink-0 gap-2"
+                >
+                  {allSettings.find(s => s.key === 'debug_logging')?.value === 'true' ? '🔍 Enabled' : '🔍 Disabled'}
                 </Button>
               </div>
             </div>
