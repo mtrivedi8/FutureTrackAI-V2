@@ -272,7 +272,7 @@ export default function AcademicPlan() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {plan && (
+            {plan && tracks.length > 0 && (
               <Button
                 onClick={() => generatePlan(true)}
                 disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
@@ -294,7 +294,7 @@ export default function AcademicPlan() {
               {generatingTrackIndex !== null ? (
                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
               ) : (
-                <><Sparkles className="w-4 h-4" /> {plan ? "Regenerate Plan" : "Generate My Plan"}</>
+                <><Sparkles className="w-4 h-4" /> {plan && tracks.length > 0 ? "Regenerate Plan" : "Generate My Plan"}</>
               )}
             </Button>
           </div>
