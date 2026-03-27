@@ -5,6 +5,7 @@ import StatsOverview from "../components/dashboard/StatsOverview";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 import GenerateButton from "../components/dashboard/GenerateButton";
 import { Sparkles, ArrowRight } from "lucide-react";
+import ExportPDFButton from "../components/dashboard/ExportPDFButton";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
@@ -102,7 +103,10 @@ Generate 3 personalized recommendations. Mix career paths, skills, courses, acti
           </h1>
           <p className="text-muted-foreground mt-1">Here's your career exploration journey</p>
         </div>
-        <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
+        <div className="flex items-center gap-2">
+          <ExportPDFButton profile={profile} />
+          <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
+        </div>
       </motion.div>
 
       {/* Stats */}
