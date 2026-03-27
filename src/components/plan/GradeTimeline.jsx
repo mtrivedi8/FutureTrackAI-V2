@@ -18,21 +18,19 @@ export default function GradeTimeline({ grades, selectedGrade, currentGrade, onS
   return (
     <div className="relative">
       {/* Desktop: horizontal timeline */}
-      <div className="hidden sm:flex items-center gap-0">
+      <div className="hidden sm:flex items-start gap-0 relative">
+        {/* Single continuous background line */}
+        <div className="absolute left-0 right-0 h-0.5 bg-border" style={{ top: '20px' }} />
         {grades.map((grade, idx) => {
           const isSelected = grade === selectedGrade;
           const isCurrent = grade === currentGrade;
           const isPast = currentGrade && grade < currentGrade;
-          const gradeInfo = trackGrades.find(g => g.grade === grade);
 
           return (
             <div key={grade} className="flex-1 flex flex-col items-center relative">
-              {/* Connector line */}
-              {idx < grades.length - 1 && (
-                <div className={cn(
-                  "absolute top-5 left-1/2 w-full h-0.5",
-                  isPast ? "bg-primary" : "bg-border"
-                )} />
+              {/* Completed segment overlay */}
+              {isPast && idx < grades.length - 1 && (
+                <div className="absolute left-1/2 w-full h-0.5 bg-primary" style={{ top: '20px' }} />
               )}
 
               {/* Node */}
@@ -67,8 +65,6 @@ export default function GradeTimeline({ grades, selectedGrade, currentGrade, onS
                   </span>
                 )}
               </div>
-
-
             </div>
           );
         })}
