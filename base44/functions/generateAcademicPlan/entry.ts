@@ -22,12 +22,50 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       description: { type: 'string' },
       emoji: { type: 'string' },
       college_goals: { type: 'string' },
-      grades: { type: 'array', items: { type: 'object' } }
+      grades: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            grade: { type: 'number' },
+            focus: { type: 'string' },
+            key_milestone: { type: 'string' },
+            clubs: { type: 'array', items: { type: 'string' } },
+            special_programs: { type: 'array', items: { type: 'string' } },
+            online_courses: { type: 'array', items: { type: 'string' } },
+            extracurriculars: { type: 'array', items: { type: 'string' } },
+            volunteer_opportunities: { type: 'array', items: { type: 'string' } },
+            summer_activities: { type: 'array', items: { type: 'string' } },
+            school_courses: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  subject_area: { type: 'string' },
+                  level: { type: 'string' },
+                  required_or_elective: { type: 'string' },
+                  recommended_for_track: { type: 'boolean' }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   };
 
   const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'your school';
-  const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. School: ${schoolName}${profile.city ? ', ' + profile.city : ''}.`;
+  const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}. Goals: ${(profile.goals || []).join(', ')}. School: ${schoolName}${profile.city ? ', ' + profile.city : ''}.`;
+
+  // Build a compact course list for the LLM to pick from
+  const allCoursesSummary = allCourses.map(c => ({
+    name: c.name,
+    subject: c.subject_area,
+    level: c.level,
+    grades: c.grade_levels,
+    elective: c.required_or_elective
+  }));
 
   const trackHints = [
     `most aligned with dream careers: ${(profile.dream_careers || []).slice(0, 2).join(', ') || 'technology'}`,
@@ -44,8 +82,13 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   const tracksToGenerate = regenerateTrackIndex !== null ? [regenerateTrackIndex] : [0, 1, 2];
   
   const trackPromises = tracksToGenerate.map(async (i) => {
+    // Build the track + interest-aligned course selection in ONE LLM call
+    const coursesContext = allCoursesSummary.length > 0
+      ? `\n\nAvailable courses from ${schoolName} catalog (${allCoursesSummary.length} total):\n${JSON.stringify(allCoursesSummary)}\n\nFor each grade in the plan, select 4-8 courses from the catalog above that best match the student's interests, goals, and this career track. Use EXACT course names from the list. Also include required core courses (English, Math, Science, Social Studies) even if not interest-aligned. Mark interest-aligned electives as recommended_for_track=true, required courses as recommended_for_track=false. For courses not in the list, do not invent new ones.`
+      : '';
+
     const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Career track ${i + 1} (${trackHints[i]}) for ${profile.display_name}. Grades ${gradeRange}. For each grade: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1). Return under key "track".`,
+      prompt: `${studentBase}\n\nCareer track ${i + 1} (${trackHints[i]}). Grades ${gradeRange}. For each grade provide: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1), and school_courses (array of objects with name, subject_area, level, required_or_elective, recommended_for_track).${coursesContext}\n\nReturn under key "track".`,
       model: 'gpt_5_mini',
       response_json_schema: { type: 'object', properties: { track: trackSchema } }
     }).catch(err => { console.error(`Track ${i + 1} failed:`, err.message); return null; });
@@ -54,38 +97,26 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     
     const track = trackData.track;
 
-    // Build per-grade course pools: use grade_levels if present, else smart fallback
+    // If LLM returned school_courses per grade (interest-based), use them directly.
+    // Otherwise fall back to the full catalog pool.
     const middleCourses = schoolMiddleResult.courses || [];
     const highCourses = schoolHighResult.courses || [];
+    const courseByName = {};
+    allCourses.forEach(c => { courseByName[c.name?.toLowerCase()] = c; });
 
-    const getCoursesForGrade = (gradeNum) => {
+    const fallbackCoursesForGrade = (gradeNum) => {
       const pool = gradeNum <= 8 ? middleCourses : highCourses;
       const matched = pool.filter(c => {
-        if (Array.isArray(c.grade_levels) && c.grade_levels.length > 0) {
-          return c.grade_levels.includes(gradeNum);
-        }
-        // Fallback: level-based heuristic
+        if (Array.isArray(c.grade_levels) && c.grade_levels.length > 0) return c.grade_levels.includes(gradeNum);
         const lvl = (c.level || '').toLowerCase();
-        const isAP = lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual');
-        const isHonors = lvl.includes('honors');
-        if (isAP) return gradeNum >= 11;
-        if (isHonors) return gradeNum >= 10;
+        if (lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual')) return gradeNum >= 11;
+        if (lvl.includes('honors')) return gradeNum >= 10;
         return true;
       });
-
-      // Group by subject_area, keep up to 2 per subject for variety
       const bySubject = {};
-      matched.forEach(c => {
-        const subj = c.subject_area || 'Other';
-        if (!bySubject[subj]) bySubject[subj] = [];
-        bySubject[subj].push(c);
-      });
-
-      // Flatten: take up to 2 per subject, sort subjects alphabetically
+      matched.forEach(c => { const s = c.subject_area || 'Other'; if (!bySubject[s]) bySubject[s] = []; bySubject[s].push(c); });
       const grouped = [];
-      Object.keys(bySubject).sort().forEach(subj => {
-        bySubject[subj].slice(0, 2).forEach(c => grouped.push({ ...c, recommended_for_track: false }));
-      });
+      Object.keys(bySubject).sort().forEach(s => bySubject[s].slice(0, 2).forEach(c => grouped.push({ ...c, recommended_for_track: false })));
       return grouped;
     };
 
@@ -93,7 +124,14 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       ...track,
       grades: (track.grades || []).map(g => {
         const gradeNum = Number(g.grade);
-        const gradeCourses = getCoursesForGrade(gradeNum);
+        // Prefer LLM-assigned courses (interest-based), fall back to full pool
+        let gradeCourses = Array.isArray(g.school_courses) && g.school_courses.length > 0
+          ? g.school_courses.map(c => {
+              // Enrich with full catalog data if name matches
+              const catalogMatch = courseByName[c.name?.toLowerCase()];
+              return catalogMatch ? { ...catalogMatch, recommended_for_track: c.recommended_for_track ?? false } : c;
+            })
+          : fallbackCoursesForGrade(gradeNum);
         return { ...g, school_courses: gradeCourses };
       })
     };
@@ -203,10 +241,11 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     };
 
     const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'Unknown School';
+    const locationStr = [profile.zipcode, profile.city].filter(Boolean).join(' ');
     const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: 'Get the full course catalog for "' + schoolName + '"' + (profile.zipcode ? ' zip ' + profile.zipcode : '') + '. For EACH course include: name, credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area (English/Math/Science/Social Studies/World Language/Arts/PE/Elective/CTE), and grade_levels as an array of specific grade numbers this course is available for (e.g. [9,10] or [11,12]). Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract graduation_requirements, school_website URL, catalog_url, enrollment_process.',
+      prompt: `Search the web for the official course catalog / Program of Studies for "${schoolName}" ${locationStr}. Look for links like "program of studies", "course catalog", or "course guide" on the school's official website or district website. Once you find the catalog document (PDF, Google Doc, or HTML page), READ IT THOROUGHLY and extract EVERY course listed. For EACH course extract: name (exact as listed), credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area (English/Math/Science/Social Studies/World Language/Arts/PE/Elective/CTE/Computer Science/Performing Arts/Visual Arts), grade_levels (array of grade numbers, e.g. [9,10] or [11,12]), required_or_elective, prerequisites. Separate courses into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract: school_website URL, catalog_url (direct link to the catalog doc), graduation_requirements (with total_credits, english_credits, math_credits, science_credits, social_studies_credits, elective_credits), enrollment_process. It is CRITICAL to extract as many real courses as possible from the actual document — aim for 50+ courses for a comprehensive high school.`,
       add_context_from_internet: true,
-      model: 'gemini_3_flash',
+      model: 'gemini_3_pro',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -220,7 +259,7 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
           high_courses: courseSchema
         }
       }
-    }).catch(() => ({ middle_courses: [], high_courses: [] }));
+    }).catch(err => { console.error('School catalog fetch failed:', err.message); return { middle_courses: [], high_courses: [] }; });
     
     const schoolMiddleResult = { 
       ...schoolResult,
