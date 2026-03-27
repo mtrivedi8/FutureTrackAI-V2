@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import StatsOverview from "../components/dashboard/StatsOverview";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
-import GenerateButton from "../components/dashboard/GenerateButton";
-import { Sparkles, ArrowRight } from "lucide-react";
+
+import { ArrowRight } from "lucide-react";
 import ExportPDFButton from "../components/dashboard/ExportPDFButton";
 import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -73,10 +74,7 @@ export default function Dashboard() {
           </h1>
           <p className="text-muted-foreground mt-1">Here's your career exploration journey</p>
         </div>
-        <div className="flex items-center gap-2">
-          <ExportPDFButton profile={profile} />
-          <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
-        </div>
+        <ExportPDFButton profile={profile} />
       </motion.div>
 
       {/* Stats */}
