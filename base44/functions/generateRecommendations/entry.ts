@@ -39,7 +39,7 @@ Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
-      model: 'claude_sonnet_4_6',
+      model: 'gpt_5_mini',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -61,6 +61,7 @@ Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
         },
       },
     });
+    console.log('LLM raw result:', JSON.stringify(result).slice(0, 500));
 
     const recs = result.recommendations || [];
     for (const rec of recs) {
