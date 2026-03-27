@@ -132,7 +132,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
       )}
 
       {/* Graduation Requirements */}
-      {schoolInfo?.graduation_requirements && schoolInfo.graduation_requirements.total_credits && (
+      {schoolInfo?.graduation_requirements && Object.values(schoolInfo.graduation_requirements).some(Boolean) && (
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
             <GraduationCap className="w-4 h-4 text-primary" /> Graduation Requirements
@@ -144,9 +144,12 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
               { label: "Math", val: schoolInfo.graduation_requirements.math_credits },
               { label: "Science", val: schoolInfo.graduation_requirements.science_credits },
               { label: "Social Studies", val: schoolInfo.graduation_requirements.social_studies_credits },
+              { label: "World Language", val: schoolInfo.graduation_requirements.world_language_credits },
+              { label: "Arts", val: schoolInfo.graduation_requirements.arts_credits },
               { label: "PE / Health", val: schoolInfo.graduation_requirements.pe_health_credits },
               { label: "Electives", val: schoolInfo.graduation_requirements.elective_credits },
-            ].filter(r => r.val != null && (typeof r.val === 'string' || typeof r.val === 'number')).map(r => {
+              { label: "Other", val: schoolInfo.graduation_requirements.other_credits },
+            ].filter(r => r.val != null && r.val !== '' && r.val !== 0).map(r => {
               const display = String(r.val);
               return (
                 <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
@@ -156,6 +159,9 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
               );
             })}
           </div>
+          {schoolInfo.graduation_requirements.notes && (
+            <p className="text-xs text-muted-foreground mt-3 border-t border-border pt-2">{schoolInfo.graduation_requirements.notes}</p>
+          )}
         </div>
       )}
 
