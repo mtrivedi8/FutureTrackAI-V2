@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Users, Laptop, Sun, Trophy, Heart, GraduationCap, Star, ExternalLink, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { BookOpen, Users, Laptop, Sun, Trophy, Heart, GraduationCap, Star, ExternalLink, Info, ChevronDown, ChevronUp, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const gradeLabels = {
@@ -109,19 +109,21 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       </div>
 
-      {/* Source Info */}
+      {/* Data Sources Footer */}
       {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
-        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">📚 Data Sources:</span>
+        <div className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2.5 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground font-medium flex items-center gap-1">
+            <Database className="w-3.5 h-3.5" /> Data Sources:
+          </span>
           {schoolInfo.school_website && (
             <a href={schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 text-primary hover:underline">
+              className="text-primary hover:underline font-medium flex items-center gap-1">
               <ExternalLink className="w-3 h-3" /> School Website
             </a>
           )}
           {schoolInfo.catalog_url && (
             <a href={schoolInfo.catalog_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 text-primary hover:underline">
+              className="text-primary hover:underline font-medium flex items-center gap-1">
               <ExternalLink className="w-3 h-3" /> Course Catalog
             </a>
           )}
