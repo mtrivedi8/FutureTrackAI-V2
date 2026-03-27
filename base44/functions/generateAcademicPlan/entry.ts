@@ -87,13 +87,29 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       ? `\n\nAvailable courses from ${schoolName} catalog (${allCoursesSummary.length} total):\n${JSON.stringify(allCoursesSummary)}\n\nFor each grade in the plan, select 4-8 courses from the catalog above that best match the student's interests, goals, and this career track. Use EXACT course names from the list. Also include required core courses (English, Math, Science, Social Studies) even if not interest-aligned. Mark interest-aligned electives as recommended_for_track=true, required courses as recommended_for_track=false. For courses not in the list, do not invent new ones.`
       : '';
 
-    const trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `${studentBase}\n\nCareer track ${i + 1} (${trackHints[i]}). Grades ${gradeRange}. For each grade provide: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1), and school_courses (array of objects with name, subject_area, level, required_or_elective, recommended_for_track).${coursesContext}\n\nReturn under key "track".`,
-      model: 'gpt_5_mini',
-      response_json_schema: { type: 'object', properties: { track: trackSchema } }
-    }).catch(err => { console.error(`Track ${i + 1} failed:`, err.message); return null; });
+    const llmPrompt = `${studentBase}\n\nCareer track ${i + 1} (${trackHints[i]}). Grades ${gradeRange}. For each grade provide: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1), and school_courses (array of objects with name, subject_area, level, required_or_elective, recommended_for_track).${coursesContext}\n\nReturn under key "track".`;
+    const llmSchema = { type: 'object', properties: { track: trackSchema } };
 
-    if (!trackData || !trackData.track) return null;
+    let trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: llmPrompt,
+      model: 'gpt_5_mini',
+      response_json_schema: llmSchema
+    }).catch(err => { console.error(`Track ${i + 1} gpt_5_mini failed:`, err.message); return null; });
+
+    // Fallback to claude if gpt_5_mini returned nothing
+    if (!trackData || !trackData.track) {
+      console.log(`Track ${i + 1}: gpt_5_mini returned no data, retrying with claude_sonnet_4_6`);
+      trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: llmPrompt,
+        model: 'claude_sonnet_4_6',
+        response_json_schema: llmSchema
+      }).catch(err => { console.error(`Track ${i + 1} claude fallback failed:`, err.message); return null; });
+    }
+
+    if (!trackData || !trackData.track) {
+      console.error(`Track ${i + 1}: both models failed, skipping`);
+      return null;
+    }
     
     const track = trackData.track;
 
@@ -147,24 +163,17 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     if (result) tracks[result.index] = result.track;
   });
 
-  const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
-  const planData = {
-    user_email: profile.user_email,
-    career_tracks: tracks,
-    selected_track_index: existing[0]?.selected_track_index || 0,
-    school_name: profile.school_name,
-    current_grade: profile.current_grade,
-    school_info,
-    is_generating: true,
-  };
-  if (existing[0]) {
-    await base44.asServiceRole.entities.CareerPlan.update(existing[0].id, planData);
-  } else {
-    await base44.asServiceRole.entities.CareerPlan.create(planData);
-  }
-  console.log(`All tracks generated in parallel for ${profile.user_email}`);
+  const validTracks = tracks.filter(Boolean);
+  console.log(`Generated ${validTracks.length} valid tracks out of ${tracksToGenerate.length} attempted`);
 
-  // Mark generation complete
+  if (validTracks.length === 0) {
+    console.error('All track generations failed — aborting plan save');
+    const existingPlan = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
+    if (existingPlan[0]) await base44.asServiceRole.entities.CareerPlan.update(existingPlan[0].id, { is_generating: false });
+    return;
+  }
+
+  const existing = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
   const existing2 = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
   if (existing2[0]) {
     await base44.asServiceRole.entities.CareerPlan.update(existing2[0].id, { is_generating: false });
