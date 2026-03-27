@@ -82,14 +82,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
   const tracksToGenerate = regenerateTrackIndex !== null ? [regenerateTrackIndex] : [0, 1, 2];
   
   const trackPromises = tracksToGenerate.map(async (i) => {
-    // Build the track + interest-aligned course selection in ONE LLM call
-    const coursesContext = allCoursesSummary.length > 0
-      ? `\n\nAvailable courses from ${schoolName} catalog (${allCoursesSummary.length} total):\n${JSON.stringify(allCoursesSummary)}\n\nFor each grade in the plan, select 4-8 courses from the catalog above that best match the student's interests, goals, and this career track. Use EXACT course names from the list. Also include required core courses (English, Math, Science, Social Studies) even if not interest-aligned. Mark interest-aligned electives as recommended_for_track=true, required courses as recommended_for_track=false. For courses not in the list, do not invent new ones.`
-      : '';
-
-    const llmPrompt = `${studentBase}\n\nCareer track ${i + 1} (${trackHints[i]}). Grades ${gradeRange}. For each grade provide: focus (1 sentence), key_milestone, clubs (2), special_programs (1-2), online_courses (1), extracurriculars (2), volunteer_opportunities (1), summer_activities (1), and school_courses (array of objects with name, subject_area, level, required_or_elective, recommended_for_track).${coursesContext}\n\nReturn under key "track".`;
-    const llmSchema = { type: 'object', properties: { track: trackSchema } };
-
+    console.log(`[TRACK_${i + 1}] Starting generation...`);
     let trackData = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: llmPrompt,
       model: 'gpt_5_mini',
@@ -107,10 +100,10 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     }
 
     if (!trackData || !trackData.track) {
-      console.error(`Track ${i + 1}: both models failed, skipping`);
+      console.error(`[TRACK_${i + 1}] Both models failed, skipping`);
       return null;
     }
-    
+    console.log(`[TRACK_${i + 1}] Generated successfully with ${trackData.track.grades?.length || 0} grades`);
     const track = trackData.track;
 
     // If LLM returned school_courses per grade (interest-based), use them directly.
@@ -254,6 +247,7 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'Unknown School';
     const locationStr = [profile.zipcode, profile.city].filter(Boolean).join(' ');
     
+    console.log(`\n[SCHOOL_FETCH] Starting search for ${schoolName} in ${locationStr}`);
     let schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Search for the official course catalog for "${schoolName}" in ${locationStr}. Try these specific locations: 1) ${schoolName}'s official website (look for Curriculum, Academics, or Course Catalog pages), 2) The school district website under "Academics" or "Programs", 3) Direct search for "${schoolName} program of studies" OR "${schoolName} course catalog". Once found, READ THE ENTIRE DOCUMENT and extract EVERY course listed. For EACH course extract: name (exact), credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area, grade_levels (array), required_or_elective, prerequisites. Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract: school_website URL, catalog_url (direct link), graduation_requirements, enrollment_process.`,
       add_context_from_internet: true,
@@ -272,29 +266,8 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
         }
       }
     }).catch(async (err) => {
-      console.error('School catalog fetch failed with Gemini:', err.message);
-      console.log('Retrying with Claude...');
-      return await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Search the web for the official course catalog / Program of Studies for "${schoolName}" ${locationStr}. Extract EVERY course with: name (exact), credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area, grade_levels (array), required_or_elective, prerequisites. Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract: school_website, catalog_url, graduation_requirements, enrollment_process.`,
-        add_context_from_internet: true,
-        model: 'claude_sonnet_4_6',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            school_name: { type: 'string' },
-            school_website: { type: 'string' },
-            catalog_url: { type: 'string' },
-            district_name: { type: 'string' },
-            graduation_requirements: { type: 'object' },
-            enrollment_process: { type: 'object' },
-            middle_courses: courseSchema,
-            high_courses: courseSchema
-          }
-        }
-      }).catch(err2 => {
-        console.error('Claude fallback also failed:', err2.message);
-        return { middle_courses: [], high_courses: [] };
-      });
+      console.error('[SCHOOL_FETCH] Gemini failed:', err.message);
+      console.log('[SCHOOL_FETCH] Retrying with Claude...');
     });
     
     let middleCourses = schoolResult.middle_courses || [];
