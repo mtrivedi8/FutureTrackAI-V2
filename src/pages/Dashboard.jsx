@@ -39,41 +39,11 @@ export default function Dashboard() {
   };
 
   const autoGenerateRecs = async (p, email) => {
-    const prompt = `You are a career mentor for a ${p.age}-year-old teenager named ${p.display_name}.
-Location: ${[p.city, p.country].filter(Boolean).join(", ") || "Not specified"}
-Interests: ${(p.interests || []).join(", ")}
-Strengths: ${(p.strengths || []).join(", ")}
-Goals: ${(p.goals || []).join(", ")}
-Dream careers: ${(p.dream_careers || []).join(", ")}
-Learning style: ${p.preferred_learning_style || "Mixed"}
-Generate 3 personalized recommendations. Mix career paths, skills, courses, activities, and projects. Tailor to their location. Include real working URLs.`;
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: { type: "string", enum: ["Career Path", "Skill", "Course", "Activity", "Project"] },
-                title: { type: "string" },
-                description: { type: "string" },
-                why_recommended: { type: "string" },
-                difficulty_level: { type: "string", enum: ["Beginner", "Intermediate", "Advanced"] },
-                estimated_duration: { type: "string" },
-                resources: { type: "array", items: { type: "string" } },
-              },
-            },
-          },
-        },
-      },
-    });
-    for (const rec of result.recommendations || []) {
-      await base44.entities.Recommendation.create({ ...rec, user_email: email, status: "New" });
-    }
-    const fresh = await base44.entities.Recommendation.filter({ user_email: email }, "-created_date", 50);
+    await base44.functions.invoke('generateRecommendations', {
+      profile: p,
+      existingTitles: [],
+    }).catch(err => console.error('autoGenerateRecs error:', err));
+    const fresh = await base44.entities.Recommendation.filter({ user_email: email }, '-created_date', 50);
     setRecommendations(fresh);
   };
 
