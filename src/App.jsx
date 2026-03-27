@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import AcademicPlan from './pages/AcademicPlan';
 import Membership from './pages/Membership';
 import ThankYou from './pages/ThankYou';
+import ApplicationPrep from './pages/ApplicationPrep';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,6 +50,7 @@ const AuthenticatedApp = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/plan" element={<AcademicPlan />} />
         <Route path="/membership" element={<Membership />} />
+        <Route path="/application-prep" element={<ApplicationPrep />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
