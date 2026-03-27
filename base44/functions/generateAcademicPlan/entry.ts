@@ -195,15 +195,17 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
 
 async function runGeneration(base44, profile, journey, existingSchoolWebsite = null) {
   try {
+    console.log('=== START GENERATION ===');
+    console.log('Profile:', { display_name: profile.display_name, school: profile.school_name, zipcode: profile.zipcode, current_grade: profile.current_grade });
+    console.log('Journey:', { adapt_mode: journey?.adapt_mode, regenerate_track_index: journey?.regenerate_track_index });
+    
     // Check cache first
     const schoolNameForCache = profile.middle_school_name || profile.high_school_name || profile.school_name || 'school';
-    const existingCache = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
-      school_name: schoolNameForCache,
-      zipcode: profile.zipcode
-    });
+    console.log('Checking cache for:', { schoolNameForCache, zipcode: profile.zipcode });
     const cache = existingCache[0];
     const now = new Date();
     const cacheValid = cache && new Date(cache.expires_at) > now;
+    console.log('Cache status:', { found: !!cache, valid: cacheValid, expiresAt: cache?.expires_at });
 
     const cachedMiddle = cache?.cached_data?.middle_courses || [];
     const cachedHigh = cache?.cached_data?.high_courses || [];
