@@ -158,10 +158,14 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     const now = new Date();
     const cacheValid = cache && new Date(cache.expires_at) > now;
 
-    if (cacheValid && cache.cached_data) {
+    const cachedMiddle = cache?.cached_data?.middle_courses || [];
+    const cachedHigh = cache?.cached_data?.high_courses || [];
+    const cacheHasCourses = cachedMiddle.length > 0 || cachedHigh.length > 0;
+
+    if (cacheValid && cache.cached_data && cacheHasCourses) {
       console.log(`Using cached data for ${profile.school_name} (${profile.zipcode})`);
       const schoolMiddleResult = { 
-        courses: cache.cached_data.middle_courses || [],
+        courses: cachedMiddle,
         school_name: cache.cached_data.school_name,
         school_website: cache.cached_data.school_website,
         catalog_url: cache.cached_data.catalog_url,
@@ -169,10 +173,14 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
         graduation_requirements: cache.cached_data.graduation_requirements,
         enrollment_process: cache.cached_data.enrollment_process,
       };
-      const schoolHighResult = { courses: cache.cached_data.high_courses || [] };
+      const schoolHighResult = { courses: cachedHigh };
       const regenerateIndex = journey?.regenerate_track_index;
       await generateTracks(base44, profile, journey, schoolMiddleResult, schoolHighResult, regenerateIndex);
       return;
+    }
+
+    if (cacheValid && cache.cached_data && !cacheHasCourses) {
+      console.log(`Cache exists but has no courses for ${schoolNameForCache} — falling back to LLM fetch`);
     }
 
     // Cache miss or expired — fetch fresh data
