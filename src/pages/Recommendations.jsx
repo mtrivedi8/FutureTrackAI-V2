@@ -1,21 +1,25 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 import RecommendationDetail from "../components/recommendations/RecommendationDetail";
 import GenerateButton from "../components/dashboard/GenerateButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Compass } from "lucide-react";
+import { Compass, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 const FILTERS = ["All", "New", "Exploring", "In Progress", "Completed", "Skipped"];
 
 export default function Recommendations() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [hasMembership, setHasMembership] = useState(false);
 
   const generateRecs = async (profile, existingRecs) => {
     await base44.functions.invoke('generateRecommendations', {
@@ -28,7 +32,11 @@ export default function Recommendations() {
 
   const loadData = async (autoGenerate = false) => {
     const user = await base44.auth.me();
-    const profiles = await base44.entities.TeenProfile.filter({ user_email: user.email });
+    const [profiles, memberships] = await Promise.all([
+      base44.entities.TeenProfile.filter({ user_email: user.email }),
+      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+    ]);
+    setHasMembership(memberships.length > 0);
     const p = profiles[0] || null;
     if (p) setProfile(p);
     const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
@@ -80,7 +88,16 @@ export default function Recommendations() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
-        <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
+        {hasMembership || recommendations.length === 0 ? (
+          <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
+        ) : (
+          <Button
+            onClick={() => navigate('/membership')}
+            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+          >
+            <Lock className="w-4 h-4" /> Unlock More Suggestions
+          </Button>
+        )}
       </motion.div>
 
       <Tabs value={filter} onValueChange={setFilter}>
