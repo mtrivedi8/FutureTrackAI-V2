@@ -37,7 +37,7 @@ export default function Recommendations() {
     ]);
     setHasMembership(memberships.length > 0);
     const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
-    const isPaymentEnabled = paymentSetting ? paymentSetting.value === 'true' : true;
+    const isPaymentEnabled = paymentSetting ? paymentSetting.value === 'true' : false;
     setPaymentEnabled(isPaymentEnabled);
     const p = profiles[0] || null;
     if (p) setProfile(p);
