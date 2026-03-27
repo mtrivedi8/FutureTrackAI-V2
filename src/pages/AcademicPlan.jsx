@@ -71,7 +71,7 @@ export default function AcademicPlan() {
     }
   };
 
-  const startPolling = (userEmail) => {
+  const startPolling = (userEmail, isFullPlan = false) => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(async () => {
       const plans = await base44.entities.CareerPlan.filter({ user_email: userEmail });
@@ -81,9 +81,9 @@ export default function AcademicPlan() {
         setPlan(p);
         setSelectedTrack(p.selected_track_index || 0);
         setGeneratingTrackIndex(null);
-        toast.success('Track updated! 🎓');
+        toast.success(isFullPlan ? 'Your academic plan is ready! 🎓' : 'Track updated! 🎓');
       }
-    }, 8000);
+    }, 5000);
   };
 
   const generatePlan = async (adaptToProgress = false, trackIndex = null) => {
@@ -155,32 +155,8 @@ export default function AcademicPlan() {
         return;
       }
 
-      // If regenerating all tracks, continue to next track after this one completes
-      if (trackIndex === null) {
-        // Wait for this track to complete, then regenerate next
-        await new Promise(resolve => {
-          const checkInterval = setInterval(async () => {
-            const plans = await base44.entities.CareerPlan.filter({ user_email: user.email });
-            if (plans[0] && !plans[0].is_generating) {
-              clearInterval(checkInterval);
-              resolve();
-            }
-          }, 2000);
-        });
-        
-        // Regenerate next track (0 → 1 → 2)
-        const currentTrackNum = journey?.regenerate_track_index || 0;
-        if (currentTrackNum < 2) {
-          await generatePlan(adaptToProgress, currentTrackNum + 1);
-        } else {
-          toast.success('All tracks regenerated! 🎓');
-          setGeneratingTrackIndex(null);
-        }
-        return;
-      }
-
       // Backend returns immediately; poll DB for completion
-      startPolling(user.email);
+      startPolling(user.email, trackIndex === null);
     } catch (err) {
       console.error('generatePlan error:', err);
       if (err.response?.status === 429) {
