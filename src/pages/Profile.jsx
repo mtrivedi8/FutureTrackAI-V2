@@ -385,7 +385,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
       </motion.div>
 
       {/* Admin: Payment Toggle */}
-      {user?.role === 'admin' && (
+      {(user?.email === 'meghnat@gmail.com' || user?.email === 'meghna.trivedi@gmail.com') && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <div className="rounded-2xl border border-border p-5 space-y-3">
             <div className="flex items-center gap-2">
