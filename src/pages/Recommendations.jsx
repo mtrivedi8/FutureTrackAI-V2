@@ -20,6 +20,7 @@ export default function Recommendations() {
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [hasMembership, setHasMembership] = useState(false);
+  const [paymentEnabled, setPaymentEnabled] = useState(true);
 
   const generateRecs = async (profile, existingRecs) => {
     await base44.functions.invoke('generateRecommendations', {
@@ -32,11 +33,15 @@ export default function Recommendations() {
 
   const loadData = async (autoGenerate = false) => {
     const user = await base44.auth.me();
-    const [profiles, memberships] = await Promise.all([
+    const [profiles, memberships, allSettings] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      base44.entities.AppSettings.filter({}),
     ]);
     setHasMembership(memberships.length > 0);
+    const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
+    const isPaymentEnabled = paymentSetting ? paymentSetting.value === 'true' : true;
+    setPaymentEnabled(isPaymentEnabled);
     const p = profiles[0] || null;
     if (p) setProfile(p);
     const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
@@ -88,7 +93,7 @@ export default function Recommendations() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
-        {hasMembership || recommendations.length === 0 ? (
+        {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
           <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
         ) : (
           <Button
