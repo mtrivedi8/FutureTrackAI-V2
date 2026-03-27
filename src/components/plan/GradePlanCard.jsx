@@ -258,6 +258,17 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
+      {/* Special Programs Header */}
+      {(Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0) || Array.isArray(gradeData.clubs) || Array.isArray(gradeData.extracurriculars) || Array.isArray(gradeData.volunteer_opportunities) ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✨</span>
+            <h3 className="font-heading font-semibold text-sm text-foreground">Special Programs & Opportunities</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">Collaborate with local businesses and explore diverse opportunities</p>
+        </div>
+      ) : null}
+
       {/* Other sections */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map(({ key, label, icon: Icon, color, tagColor }) => {
