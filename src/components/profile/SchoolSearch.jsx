@@ -11,7 +11,13 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   const [showMiddleList, setShowMiddleList] = useState(false);
   const [showHighList, setShowHighList] = useState(false);
   const [zipError, setZipError] = useState(null);
+  const [debugSteps, setDebugSteps] = useState([]);
   const debounceRef = useRef(null);
+
+  const addDebugStep = (step) => {
+    console.log(step);
+    setDebugSteps(prev => [...prev.slice(-4), step]);
+  };
 
   const lookupZip = async (zip) => {
     if (!/^\d{5}$/.test(zip)) { 
@@ -23,20 +29,33 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     }
     setLoading(true);
     setZipError(null);
+    setDebugSteps([]);
     try {
+      addDebugStep(`⏳ Step 1: Calling lookupSchoolsByZip(${zip})...`);
       const res = await base44.functions.invoke('lookupSchoolsByZip', { zipcode: zip });
+      
+      addDebugStep(`✅ Step 2: Response status ${res.status}`);
       const list = res.data?.schools || [];
+      addDebugStep(`📊 Step 3: Got ${list.length} schools (source: ${res.data?.source || '?'})`);
+      
       const middle = list.filter(s => s.school_type === 'middle' || s.school_type === 'middle_high');
       const high = list.filter(s => s.school_type === 'high' || s.school_type === 'middle_high');
+      addDebugStep(`🏫 Step 4: Filtered: ${middle.length} middle + ${high.length} high`);
+      
       setMiddleSchools(middle);
       setHighSchools(high);
       setShowMiddleList(middle.length > 0);
       setShowHighList(high.length > 0);
+      
       if (middle.length === 0 && high.length === 0) {
-        setZipError('No schools found. You can type school names manually below.');
+        addDebugStep(`❌ No results. Try typing school name.`);
+        setZipError('No schools found. Try typing the school name manually.');
+      } else {
+        addDebugStep(`✅ Ready! Select a school below.`);
       }
-    } catch {
-      setZipError('Could not fetch schools. Please type school names manually.');
+    } catch (err) {
+      addDebugStep(`❌ ERROR: ${err.message}`);
+      setZipError(`Error: ${err.message}. Try typing manually.`);
     }
     setLoading(false);
   };
@@ -48,6 +67,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     onHighSchoolChange('');
     setShowMiddleList(false);
     setShowHighList(false);
+    setDebugSteps([]);
     clearTimeout(debounceRef.current);
     if (val.length === 5) {
       debounceRef.current = setTimeout(() => lookupZip(val), 400);
@@ -89,7 +109,14 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
               maxLength={5}
             />
           </div>
-          {zipError && <p className="text-xs text-muted-foreground mt-1">{zipError}</p>}
+          {zipError && <p className="text-xs text-destructive mt-1 font-medium">{zipError}</p>}
+          {debugSteps.length > 0 && (
+            <div className="mt-2 text-xs bg-muted/60 rounded-lg p-2.5 space-y-0.5 max-h-48 overflow-y-auto border border-border">
+              {debugSteps.map((step, i) => (
+                <div key={i} className="text-muted-foreground font-mono leading-snug">{step}</div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
