@@ -93,10 +93,10 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
       {/* Header */}
       <div className="rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 p-5">
         <div className="space-y-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="font-heading text-2xl font-bold text-foreground">{gradeLabels[grade]}</h2>
-            <span className="text-xs font-medium bg-primary/20 text-primary px-2.5 py-1 rounded-full">{gradeData.focus}</span>
-          </div>
+          <h2 className="font-heading text-2xl font-bold text-foreground">{gradeLabels[grade]}</h2>
+          {gradeData.focus && (
+            <p className="text-sm text-muted-foreground">{gradeData.focus}</p>
+          )}
           {gradeData.key_milestone && (
             <div className="flex items-start gap-2 bg-white/70 dark:bg-card/70 border border-primary/20 rounded-xl px-4 py-3">
               <span className="text-lg leading-none mt-0.5">🏆</span>
