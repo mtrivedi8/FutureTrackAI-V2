@@ -53,27 +53,48 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     if (!trackData || !trackData.track) return null;
     
     const track = trackData.track;
+
+    // Build per-grade course pools: use grade_levels if present, else smart fallback
+    const middleCourses = schoolMiddleResult.courses || [];
+    const highCourses = schoolHighResult.courses || [];
+
+    const getCoursesForGrade = (gradeNum) => {
+      const pool = gradeNum <= 8 ? middleCourses : highCourses;
+      const matched = pool.filter(c => {
+        if (Array.isArray(c.grade_levels) && c.grade_levels.length > 0) {
+          return c.grade_levels.includes(gradeNum);
+        }
+        // Fallback: level-based heuristic
+        const lvl = (c.level || '').toLowerCase();
+        const isAP = lvl.includes('ap') || lvl.includes('ib') || lvl.includes('dual');
+        const isHonors = lvl.includes('honors');
+        if (isAP) return gradeNum >= 11;
+        if (isHonors) return gradeNum >= 10;
+        return true;
+      });
+
+      // Group by subject_area, keep up to 2 per subject for variety
+      const bySubject = {};
+      matched.forEach(c => {
+        const subj = c.subject_area || 'Other';
+        if (!bySubject[subj]) bySubject[subj] = [];
+        bySubject[subj].push(c);
+      });
+
+      // Flatten: take up to 2 per subject, sort subjects alphabetically
+      const grouped = [];
+      Object.keys(bySubject).sort().forEach(subj => {
+        bySubject[subj].slice(0, 2).forEach(c => grouped.push({ ...c, recommended_for_track: false }));
+      });
+      return grouped;
+    };
+
     const enhancedTrack = {
       ...track,
       grades: (track.grades || []).map(g => {
-        const gradeNum = g.grade;
-        const gradeCourses = allCourses.filter(c => {
-          const lvl = (c.level || '').toLowerCase();
-          const courseName = (c.name || '').toLowerCase();
-          const isMiddleSchool = lvl.includes('middle') || /\bgrade\s+[67]|\b[67]\b/.test(courseName);
-          const isHighSchool = lvl.includes('high') || /\bgrade\s+(?:9|10|11|12)|\b(?:9|10|11|12)\b/.test(courseName);
-          const isAP = lvl.includes('ap');
-          const isHonors = lvl.includes('honors');
-          const isDual = lvl.includes('dual');
-          const isIB = lvl.includes('ib');
-          if (gradeNum === 7 || gradeNum === 8) return isMiddleSchool || (!isHighSchool && !isAP);
-          if (gradeNum === 9) return !isMiddleSchool || isHighSchool;
-          if (gradeNum === 10) return !isMiddleSchool || isHighSchool || isHonors;
-          if (gradeNum === 11) return !isMiddleSchool || isHighSchool || isHonors || isAP || isDual;
-          if (gradeNum === 12) return !isMiddleSchool || isHighSchool || isHonors || isAP || isDual || isIB;
-          return true;
-        }).slice(0, 5);
-        return { ...g, school_courses: gradeCourses.length > 0 ? gradeCourses.map(c => ({ ...c, recommended_for_track: false })) : (g.school_courses || []) };
+        const gradeNum = Number(g.grade);
+        const gradeCourses = getCoursesForGrade(gradeNum);
+        return { ...g, school_courses: gradeCourses };
       })
     };
 
@@ -164,16 +185,18 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
         properties: {
           name: { type: 'string' },
           credits: { type: 'string' },
-          level: { type: 'string' },
-          subject_area: { type: 'string' },
+          level: { type: 'string', description: 'e.g. Standard, Honors, AP, IB, Dual Enrollment' },
+          subject_area: { type: 'string', description: 'e.g. English, Math, Science, Social Studies, Art, PE, Elective' },
+          grade_levels: { type: 'array', items: { type: 'number' }, description: 'Specific grade levels this course is offered for, e.g. [9,10] or [11,12] or [7,8]' },
           required_or_elective: { type: 'string' },
           prerequisites: { type: 'string' }
         }
       }
     };
 
+    const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'Unknown School';
     const schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Get middle school (grades 7-8) and high school (grades 9-12) course catalog for "${profile.middle_school_name || profile.high_school_name || profile.school_name}"${profile.zipcode ? ' zip ' + profile.zipcode : ''}. Include: course names, credits, level (Standard/Honors/AP/IB/Dual), subject area. Extract: graduation requirements, school_website URL, catalog_url, enrollment_process. Return as middle_courses and high_courses arrays.`,
+      prompt: 'Get the full course catalog for "' + schoolName + '"' + (profile.zipcode ? ' zip ' + profile.zipcode : '') + '. For EACH course include: name, credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area (English/Math/Science/Social Studies/World Language/Arts/PE/Elective/CTE), and grade_levels as an array of specific grade numbers this course is available for (e.g. [9,10] or [11,12]). Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract graduation_requirements, school_website URL, catalog_url, enrollment_process.',
       add_context_from_internet: true,
       model: 'gemini_3_flash',
       response_json_schema: {

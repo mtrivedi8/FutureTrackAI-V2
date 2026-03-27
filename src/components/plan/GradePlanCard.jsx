@@ -197,28 +197,37 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       )}
 
-      {/* School Courses */}
-      {courses.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
-              <BookOpen className="w-4 h-4" />
+      {/* School Courses grouped by subject */}
+      {courses.length > 0 && (() => {
+        const bySubject = {};
+        courses.forEach(c => {
+          const subj = (typeof c === 'object' && c.subject_area) ? c.subject_area : 'Other';
+          if (!bySubject[subj]) bySubject[subj] = [];
+          bySubject[subj].push(c);
+        });
+        const subjects = Object.keys(bySubject).sort();
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
+              <span className="text-xs text-muted-foreground ml-1">📚 From course catalog</span>
             </div>
-            <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
-            <span className="text-xs text-muted-foreground ml-1">📚 From real course catalog</span>
-            {courses.some(c => c.recommended_for_track) && (
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1 ml-auto">
-                <Star className="w-3 h-3 fill-primary" /> = Recommended for this track
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {courses.map((course, i) => (
-              <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
+            {subjects.map(subj => (
+              <div key={subj} className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{subj}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {bySubject[subj].map((course, i) => (
+                    <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Special Programs */}
       {Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0 && (
