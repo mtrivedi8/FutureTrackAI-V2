@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
@@ -21,14 +21,11 @@ export default function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [hasMembership, setHasMembership] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const pollRef = useRef(null);
 
-  const generateRecs = async (profile, existingRecs) => {
-    await base44.functions.invoke('generateRecommendations', {
-      profile,
-      existingTitles: existingRecs.map(r => r.title),
-    });
-    const user = await base44.auth.me();
-    return base44.entities.Recommendation.filter({ user_email: user.email }, '-created_date', 100);
+  const handleNewRec = (freshRecs) => {
+    setRecommendations(freshRecs);
   };
 
   const loadData = async (autoGenerate = false) => {
@@ -48,11 +45,36 @@ export default function Recommendations() {
 
     // Auto-generate on first visit if no recommendations exist
     if (autoGenerate && p && recs.length === 0) {
-      setLoading(true);
-      await generateRecs(p, []);
-      const fresh = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
-      setRecommendations(fresh);
-      toast.success("Your first recommendations are ready!");
+      setLoading(false);
+      setIsSearching(true);
+      base44.functions.invoke('generateRecommendations', {
+        profile: p,
+        existingTitles: [],
+      }).catch(err => console.error('generateRecommendations invoke error:', err));
+      // Poll for new recs and show them as they arrive
+      let lastCount = 0;
+      let stableRounds = 0;
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(async () => {
+        try {
+          const freshUser = await base44.auth.me();
+          const fresh = await base44.entities.Recommendation.filter({ user_email: freshUser.email }, '-created_date', 100);
+          if (fresh.length > lastCount) {
+            setRecommendations(fresh);
+            lastCount = fresh.length;
+            stableRounds = 0;
+          } else {
+            stableRounds++;
+          }
+          if (stableRounds >= 2 || fresh.length >= 5) {
+            clearInterval(pollRef.current);
+            setIsSearching(false);
+          }
+        } catch (e) {
+          clearInterval(pollRef.current);
+          setIsSearching(false);
+        }
+      }, 3000);
     } else {
       setRecommendations(recs);
     }
@@ -94,7 +116,12 @@ export default function Recommendations() {
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
         {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
-          <GenerateButton profile={profile} existingRecs={recommendations} onGenerated={loadData} />
+          <GenerateButton
+            profile={profile}
+            existingRecs={recommendations}
+            onGenerated={() => { setIsSearching(false); loadData(); }}
+            onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
+          />
         ) : (
           <Button
             onClick={() => navigate('/membership')}
@@ -129,6 +156,13 @@ export default function Recommendations() {
       ) : (
         <div className="rounded-2xl border border-dashed border-border p-10 text-center">
           <p className="text-muted-foreground">No {filter !== "All" ? filter.toLowerCase() : ""} recommendations yet</p>
+        </div>
+      )}
+
+      {isSearching && (
+        <div className="flex items-center justify-center gap-3 py-6 text-sm text-muted-foreground">
+          <div className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+          <span>Still searching for more suggestions for you…</span>
         </div>
       )}
 

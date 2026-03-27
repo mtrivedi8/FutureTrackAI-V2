@@ -6,21 +6,34 @@ import { toast } from "sonner";
 
 const STORAGE_KEY = 'recs_generating';
 
-export default function GenerateButton({ profile, existingRecs = [], onGenerated }) {
+export default function GenerateButton({ profile, existingRecs = [], onGenerated, onNewRec }) {
   const [loading, setLoading] = useState(() => !!localStorage.getItem(STORAGE_KEY));
   const pollRef = useRef(null);
+  const lastCountRef = useRef(existingRecs.length);
 
   const startPolling = (prevCount) => {
     if (pollRef.current) clearInterval(pollRef.current);
+    lastCountRef.current = prevCount;
+    let stableRounds = 0;
     pollRef.current = setInterval(async () => {
       try {
         const user = await base44.auth.me();
         const fresh = await base44.entities.Recommendation.filter({ user_email: user.email }, '-created_date', 100);
-        if (fresh.length > prevCount) {
+        if (fresh.length > lastCountRef.current) {
+          // New recs arrived — show them immediately
+          onNewRec?.(fresh);
+          lastCountRef.current = fresh.length;
+          stableRounds = 0;
+        } else {
+          stableRounds++;
+        }
+        // Stop after 2 stable rounds (no new recs) or if we've accumulated 5+ new recs
+        const totalNew = fresh.length - prevCount;
+        if (stableRounds >= 2 || totalNew >= 5) {
           clearInterval(pollRef.current);
           localStorage.removeItem(STORAGE_KEY);
           setLoading(false);
-          toast.success(`${fresh.length - prevCount} new suggestions ready! 🎉`);
+          if (totalNew > 0) toast.success(`${totalNew} new suggestions ready! 🎉`);
           onGenerated?.();
         }
       } catch (e) {
@@ -28,7 +41,7 @@ export default function GenerateButton({ profile, existingRecs = [], onGenerated
         localStorage.removeItem(STORAGE_KEY);
         setLoading(false);
       }
-    }, 4000);
+    }, 3000);
   };
 
   // Resume polling if generation was in progress before navigation
