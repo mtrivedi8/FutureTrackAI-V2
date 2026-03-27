@@ -217,7 +217,7 @@ export default function AcademicPlan() {
   const startGrade = currentGrade;
   const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
 
-  const tracks = plan?.career_tracks || [];
+  const tracks = (plan?.career_tracks || []).filter(t => t && t.name);
   const currentTrack = tracks[selectedTrack];
   const gradeData = currentTrack?.grades?.find(g => Number(g.grade) === Number(selectedGrade)) || (currentTrack?.grades?.[0] || null);
 
@@ -301,7 +301,7 @@ export default function AcademicPlan() {
         </div>
       </div>
 
-      {!plan && generatingTrackIndex === null && (
+      {(!plan || tracks.length === 0) && generatingTrackIndex === null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <BookOpen className="w-12 h-12 text-primary" />
@@ -318,7 +318,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {!plan && generatingTrackIndex !== null && (
+      {(!plan || tracks.length === 0) && generatingTrackIndex !== null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -341,7 +341,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {plan && (
+      {plan && tracks.length > 0 && (
         <div className="space-y-8">
           {/* Career Track Selector */}
           <div>
