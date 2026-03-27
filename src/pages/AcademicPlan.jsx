@@ -133,7 +133,25 @@ export default function AcademicPlan() {
       const maxRetries = 3;
       while (retries < maxRetries) {
         try {
-          response = await base44.functions.invoke('generateAcademicPlan', { profile: { ...profile, current_grade: currentGrade }, journey });
+          // Extract only serializable profile fields to avoid circular references
+          const cleanProfile = {
+            user_email: user.email,
+            display_name: profile.display_name,
+            age: profile.age,
+            zipcode: profile.zipcode,
+            city: profile.city,
+            country: profile.country,
+            current_grade: currentGrade,
+            interests: profile.interests || [],
+            strengths: profile.strengths || [],
+            goals: profile.goals || [],
+            dream_careers: profile.dream_careers || [],
+            preferred_learning_style: profile.preferred_learning_style,
+            middle_school_name: profile.middle_school_name,
+            high_school_name: profile.high_school_name,
+            school_name: profile.school_name,
+          };
+          response = await base44.functions.invoke('generateAcademicPlan', { profile: cleanProfile, journey });
           break;
         } catch (invokeErr) {
           retries++;
@@ -159,7 +177,7 @@ export default function AcademicPlan() {
       // Backend returns immediately; poll DB for completion
       startPolling(user.email, trackIndex === null);
     } catch (err) {
-      console.error('generatePlan error:', err);
+      console.error('generatePlan error:', err.message || err);
       if (err.response?.status === 429) {
         toast.error('Monthly usage limit reached. Your credits reset next month.');
         setUsageBlocked(true);
