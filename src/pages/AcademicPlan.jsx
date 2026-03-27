@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle } from "lucide-react";
+import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -254,6 +254,38 @@ export default function AcademicPlan() {
         </div>
       )}
 
+      {/* School Resources */}
+      {plan?.school_info && (plan.school_info.school_website || plan.school_info.catalog_url) && (
+        <div className="mb-6 rounded-2xl border border-border bg-gradient-to-r from-primary/5 to-secondary/5 p-4 flex items-start gap-4">
+          <School className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-semibold text-foreground">{plan.school_info.school_name}</p>
+            <div className="flex flex-wrap gap-3 text-sm">
+              {plan.school_info.school_website && (
+                <a
+                  href={plan.school_info.school_website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                >
+                  School Website →
+                </a>
+              )}
+              {plan.school_info.catalog_url && (
+                <a
+                  href={plan.school_info.catalog_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-secondary hover:underline font-medium"
+                >
+                  Course Catalog →
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -262,39 +294,10 @@ export default function AcademicPlan() {
               Academic Roadmap
             </h1>
             <p className="text-muted-foreground mt-1">
-              {profile?.school_name ? `${profile.school_name} · ` : ""}
-              Grade {startGrade} → College
+              {profile?.school_name ? `${profile.school_name} · ` : ""}Grade {startGrade} → College
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {plan && tracks.length > 0 && (
-              <Button
-                onClick={() => generatePlan(true)}
-                disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
-                variant="outline"
-                className="gap-2"
-              >
-                {generatingTrackIndex !== null ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
-                ) : (
-                  <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
-                )}
-              </Button>
-            )}
-            <Button
-              onClick={() => generatePlan(false)}
-              disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
-            >
-              {generatingTrackIndex !== null ? (
-               <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> {plan && tracks.length > 0 ? "Regenerate Plan" : "Generate My Plan"}</>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {(!plan || tracks.length === 0) && generatingTrackIndex === null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
