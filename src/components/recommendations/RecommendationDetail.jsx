@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Star, ExternalLink } from "lucide-react";
+import { X, Star, ExternalLink, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -13,6 +13,16 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
   const [status, setStatus] = useState(recommendation.status || "New");
   const [rating, setRating] = useState(recommendation.rating || 0);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm("Remove this recommendation?")) return;
+    setDeleting(true);
+    await base44.entities.Recommendation.delete(recommendation.id);
+    toast.success("Recommendation removed");
+    onUpdated?.();
+    onClose();
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -34,9 +44,14 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
               <Badge variant="secondary" className="mb-2">{recommendation.type}</Badge>
               <h2 className="font-heading text-xl font-bold text-foreground">{recommendation.title}</h2>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors">
+            <div className="flex items-center gap-1">
+              <button onClick={handleDelete} disabled={deleting} className="p-2 hover:bg-destructive/10 text-destructive rounded-xl transition-colors" title="Remove">
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors">
               <X className="w-5 h-5" />
-            </button>
+              </button>
+            </div>
           </div>
 
           <p className="text-muted-foreground text-sm leading-relaxed">{recommendation.description}</p>
