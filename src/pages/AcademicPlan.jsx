@@ -298,6 +298,34 @@ export default function AcademicPlan() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {plan && tracks.length > 0 && (
+              <Button
+                onClick={() => generatePlan(true)}
+                disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
+                variant="outline"
+                className="gap-2"
+              >
+                {generatingTrackIndex !== null ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4" /> Adapt to My Progress</>
+                )}
+              </Button>
+            )}
+            <Button
+              onClick={() => generatePlan(false)}
+              disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+            >
+              {generatingTrackIndex !== null ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Generating Plan...</>
+              ) : (
+                <><Sparkles className="w-4 h-4" /> {plan && tracks.length > 0 ? "Regenerate Plan" : "Generate My Plan"}</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {(!plan || tracks.length === 0) && generatingTrackIndex === null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
