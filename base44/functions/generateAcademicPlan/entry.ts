@@ -251,6 +251,7 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
 
     const schoolName = profile.middle_school_name || profile.high_school_name || profile.school_name || 'Unknown School';
     const locationStr = [profile.zipcode, profile.city].filter(Boolean).join(' ');
+    
     let schoolResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Search the web for the official course catalog / Program of Studies for "${schoolName}" ${locationStr}. Look for links like "program of studies", "course catalog", or "course guide" on the school's official website or district website. Once you find the catalog document (PDF, Google Doc, or HTML page), READ IT THOROUGHLY and extract EVERY course listed. For EACH course extract: name (exact as listed), credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area (English/Math/Science/Social Studies/World Language/Arts/PE/Elective/CTE/Computer Science/Performing Arts/Visual Arts), grade_levels (array of grade numbers, e.g. [9,10] or [11,12]), required_or_elective, prerequisites. Separate courses into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract: school_website URL, catalog_url (direct link to the catalog doc), graduation_requirements (with total_credits, english_credits, math_credits, science_credits, social_studies_credits, elective_credits), enrollment_process. It is CRITICAL to extract as many real courses as possible from the actual document — aim for 50+ courses for a comprehensive high school.`,
       add_context_from_internet: true,
@@ -272,11 +273,18 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
       console.error('School catalog fetch failed with Gemini:', err.message);
       console.log('Retrying with Claude...');
       return await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Generate a comprehensive typical US public school course catalog for grades 7-12 for a school named "${schoolName}". Include all standard subject areas: English/Language Arts, Math (Pre-Algebra through Calculus), Science (Life Science, Earth Science, Biology, Chemistry, Physics), Social Studies (World History, US History, Government, Economics), World Languages (Spanish, French levels 1-4), Arts (Art, Music, Drama), PE/Health, Computer Science, and electives. For each course include: name, credits (0.5 or 1.0), level (Standard/Honors/AP), subject_area, grade_levels (array of grade numbers), required_or_elective, prerequisites. Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Aim for 30+ courses total.`,
+        prompt: `Search the web for the official course catalog / Program of Studies for "${schoolName}" ${locationStr}. Extract EVERY course with: name (exact), credits, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area, grade_levels (array), required_or_elective, prerequisites. Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Also extract: school_website, catalog_url, graduation_requirements, enrollment_process.`,
+        add_context_from_internet: true,
         model: 'claude_sonnet_4_6',
         response_json_schema: {
           type: 'object',
           properties: {
+            school_name: { type: 'string' },
+            school_website: { type: 'string' },
+            catalog_url: { type: 'string' },
+            district_name: { type: 'string' },
+            graduation_requirements: { type: 'object' },
+            enrollment_process: { type: 'object' },
             middle_courses: courseSchema,
             high_courses: courseSchema
           }
@@ -290,7 +298,7 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
     let middleCourses = schoolResult.middle_courses || [];
     let highCourses = schoolResult.high_courses || [];
 
-    // Fallback: if catalog search returned no courses, generate generic ones
+    // If both Gemini and Claude returned no courses, generate generic ones
     if (middleCourses.length === 0 && highCourses.length === 0) {
       console.log(`No courses found for ${schoolName} — generating generic US school course list as fallback`);
       const fallback = await base44.asServiceRole.integrations.Core.InvokeLLM({
