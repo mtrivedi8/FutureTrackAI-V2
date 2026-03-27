@@ -37,7 +37,7 @@ For each recommendation:
 
 Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    let result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       model: 'gpt_5_mini',
       response_json_schema: {
@@ -61,6 +61,35 @@ Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
         },
       },
     });
+
+    if (!result?.recommendations?.length) {
+      console.log('gpt_5_mini returned no data, falling back to claude_sonnet_4_6');
+      result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt,
+        model: 'claude_sonnet_4_6',
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            recommendations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['Career Path', 'Skill', 'Course', 'Activity', 'Project'] },
+                  title: { type: 'string' },
+                  description: { type: 'string' },
+                  why_recommended: { type: 'string' },
+                  difficulty_level: { type: 'string', enum: ['Beginner', 'Intermediate', 'Advanced'] },
+                  estimated_duration: { type: 'string' },
+                  resources: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
     console.log('LLM raw result:', JSON.stringify(result).slice(0, 500));
 
     const recs = result.recommendations || [];
