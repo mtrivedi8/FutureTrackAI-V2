@@ -270,12 +270,34 @@ async function runGeneration(base44, profile, journey, existingSchoolWebsite = n
       }
     }).catch(err => { console.error('School catalog fetch failed:', err.message); return { middle_courses: [], high_courses: [] }; });
     
+    let middleCourses = schoolResult.middle_courses || [];
+    let highCourses = schoolResult.high_courses || [];
+
+    // Fallback: if catalog search returned no courses, generate generic ones
+    if (middleCourses.length === 0 && highCourses.length === 0) {
+      console.log(`No courses found for ${schoolName} — generating generic US school course list as fallback`);
+      const fallback = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: `Generate a comprehensive typical US public school course catalog for grades 7-12. Include all standard subject areas: English/Language Arts, Math (Pre-Algebra through Calculus), Science (Life Science, Earth Science, Biology, Chemistry, Physics), Social Studies (World History, US History, Government, Economics), World Languages (Spanish, French levels 1-4), Arts (Art, Music, Drama), PE/Health, Computer Science, and electives. For each course include: name, credits (0.5 or 1.0), level (Standard/Honors/AP), subject_area, grade_levels (array of grade numbers), required_or_elective, prerequisites. Separate into middle_courses (grades 7-8) and high_courses (grades 9-12). Aim for 30+ courses total.`,
+        model: 'gpt_5_mini',
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            middle_courses: courseSchema,
+            high_courses: courseSchema
+          }
+        }
+      }).catch(err => { console.error('Generic course fallback failed:', err.message); return { middle_courses: [], high_courses: [] }; });
+      middleCourses = fallback.middle_courses || [];
+      highCourses = fallback.high_courses || [];
+      console.log(`Fallback generated ${middleCourses.length} middle + ${highCourses.length} high school courses`);
+    }
+
     const schoolMiddleResult = { 
       ...schoolResult,
-      courses: schoolResult.middle_courses || []
+      courses: middleCourses
     };
     const schoolHighResult = {
-      courses: schoolResult.high_courses || []
+      courses: highCourses
     };
 
     // Save to cache for future use
