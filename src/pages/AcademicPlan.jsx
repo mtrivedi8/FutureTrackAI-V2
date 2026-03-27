@@ -104,7 +104,7 @@ export default function AcademicPlan() {
       const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
       let generatingPlanId = null;
       if (existingForMark[0]) {
-        await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: trackIndex !== null });
+        await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: true });
         generatingPlanId = existingForMark[0].id;
       } else {
         const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
