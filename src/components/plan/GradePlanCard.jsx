@@ -109,29 +109,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       </div>
 
-      {/* Data Sources Footer */}
-      {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
-        <div className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2.5 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted-foreground font-medium flex items-center gap-1">
-            <Database className="w-3.5 h-3.5" /> Data Sources:
-          </span>
-          {schoolInfo.school_website && (
-            <a href={schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> School Website
-            </a>
-          )}
-          {schoolInfo.catalog_url && (
-            <a href={schoolInfo.catalog_url} target="_blank" rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> Course Catalog
-            </a>
-          )}
-          {schoolInfo.courses_found > 0 && (
-            <span className="text-muted-foreground">{schoolInfo.courses_found} courses found in catalog</span>
-          )}
-        </div>
-      )}
+
 
       {/* Graduation Requirements */}
       {schoolInfo?.graduation_requirements && Object.values(schoolInfo.graduation_requirements).some(Boolean) && (
@@ -216,12 +194,28 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         const subjects = Object.keys(bySubject).sort();
         return (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
                 <BookOpen className="w-4 h-4" />
               </div>
               <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
-              <span className="text-xs text-muted-foreground ml-1">📚 From course catalog</span>
+              <span className="text-xs text-muted-foreground">📚 From course catalog</span>
+              {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
+                <div className="flex items-center gap-2 text-xs ml-auto">
+                  {schoolInfo.school_website && (
+                    <a href={schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3" /> School Website
+                    </a>
+                  )}
+                  {schoolInfo.catalog_url && (
+                    <a href={schoolInfo.catalog_url} target="_blank" rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3" /> Course Catalog
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             {subjects.map(subj => (
               <div key={subj} className="space-y-2">
