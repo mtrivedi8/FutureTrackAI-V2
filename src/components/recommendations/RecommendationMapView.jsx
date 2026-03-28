@@ -59,7 +59,7 @@ function TrackTree({ track, theme, recommendations, currentGrade, onNodeTap, sel
         </div>
       </div>
 
-      <div className="overflow-x-auto pb-1">
+      <div className="pb-1">
         <div className="flex items-center min-w-max gap-0">
           <div className="w-4 h-0.5 opacity-30" style={{ backgroundColor: theme.line }} />
 
