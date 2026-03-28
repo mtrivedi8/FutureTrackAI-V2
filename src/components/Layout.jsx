@@ -7,10 +7,10 @@ const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/recommendations", icon: Compass, label: "Explore" },
   { path: "/plan", icon: GraduationCap, label: "My Plan" },
+  { path: "/path-demo", icon: Map, label: "Path Demo 🆕" },
   { path: "/progress", icon: TrendingUp, label: "Journey" },
   { path: null, icon: BarChart2, label: "Track Progress" },
   { path: "/application-prep", icon: Rocket, label: "Application Prep" },
-  { path: "/path-demo", icon: Map, label: "Path Demo 🆕" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
