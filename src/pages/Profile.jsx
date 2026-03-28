@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
@@ -22,6 +23,23 @@ const STRENGTHS = [
   "Analytical Thinking", "Empathy", "Organization", "Public Speaking",
   "Adaptability", "Persistence", "Curiosity"
 ];
+
+const addToList = (field, value, setter, form, setForm) => {
+  if (value.trim()) {
+    setForm(p => ({
+      ...p,
+      [field]: [...(p[field] || []), value]
+    }));
+    setter("");
+  }
+};
+
+const removeFromList = (field, index, form, setForm) => {
+  setForm(p => ({
+    ...p,
+    [field]: p[field].filter((_, i) => i !== index)
+  }));
+};
 
 const AVATARS = ["🚀", "🌟", "🎨", "🔬", "🎵", "⚡", "🌍", "💡", "🎮", "🦋", "🔥", "🌈"];
 
@@ -102,7 +120,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { id, created_date, updated_date, created_by, ...data } = form;
+    const { id, created_date, updated_date, created_by, goalInput, careerInput, ...data } = form;
     await base44.entities.TeenProfile.update(profile.id, data);
     setProfile({ ...profile, ...data });
     setEditing(false);
@@ -339,14 +357,90 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
       {/* Goals & Dreams */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-3">
         <h2 className="font-heading font-semibold text-lg">Goals & Dream Careers</h2>
-        <div className="flex flex-wrap gap-2">
-          {(profile?.goals || []).map(g => (
-            <Badge key={g} variant="outline">{g}</Badge>
-          ))}
-          {(profile?.dream_careers || []).map(c => (
-            <Badge key={c} className="bg-accent/10 text-accent border-accent/20">{c}</Badge>
-          ))}
-        </div>
+        {editing ? (
+          <div className="space-y-4">
+            {/* Goals */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Your Goals</label>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  id="goal-input"
+                  placeholder="e.g., Get into Good College..."
+                  value={form.goalInput || ""}
+                  onChange={e => setForm(p => ({ ...p, goalInput: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && addToList("goals", form.goalInput || "", () => {}, form, setForm)}
+                  className="h-10"
+                />
+                <Button
+                  onClick={() => addToList("goals", form.goalInput || "", () => {}, form, setForm)}
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0"
+                >
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(form.goals || []).map((g, i) => (
+                  <div key={i} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
+                    {g}
+                    <button
+                      onClick={() => removeFromList("goals", i, form, setForm)}
+                      className="hover:text-destructive transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dream Careers */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Dream Careers</label>
+              <div className="flex gap-2 mb-2">
+                <Input
+                  id="career-input"
+                  placeholder="e.g., Software Engineer, Doctor..."
+                  value={form.careerInput || ""}
+                  onChange={e => setForm(p => ({ ...p, careerInput: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && addToList("dream_careers", form.careerInput || "", () => {}, form, setForm)}
+                  className="h-10"
+                />
+                <Button
+                  onClick={() => addToList("dream_careers", form.careerInput || "", () => {}, form, setForm)}
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0"
+                >
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(form.dream_careers || []).map((c, i) => (
+                  <div key={i} className="px-3 py-1.5 bg-accent bg-opacity-10 text-accent rounded-lg text-sm flex items-center gap-2">
+                    {c}
+                    <button
+                      onClick={() => removeFromList("dream_careers", i, form, setForm)}
+                      className="hover:text-destructive transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(profile?.goals || []).map(g => (
+              <Badge key={g} variant="outline">{g}</Badge>
+            ))}
+            {(profile?.dream_careers || []).map(c => (
+              <Badge key={c} className="bg-accent/10 text-accent border-accent/20">{c}</Badge>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Learning Style */}
