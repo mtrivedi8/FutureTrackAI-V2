@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Loader2, School, MapPin, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
@@ -12,8 +12,18 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   const [showHighList, setShowHighList] = useState(false);
   const [zipError, setZipError] = useState(null);
   const [debugSteps, setDebugSteps] = useState([]);
+  const [debugMode, setDebugMode] = useState(false);
   const [docStatus, setDocStatus] = useState(null); // null | 'checking' | 'found' | 'harvesting' | 'harvested' | 'not_found'
   const debounceRef = useRef(null);
+
+  // Load debug mode setting on mount
+  useEffect(() => {
+    const loadDebugMode = async () => {
+      const settings = await base44.entities.AppSettings.filter({ key: 'debug_mode' });
+      setDebugMode(settings[0]?.value === 'true');
+    };
+    loadDebugMode().catch(() => setDebugMode(false));
+  }, []);
 
   const addDebugStep = (step) => {
     console.log(step);
@@ -138,7 +148,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
             />
           </div>
           {zipError && <p className="text-xs text-destructive mt-1 font-medium">{zipError}</p>}
-          {debugSteps.length > 0 && (
+          {debugMode && debugSteps.length > 0 && (
             <div className="mt-2 text-xs bg-muted/60 rounded-lg p-2.5 space-y-0.5 max-h-48 overflow-y-auto border border-border">
               {debugSteps.map((step, i) => (
                 <div key={i} className="text-muted-foreground font-mono leading-snug">{step}</div>
@@ -235,7 +245,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
       )}
 
       {/* Curriculum doc status indicator */}
-      {docStatus && (
+      {debugMode && docStatus && (
         <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${
           docStatus === 'found' ? 'bg-green-50 border-green-200 text-green-700' :
           docStatus === 'harvested' ? 'bg-green-50 border-green-200 text-green-700' :
