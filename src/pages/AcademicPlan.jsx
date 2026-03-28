@@ -480,44 +480,66 @@ export default function AcademicPlan() {
 
             {/* Mobile Carousel */}
             <div className="sm:hidden space-y-3">
-              <div 
-                ref={carouselRef}
-                className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                onScroll={(e) => {
-                  const el = e.target;
-                  const itemWidth = window.innerWidth * 0.85 + 12;
-                  setActiveCarouselIndex(Math.max(0, Math.round(el.scrollLeft / itemWidth)));
-                }}
-              >
-                <div className="flex gap-3 pb-2">
-                  {tracks.map((track, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-[85vw] max-w-sm">
-                      <div className="relative">
-                        <button
-                          onClick={() => handleTrackSelect(idx)}
-                          className={cn(
-                            "w-full text-left p-4 rounded-2xl border transition-all duration-200",
-                            selectedTrack === idx
-                              ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                              : "border-border bg-card hover:border-primary/40"
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+                    }
+                  }}
+                  className="h-10 w-10 rounded-full border border-border bg-card hover:bg-muted flex items-center justify-center shrink-0"
+                >
+                  <ChevronRight className="w-5 h-5 rotate-180" />
+                </button>
+                <div 
+                  ref={carouselRef}
+                  className="overflow-x-auto flex-1 snap-x snap-mandatory"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  onScroll={(e) => {
+                    const el = e.target;
+                    const itemWidth = window.innerWidth * 0.7 + 12;
+                    setActiveCarouselIndex(Math.max(0, Math.round(el.scrollLeft / itemWidth)));
+                  }}
+                >
+                  <div className="flex gap-3 pb-2">
+                    {tracks.map((track, idx) => (
+                      <div key={idx} className="flex-shrink-0 w-[70vw]">
+                        <div className="relative">
+                          <button
+                            onClick={() => handleTrackSelect(idx)}
+                            className={cn(
+                              "w-full text-left p-4 rounded-2xl border transition-all duration-200",
+                              selectedTrack === idx
+                                ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                                : "border-border bg-card hover:border-primary/40"
+                            )}
+                          >
+                            <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{track.description}</p>
+                            {selectedTrack === idx && (
+                              <div className="mt-2 text-xs text-primary font-medium">Active Track ✓</div>
+                            )}
+                          </button>
+                          {generatingTrackIndex === idx && (
+                            <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
+                              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                            </div>
                           )}
-                        >
-                          <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
-                          {selectedTrack === idx && (
-                            <div className="mt-2 text-xs text-primary font-medium">Active Track ✓</div>
-                          )}
-                        </button>
-                        {generatingTrackIndex === idx && (
-                          <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
-                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                          </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
+                <button
+                  onClick={() => {
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+                    }
+                  }}
+                  className="h-10 w-10 rounded-full border border-border bg-card hover:bg-muted flex items-center justify-center shrink-0"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
               <div className="flex items-center justify-center gap-2 py-2">
                 {tracks.map((_, idx) => (
