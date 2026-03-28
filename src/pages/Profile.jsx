@@ -364,28 +364,6 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
         </motion.div>
       )}
 
-      {/* Refresh Recommendations */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <div className="rounded-2xl border border-border p-5 text-center space-y-3">
-          <Sparkles className="w-6 h-6 text-primary mx-auto" />
-          <h3 className="font-heading font-semibold">Refresh Your Recommendations</h3>
-          <p className="text-sm text-muted-foreground">
-            Get new suggestions based on your latest progress and evolving interests
-          </p>
-          <Button
-            onClick={refreshRecommendations}
-            disabled={refreshing}
-            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
-          >
-            {refreshing ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-            ) : (
-              <><Sparkles className="w-4 h-4" /> Get Refined Suggestions</>
-            )}
-          </Button>
-        </div>
-      </motion.div>
-
       {/* Admin: Payment Toggle */}
       {(user?.email === 'meghnat@gmail.com' || user?.email === 'meghna.trivedi@gmail.com') && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
