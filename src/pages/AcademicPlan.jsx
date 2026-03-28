@@ -412,12 +412,12 @@ export default function AcademicPlan() {
                       <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
                       <p className={`text-xs text-muted-foreground mt-1 ${expandedTrack === idx ? '' : 'line-clamp-2'}`}>{track.description}</p>
                       {track.description && track.description.length > 80 && (
-                        <button
+                        <span
                           onClick={e => { e.stopPropagation(); setExpandedTrack(expandedTrack === idx ? null : idx); }}
-                          className="text-[10px] text-primary font-medium mt-1 hover:underline"
+                          className="text-[10px] text-primary font-medium mt-1 hover:underline cursor-pointer block"
                         >
                           {expandedTrack === idx ? 'See less' : 'See more'}
-                        </button>
+                        </span>
                       )}
                       {selectedTrack === idx && (
                         <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
