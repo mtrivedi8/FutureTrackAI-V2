@@ -348,7 +348,7 @@ export default function AcademicPlan() {
                 onClick={() => generatePlan(true)}
                 disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
                 variant="outline"
-                className="gap-2"
+                className="gap-2 hidden sm:flex"
               >
                 {generatingTrackIndex !== null ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Updating...</>
