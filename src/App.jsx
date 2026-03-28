@@ -15,7 +15,7 @@ import AcademicPlan from './pages/AcademicPlan';
 import Membership from './pages/Membership';
 import ThankYou from './pages/ThankYou';
 import ApplicationPrep from './pages/ApplicationPrep';
-import RecommendationPathDemo from './pages/RecommendationPathDemo';
+
 import RoadmapDemo from './pages/RoadmapDemo';
 
 const AuthenticatedApp = () => {
@@ -54,7 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/membership" element={<Membership />} />
         <Route path="/application-prep" element={<ApplicationPrep />} />
         <Route path="/thank-you" element={<ThankYou />} />
-        <Route path="/path-demo" element={<RecommendationPathDemo />} />
+
         <Route path="/roadmap" element={<RoadmapDemo />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
