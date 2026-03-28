@@ -312,11 +312,19 @@ export default function ExportPDFButton({ profile }) {
     <Button
       onClick={handleExport}
       disabled={loading}
-      variant="outline"
-      className="gap-2"
+      className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-      {loading ? "Exporting..." : "Export PDF"}
+      {loading ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Exporting...
+        </>
+      ) : (
+        <>
+          <Download className="w-4 h-4" />
+          Export PDF
+        </>
+      )}
     </Button>
   );
 }
