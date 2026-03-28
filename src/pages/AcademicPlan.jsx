@@ -225,18 +225,13 @@ export default function AcademicPlan() {
     );
   }
 
-  // If load failed but we have a cached plan, still show it (don't flash empty state)
-  if (loadError && !plan) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-6">
-        <p className="text-muted-foreground">Could not load your plan. Check your connection.</p>
-        <Button onClick={loadData} variant="outline">Retry</Button>
-      </div>
-    );
-  }
-
   const currentGrade = profile?.current_grade || 9;
   const startGrade = currentGrade;
+  const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
+
+  const tracks = (plan?.career_tracks || []).filter(t => t && t.name);
+  const currentTrack = tracks[selectedTrack];
+  const gradeData = currentTrack?.grades?.find(g => Number(g.grade) === Number(selectedGrade)) || (currentTrack?.grades?.[0] || null);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
