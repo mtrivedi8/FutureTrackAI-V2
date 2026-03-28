@@ -23,7 +23,7 @@ function getDifficultyForGrade(grade) {
 
 function getRecsForGrade(recs, grade) {
   const difficulty = getDifficultyForGrade(grade);
-  return recs.filter(r => r.status !== "Skipped" && r.difficulty_level === difficulty).slice(0, 5);
+  return recs.filter(r => r.status !== "Skipped" && r.difficulty_level === difficulty);
 }
 
 function Section({ title, color, children }) {
@@ -228,28 +228,7 @@ export default function RecommendationMapView({ tracks, recommendations, current
                   </div>
                 )}
 
-                {selected.g?.school_courses?.length > 0 && (
-                  <Section title="📚 School Courses" color="text-blue-300">
-                    {selected.g.school_courses.map((c, i) => (
-                      <Chip key={i} label={typeof c === "string" ? c : `${c.name}${c.level && c.level !== "Standard" ? " · " + c.level : ""}`} color="bg-blue-900/40 text-blue-300 border-blue-500/20" />
-                    ))}
-                  </Section>
-                )}
-                {selected.g?.clubs?.length > 0 && (
-                  <Section title="🏆 Clubs" color="text-emerald-300">
-                    {selected.g.clubs.map((c, i) => <Chip key={i} label={c} color="bg-emerald-900/40 text-emerald-300 border-emerald-500/20" />)}
-                  </Section>
-                )}
-                {selected.g?.extracurriculars?.length > 0 && (
-                  <Section title="⚡ Extracurriculars" color="text-amber-300">
-                    {selected.g.extracurriculars.map((c, i) => <Chip key={i} label={c} color="bg-amber-900/40 text-amber-300 border-amber-500/20" />)}
-                  </Section>
-                )}
-                {selected.g?.summer_activities?.length > 0 && (
-                  <Section title="☀️ Summer" color="text-orange-300">
-                    {selected.g.summer_activities.map((c, i) => <Chip key={i} label={c} color="bg-orange-900/40 text-orange-300 border-orange-500/20" />)}
-                  </Section>
-                )}
+
 
                 {!selected.gradeRecs?.length && !selected.g?.school_courses?.length && (
                   <div className="text-center py-4">
