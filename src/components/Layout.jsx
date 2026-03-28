@@ -8,7 +8,7 @@ const navItems = [
   { path: "/recommendations", icon: Compass, label: "Explore" },
   { path: "/plan", icon: GraduationCap, label: "My Plan" },
   { path: "/path-demo", icon: Map, label: "Path Demo" },
-  { path: "/roadmap", icon: GitBranch, label: "Roadmap" }, 🆕" }, 🆕" },
+  { path: "/roadmap", icon: GitBranch, label: "Roadmap" },
   { path: "/progress", icon: TrendingUp, label: "Journey" },
   { path: null, icon: BarChart2, label: "Track Progress" },
   { path: "/application-prep", icon: Rocket, label: "Application Prep" },
