@@ -157,7 +157,7 @@ export default function Recommendations() {
               view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
             )}
           >
-            <GitBranch className="w-4 h-4" /> Roadmap Map
+            <GitBranch className="w-4 h-4" /> Map
           </button>
         </div>
       </div>
