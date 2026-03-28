@@ -96,7 +96,7 @@ export default function Dashboard() {
           )}
         </div>
         {recentRecs.length > 0 ? (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             {recentRecs.map(rec => (
               <RecommendationCard key={rec.id} recommendation={rec} onClick={() => navigate(`/recommendations?id=${rec.id}`)} />
             ))}
