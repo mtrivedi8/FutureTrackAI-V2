@@ -480,17 +480,7 @@ export default function AcademicPlan() {
 
             {/* Mobile Carousel */}
             <div className="sm:hidden space-y-3">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (carouselRef.current) {
-                      carouselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-                    }
-                  }}
-                  className="h-10 w-10 rounded-full border border-border bg-card hover:bg-muted flex items-center justify-center shrink-0"
-                >
-                  <ChevronRight className="w-5 h-5 rotate-180" />
-                </button>
+              <div className="relative">
                 <div 
                   ref={carouselRef}
                   className="overflow-x-auto flex-1 snap-x snap-mandatory"
@@ -530,13 +520,24 @@ export default function AcademicPlan() {
                     ))}
                   </div>
                 </div>
+                {/* Overlay arrow buttons */}
+                <button
+                  onClick={() => {
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+                    }
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border border-border bg-card/95 hover:bg-muted flex items-center justify-center z-20"
+                >
+                  <ChevronRight className="w-5 h-5 rotate-180" />
+                </button>
                 <button
                   onClick={() => {
                     if (carouselRef.current) {
                       carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
                     }
                   }}
-                  className="h-10 w-10 rounded-full border border-border bg-card hover:bg-muted flex items-center justify-center shrink-0"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border border-border bg-card/95 hover:bg-muted flex items-center justify-center z-20"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -556,16 +557,6 @@ export default function AcademicPlan() {
 
           {currentTrack && (
             <>
-              {/* College Goal Banner */}
-              {currentTrack.college_goals && (
-                <div className="rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 p-4 flex items-start gap-3">
-                  <Trophy className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-primary mb-0.5">College and Career Goal</p>
-                    <p className="text-sm text-foreground">{currentTrack.college_goals}</p>
-                  </div>
-                </div>
-              )}
 
               {/* Grade Timeline */}
               <div>
