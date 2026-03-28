@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
-import { Loader2, School, MapPin, ChevronDown } from "lucide-react";
+import { Loader2, School, MapPin, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSchoolName, onZipChange, onMiddleSchoolChange, onHighSchoolChange }) {
@@ -12,6 +12,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   const [showHighList, setShowHighList] = useState(false);
   const [zipError, setZipError] = useState(null);
   const [debugSteps, setDebugSteps] = useState([]);
+  const [docStatus, setDocStatus] = useState(null); // null | 'checking' | 'found' | 'harvesting' | 'harvested' | 'not_found'
   const debounceRef = useRef(null);
 
   const addDebugStep = (step) => {
@@ -78,14 +79,41 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     }
   };
 
+  const checkAndHarvestDocs = async (schoolName, zip, city) => {
+    setDocStatus('checking');
+    try {
+      const cached = await base44.entities.SchoolDocumentCache.filter({ school_name: schoolName, zipcode: zip });
+      const cache = cached[0];
+      const hasData = cache && cache.document_urls && Object.keys(cache.document_urls).length > 0;
+      const stillFresh = hasData && cache.expires_at && new Date(cache.expires_at) > new Date();
+
+      if (stillFresh) {
+        setDocStatus('found');
+        return;
+      }
+
+      // Not cached — trigger background harvest (fire-and-forget)
+      setDocStatus('harvesting');
+      base44.functions.invoke('harvestSchoolDocuments', { school_name: schoolName, zipcode: zip, city })
+        .then(() => setDocStatus('harvested'))
+        .catch(() => setDocStatus('not_found'));
+    } catch {
+      setDocStatus('not_found');
+    }
+  };
+
   const handleMiddleSelect = (school) => {
     onMiddleSchoolChange(school.school_name);
     setShowMiddleList(false);
+    setDocStatus(null);
+    checkAndHarvestDocs(school.school_name, zipcode, school.city);
   };
 
   const handleHighSelect = (school) => {
     onHighSchoolChange(school.school_name);
     setShowHighList(false);
+    setDocStatus(null);
+    checkAndHarvestDocs(school.school_name, zipcode, school.city);
   };
 
   // Determine which schools to show based on grade
@@ -203,6 +231,28 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Curriculum doc status indicator */}
+      {docStatus && (
+        <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${
+          docStatus === 'found' ? 'bg-green-50 border-green-200 text-green-700' :
+          docStatus === 'harvested' ? 'bg-green-50 border-green-200 text-green-700' :
+          docStatus === 'harvesting' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+          docStatus === 'checking' ? 'bg-muted border-border text-muted-foreground' :
+          'bg-orange-50 border-orange-200 text-orange-700'
+        }`}>
+          {(docStatus === 'checking' || docStatus === 'harvesting') && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
+          {(docStatus === 'found' || docStatus === 'harvested') && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+          {docStatus === 'not_found' && <AlertCircle className="w-3 h-3 shrink-0" />}
+          <span>
+            {docStatus === 'checking' && 'Checking for curriculum documents...'}
+            {docStatus === 'found' && 'Curriculum documents found in cache ✓'}
+            {docStatus === 'harvesting' && 'Fetching curriculum documents in background...'}
+            {docStatus === 'harvested' && 'Curriculum documents fetched and cached ✓'}
+            {docStatus === 'not_found' && 'No curriculum documents found for this school'}
+          </span>
         </div>
       )}
 
