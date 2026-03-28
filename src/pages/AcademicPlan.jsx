@@ -14,8 +14,15 @@ import GradePlanCard from "@/components/plan/GradePlanCard";
 export default function AcademicPlan() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [plan, setPlan] = useState(null);
+  const [plan, setPlan] = useState(() => {
+    // Pre-populate from localStorage so mobile remounts don't flash empty state
+    try {
+      const cached = localStorage.getItem('academic_plan_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [generatingTrackIndex, setGeneratingTrackIndex] = useState(null);
   const [selectedTrack, setSelectedTrack] = useState(0);
   const [selectedGrade, setSelectedGrade] = useState(null);
@@ -30,9 +37,18 @@ export default function AcademicPlan() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
+  const setPlanWithCache = (p) => {
+    setPlan(p);
+    try {
+      if (p) localStorage.setItem('academic_plan_cache', JSON.stringify(p));
+      else localStorage.removeItem('academic_plan_cache');
+    } catch {}
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const user = await base44.auth.me();
     const allSettings = await base44.entities.AppSettings.filter({});
     const [profiles, plans, memberships, usageRecords] = await Promise.all([
@@ -52,7 +68,7 @@ export default function AcademicPlan() {
     setProfile(p);
     const existingPlan = plans[0];
     if (existingPlan) {
-      setPlan(existingPlan);
+      setPlanWithCache(existingPlan);
       setSelectedTrack(existingPlan.selected_track_index || 0);
       // If plan is still generating (user left the page), start polling
       if (existingPlan.is_generating) {
@@ -68,6 +84,7 @@ export default function AcademicPlan() {
     setLoading(false);
     } catch (err) {
       console.error('AcademicPlan loadData error:', err);
+      setLoadError(true);
       setLoading(false);
     }
   };
@@ -79,7 +96,7 @@ export default function AcademicPlan() {
       const p = plans[0];
       if (p && !p.is_generating && p.career_tracks?.length > 0) {
         clearInterval(pollingRef.current);
-        setPlan(p);
+        setPlanWithCache(p);
         setSelectedTrack(p.selected_track_index || 0);
         setGeneratingTrackIndex(null);
         toast.success(isFullPlan ? 'Your academic plan is ready! 🎓' : 'Track updated! 🎓');
@@ -202,19 +219,24 @@ export default function AcademicPlan() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+    );
+  }
+
+  // If load failed but we have a cached plan, still show it (don't flash empty state)
+  if (loadError && !plan) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-6">
+        <p className="text-muted-foreground">Could not load your plan. Check your connection.</p>
+        <Button onClick={loadData} variant="outline">Retry</Button>
       </div>
     );
   }
 
   const currentGrade = profile?.current_grade || 9;
   const startGrade = currentGrade;
-  const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
-
-  const tracks = (plan?.career_tracks || []).filter(t => t && t.name);
-  const currentTrack = tracks[selectedTrack];
-  const gradeData = currentTrack?.grades?.find(g => Number(g.grade) === Number(selectedGrade)) || (currentTrack?.grades?.[0] || null);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
