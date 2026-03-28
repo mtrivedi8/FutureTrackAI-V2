@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 import RecommendationDetail from "../components/recommendations/RecommendationDetail";
+import RecommendationMapView from "../components/recommendations/RecommendationMapView";
 import GenerateButton from "../components/dashboard/GenerateButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Compass, Lock } from "lucide-react";
+import { Compass, Lock, LayoutGrid, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const FILTERS = ["All", "New", "Exploring", "In Progress", "Completed", "Skipped"];
@@ -16,42 +17,44 @@ export default function Recommendations() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [tracks, setTracks] = useState([]);
+  const [currentGrade, setCurrentGrade] = useState(9);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("All");
+  const [view, setView] = useState("list"); // "list" | "map"
   const [loading, setLoading] = useState(true);
   const [hasMembership, setHasMembership] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const pollRef = useRef(null);
 
-  const handleNewRec = (freshRecs) => {
-    setRecommendations(freshRecs);
-  };
+  const handleNewRec = (freshRecs) => setRecommendations(freshRecs);
 
   const loadData = async (autoGenerate = false) => {
     const user = await base44.auth.me();
-    const [profiles, memberships, allSettings] = await Promise.all([
+    const [profiles, memberships, allSettings, plans] = await Promise.all([
       base44.entities.TeenProfile.filter({ user_email: user.email }),
       base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
       base44.entities.AppSettings.filter({}),
+      base44.entities.CareerPlan.filter({ user_email: user.email }),
     ]);
     setHasMembership(memberships.length > 0);
     const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
-    const isPaymentEnabled = paymentSetting ? paymentSetting.value === 'true' : false;
-    setPaymentEnabled(isPaymentEnabled);
+    setPaymentEnabled(paymentSetting ? paymentSetting.value === 'true' : false);
     const p = profiles[0] || null;
-    if (p) setProfile(p);
+    if (p) {
+      setProfile(p);
+      if (p.current_grade) setCurrentGrade(p.current_grade);
+    }
+    if (plans[0]?.career_tracks?.length > 0) setTracks(plans[0].career_tracks.filter(t => t?.name));
+
     const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
 
-    // Auto-generate on first visit if no recommendations exist
     if (autoGenerate && p && recs.length === 0) {
       setLoading(false);
       setIsSearching(true);
-      base44.functions.invoke('generateRecommendations', {
-        profile: p,
-        existingTitles: [],
-      }).catch(err => console.error('generateRecommendations invoke error:', err));
-      // Poll for new recs and show them as they arrive
+      base44.functions.invoke('generateRecommendations', { profile: p, existingTitles: [] })
+        .catch(err => console.error('generateRecommendations invoke error:', err));
       let lastCount = 0;
       let stableRounds = 0;
       if (pollRef.current) clearInterval(pollRef.current);
@@ -115,56 +118,84 @@ export default function Recommendations() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
-        {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
-          <GenerateButton
-            profile={profile}
-            existingRecs={recommendations}
-            disabled={isSearching}
-            onGenerated={() => { setIsSearching(false); loadData(); }}
-            onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
-          />
-        ) : (
-          <Button
-            onClick={() => navigate('/membership')}
-            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
-          >
-            <Lock className="w-4 h-4" /> Unlock More Suggestions
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+            <button
+              onClick={() => setView("list")}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                view === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> List
+            </button>
+            <button
+              onClick={() => setView("map")}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                view === "map" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <GitBranch className="w-3.5 h-3.5" /> Map
+            </button>
+          </div>
+
+          {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
+            <GenerateButton
+              profile={profile}
+              existingRecs={recommendations}
+              disabled={isSearching}
+              onGenerated={() => { setIsSearching(false); loadData(); }}
+              onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
+            />
+          ) : (
+            <Button
+              onClick={() => navigate('/membership')}
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+            >
+              <Lock className="w-4 h-4" /> Unlock More Suggestions
+            </Button>
+          )}
+        </div>
       </motion.div>
 
-      <Tabs value={filter} onValueChange={setFilter}>
-        <TabsList className="bg-muted/50 w-full sm:w-auto overflow-x-auto flex">
-          {FILTERS.map(f => (
-            <TabsTrigger key={f} value={f} className="text-xs">{f}</TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      {filtered.length > 0 ? (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {filtered.map((rec, i) => (
-            <motion.div
-              key={rec.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <RecommendationCard recommendation={rec} onClick={setSelected} onStatusChange={loadData} />
-            </motion.div>
-          ))}
-        </div>
+      {view === "map" ? (
+        <RecommendationMapView
+          tracks={tracks}
+          recommendations={recommendations}
+          currentGrade={currentGrade}
+        />
       ) : (
-        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-          <p className="text-muted-foreground">No {filter !== "All" ? filter.toLowerCase() : ""} recommendations yet</p>
-        </div>
-      )}
+        <>
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList className="bg-muted/50 w-full sm:w-auto overflow-x-auto flex">
+              {FILTERS.map(f => (
+                <TabsTrigger key={f} value={f} className="text-xs">{f}</TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
-      {isSearching && (
-        <div className="flex items-center justify-center gap-3 py-6 text-sm text-muted-foreground">
-          <div className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
-          <span>Still searching for more suggestions for you…</span>
-        </div>
+          {filtered.length > 0 ? (
+            <div className="grid sm:grid-cols-2 gap-3">
+              {filtered.map((rec, i) => (
+                <motion.div key={rec.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <RecommendationCard recommendation={rec} onClick={setSelected} onStatusChange={loadData} />
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+              <p className="text-muted-foreground">No {filter !== "All" ? filter.toLowerCase() : ""} recommendations yet</p>
+            </div>
+          )}
+
+          {isSearching && (
+            <div className="flex items-center justify-center gap-3 py-6 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+              <span>Still searching for more suggestions for you…</span>
+            </div>
+          )}
+        </>
       )}
 
       {selected && (
