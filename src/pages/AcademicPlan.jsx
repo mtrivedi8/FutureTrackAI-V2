@@ -349,8 +349,14 @@ export default function AcademicPlan() {
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
           </div>
-          <h2 className="font-heading text-xl font-bold">Building your roadmap</h2>
-          <p className="text-muted-foreground">Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a grade {startGrade}–12 plan for you</p>
+          <h2 className="font-heading text-xl font-bold">Generating your comprehensive plan</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Searching {profile?.school_name ? `${profile.school_name}'s course catalog` : 'your school'} and crafting a personalized grade {startGrade}–12 roadmap with career tracks, courses, and activities.
+          </p>
+          <div className="flex items-center gap-2 text-sm text-primary font-medium bg-primary/10 rounded-xl px-4 py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            This usually takes 2–3 minutes — please keep this page open
+          </div>
           <button
             onClick={async () => {
               if (pollingRef.current) clearInterval(pollingRef.current);
