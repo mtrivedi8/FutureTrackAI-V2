@@ -180,23 +180,23 @@ export default function Onboarding() {
         <div>
           <label className="text-sm font-medium mb-3 block">Choose your avatar</label>
           <div className="grid grid-cols-6 gap-3">
-            {AVATARS.map(emoji => {
-              const Icon = avatarIcons[emoji];
-              return (
-                <button
-                  key={emoji}
-                  onClick={() => setForm(p => ({ ...p, avatar_emoji: emoji }))}
-                  className={cn(
-                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 text-slate-700 dark:text-slate-300",
-                    form.avatar_emoji === emoji
-                      ? "bg-primary/15 ring-2 ring-primary scale-110"
-                      : "bg-muted hover:bg-muted/80"
-                  )}
-                >
-                  {Icon && <Icon size={28} />}
-                </button>
-              );
-            })}
+              {AVATARS.map(emoji => {
+                const Icon = avatarIcons[emoji];
+                return (
+                  <button
+                    key={emoji}
+                    onClick={() => setForm(p => ({ ...p, avatar_emoji: emoji }))}
+                    className={cn(
+                      "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 text-5xl shadow-sm hover:shadow-md",
+                      form.avatar_emoji === emoji
+                        ? "bg-gradient-to-br from-primary/20 to-primary/10 ring-2 ring-primary shadow-lg scale-110"
+                        : "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
           </div>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function Onboarding() {
     () => (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="font-heading text-2xl font-bold mb-2">Your superpowers 💪</h2>
+          <h2 className="font-heading text-2xl font-bold mb-2">Your superpowers <span className="text-3xl">💪</span></h2>
           <p className="text-muted-foreground">What are you naturally good at?</p>
         </div>
         <div className="flex flex-wrap gap-2 justify-center">
@@ -303,19 +303,19 @@ export default function Onboarding() {
               key={value}
               onClick={() => setForm(p => ({ ...p, preferred_learning_style: value }))}
               className={cn(
-                "w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200",
+                "w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 shadow-sm hover:shadow-md",
                 form.preferred_learning_style === value
-                  ? "bg-primary/10 ring-2 ring-primary"
-                  : "bg-muted hover:bg-muted/80"
-              )}
+                  ? "bg-gradient-to-r from-primary/20 to-primary/5 ring-2 ring-primary border border-primary/20 shadow-md"
+                  : "bg-white dark:bg-slate-800 border border-transparent hover:border-primary/20"
+              )
             >
-              <span className="text-3xl">{emoji}</span>
-              <div>
+              <span className="text-4xl flex-shrink-0">{emoji}</span>
+              <div className="flex-1">
                 <p className="font-medium text-foreground">{value}</p>
                 <p className="text-sm text-muted-foreground">{desc}</p>
               </div>
             </button>
-          ))}
+          ))
         </div>
       </div>
     ),
