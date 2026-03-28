@@ -49,6 +49,8 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
+  const [interestInput, setInterestInput] = useState("");
+  const [strengthInput, setStrengthInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -303,55 +305,123 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
       {/* Interests */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-3">
         <h2 className="font-heading font-semibold text-lg">Interests</h2>
-        <div className="flex flex-wrap gap-2">
-          {editing ? (
-            INTERESTS.map(i => (
-              <button
-                key={i}
-                onClick={() => toggleItem("interests", i)}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-sm font-medium transition-all",
-                  (form.interests || []).includes(i)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}
+        {editing ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add custom interest..."
+                value={interestInput}
+                onChange={e => setInterestInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addToList("interests", interestInput, setInterestInput, form, setForm)}
+                className="h-10"
+              />
+              <Button
+                onClick={() => addToList("interests", interestInput, setInterestInput, form, setForm)}
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
               >
-                {i}
-              </button>
-            ))
-          ) : (
-            (profile?.interests || []).map(i => (
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map(i => (
+                <button
+                  key={i}
+                  onClick={() => toggleItem("interests", i)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all",
+                    (form.interests || []).includes(i)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(form.interests || []).filter(i => !INTERESTS.includes(i)).map((i, idx) => (
+                <div key={idx} className="px-3 py-1.5 bg-primary bg-opacity-10 text-foreground rounded-lg text-sm flex items-center gap-2">
+                  {i}
+                  <button
+                    onClick={() => removeFromList("interests", form.interests.indexOf(i), form, setForm)}
+                    className="hover:text-destructive transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(profile?.interests || []).map(i => (
               <Badge key={i} variant="secondary" className="bg-primary/10 text-primary">{i}</Badge>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Strengths */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="space-y-3">
         <h2 className="font-heading font-semibold text-lg">Strengths</h2>
-        <div className="flex flex-wrap gap-2">
-          {editing ? (
-            STRENGTHS.map(s => (
-              <button
-                key={s}
-                onClick={() => toggleItem("strengths", s)}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-sm font-medium transition-all",
-                  (form.strengths || []).includes(s)
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}
+        {editing ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add custom strength..."
+                value={strengthInput}
+                onChange={e => setStrengthInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addToList("strengths", strengthInput, setStrengthInput, form, setForm)}
+                className="h-10"
+              />
+              <Button
+                onClick={() => addToList("strengths", strengthInput, setStrengthInput, form, setForm)}
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
               >
-                {s}
-              </button>
-            ))
-          ) : (
-            (profile?.strengths || []).map(s => (
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {STRENGTHS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => toggleItem("strengths", s)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all",
+                    (form.strengths || []).includes(s)
+                      ? "bg-secondary text-secondary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(form.strengths || []).filter(s => !STRENGTHS.includes(s)).map((s, idx) => (
+                <div key={idx} className="px-3 py-1.5 bg-secondary bg-opacity-10 text-foreground rounded-lg text-sm flex items-center gap-2">
+                  {s}
+                  <button
+                    onClick={() => removeFromList("strengths", form.strengths.indexOf(s), form, setForm)}
+                    className="hover:text-destructive transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(profile?.strengths || []).map(s => (
               <Badge key={s} variant="secondary" className="bg-secondary/10 text-secondary">{s}</Badge>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Goals & Dreams */}
