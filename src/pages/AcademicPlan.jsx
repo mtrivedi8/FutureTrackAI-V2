@@ -499,7 +499,7 @@ export default function AcademicPlan() {
             </div>
 
             {/* Mobile Carousel */}
-            <div className="sm:hidden space-y-3">
+            <div className="sm:hidden space-y-1">
               <div className="relative">
                 <div 
                   ref={carouselRef}
