@@ -76,11 +76,7 @@ export default function RoadmapDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-violet-950">
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
-        <h1 className="font-heading text-lg font-bold text-white">Career Roadmap</h1>
-        <p className="text-white/40 text-[10px]">Tap any grade node to see activities & suggestions</p>
-      </div>
+
 
       {/* You are here */}
       <div className="flex justify-center pt-4 pb-2 px-4">
