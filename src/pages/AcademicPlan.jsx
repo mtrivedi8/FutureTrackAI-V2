@@ -496,7 +496,5 @@ export default function AcademicPlan() {
         </div>
         )}
         </div>
-      );
-    }
-
-    export default AcademicPlan;
+        );
+}
