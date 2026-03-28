@@ -14,9 +14,8 @@ import Profile from './pages/Profile';
 import AcademicPlan from './pages/AcademicPlan';
 import Membership from './pages/Membership';
 import ThankYou from './pages/ThankYou';
-import ApplicationPrep from './pages/ApplicationPrep';
-
 import RoadmapDemo from './pages/RoadmapDemo';
+import CollegePath from './pages/CollegePath';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,9 +51,8 @@ const AuthenticatedApp = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/plan" element={<AcademicPlan />} />
         <Route path="/membership" element={<Membership />} />
-        <Route path="/application-prep" element={<ApplicationPrep />} />
         <Route path="/thank-you" element={<ThankYou />} />
-
+        <Route path="/college-path" element={<CollegePath />} />
         <Route path="/roadmap" element={<RoadmapDemo />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
