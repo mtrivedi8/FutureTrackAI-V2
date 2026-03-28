@@ -321,26 +321,25 @@ export default function AcademicPlan() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
             {/* View Toggle */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-muted-foreground">View:</span>
-              <div className="flex items-center rounded-full border-2 border-primary/30 bg-primary/5 p-1">
-                <button
-                  onClick={() => setView("list")}
-                  className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all",
-                    view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4" /> List
-                </button>
-                <button
-                  onClick={() => setView("map")}
-                  className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all",
-                    view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
-                  )}
-                >
-                  <GitBranch className="w-4 h-4" /> Map
-                </button>
-              </div>
+            <div className="flex items-center rounded-full border-2 border-primary/30 bg-primary/5 p-1 gap-0">
+              <button
+                onClick={() => setView("list")}
+                className={cn("flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold transition-all",
+                  view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
+                )}
+                title="List View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setView("map")}
+                className={cn("flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold transition-all",
+                  view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
+                )}
+                title="Map View"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
             </div>
             {plan && tracks.length > 0 && (
               <Button
