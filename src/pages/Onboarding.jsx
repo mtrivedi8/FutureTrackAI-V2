@@ -80,14 +80,36 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setLoading(true);
     const user = await base44.auth.me();
-    await base44.entities.TeenProfile.create({
+    const profile = await base44.entities.TeenProfile.create({
       ...form,
       user_email: user.email,
       age: parseInt(form.age) || 0,
       onboarding_completed: true,
     });
+
+    // Kick off recommendations and academic plan generation in background
+    const cleanProfile = {
+      user_email: user.email,
+      display_name: form.display_name,
+      age: parseInt(form.age) || 0,
+      zipcode: form.zipcode,
+      city: form.city,
+      current_grade: form.current_grade,
+      interests: form.interests,
+      strengths: form.strengths,
+      goals: form.goals,
+      dream_careers: form.dream_careers,
+      preferred_learning_style: form.preferred_learning_style,
+      middle_school_name: form.middle_school_name,
+      high_school_name: form.high_school_name,
+    };
+
+    // Fire and forget both — don't await
+    base44.functions.invoke('generateRecommendations', { profile: cleanProfile, existing_recommendations: [] }).catch(() => {});
+    base44.functions.invoke('generateAcademicPlan', { profile: cleanProfile, journey: { adapt_mode: false } }).catch(() => {});
+
     setLoading(false);
-    navigate("/recommendations");
+    navigate("/");
   };
 
   const steps = [
