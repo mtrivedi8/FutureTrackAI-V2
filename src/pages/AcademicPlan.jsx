@@ -418,7 +418,9 @@ export default function AcademicPlan() {
           {/* Career Track Selector */}
           <div>
             <h2 className="font-heading text-lg font-semibold mb-3">Choose a Career Track</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            
+            {/* Desktop Grid */}
+            <div className="hidden sm:grid grid-cols-3 gap-3">
               {tracks.map((track, idx) => (
                 <div key={idx} className="space-y-2">
                   <div className="relative">
@@ -449,12 +451,12 @@ export default function AcademicPlan() {
                       )}
                     </button>
                     {generatingTrackIndex === idx && (
-                     <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
-                       <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                     </div>
+                      <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                      </div>
                     )}
                     {selectedTrack === idx && generatingTrackIndex !== idx && (
-                     <Button
+                      <Button
                         onClick={(e) => { e.stopPropagation(); generatePlan(false, idx); }}
                         disabled={generatingTrackIndex !== null || (usageBlocked && monthlyLimitEnabled)}
                         variant="ghost"
@@ -472,6 +474,41 @@ export default function AcademicPlan() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Mobile Carousel */}
+            <div className="sm:hidden space-y-3">
+              <div className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+                <div className="flex gap-3 pb-2">
+                  {tracks.map((track, idx) => (
+                    <div key={idx} className="flex-shrink-0 w-[85vw] max-w-sm">
+                      <div className="relative">
+                        <button
+                          onClick={() => handleTrackSelect(idx)}
+                          className={cn(
+                            "w-full text-left p-4 rounded-2xl border transition-all duration-200",
+                            selectedTrack === idx
+                              ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                              : "border-border bg-card hover:border-primary/40"
+                          )}
+                        >
+                          <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{track.description}</p>
+                          {selectedTrack === idx && (
+                            <div className="mt-2 text-xs text-primary font-medium">Active Track ✓</div>
+                          )}
+                        </button>
+                        {generatingTrackIndex === idx && (
+                          <div className="absolute inset-0 rounded-2xl bg-black/5 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Swipe to see all tracks</p>
             </div>
           </div>
 
@@ -521,7 +558,7 @@ export default function AcademicPlan() {
             </>
           )}
         </div>
-        )}
-        </div>
-        );
+      )}
+    </div>
+  );
 }
