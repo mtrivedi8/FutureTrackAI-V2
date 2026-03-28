@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Compass, TrendingUp, User, GraduationCap, Rocket, BarChart2, Map } from "lucide-react";
+import { Home, Compass, TrendingUp, User, GraduationCap, Rocket, BarChart2, Map, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +7,8 @@ const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/recommendations", icon: Compass, label: "Explore" },
   { path: "/plan", icon: GraduationCap, label: "My Plan" },
-  { path: "/path-demo", icon: Map, label: "Path Demo 🆕" },
+  { path: "/path-demo", icon: Map, label: "Path Demo" },
+  { path: "/roadmap", icon: GitBranch, label: "Roadmap" }, 🆕" }, 🆕" },
   { path: "/progress", icon: TrendingUp, label: "Journey" },
   { path: null, icon: BarChart2, label: "Track Progress" },
   { path: "/application-prep", icon: Rocket, label: "Application Prep" },
