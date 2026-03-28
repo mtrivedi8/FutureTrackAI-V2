@@ -129,26 +129,43 @@ export default function Recommendations() {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View toggle - compact on mobile */}
-          <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-0.5 sm:p-1 gap-0.5 sm:gap-0">
+          <div className="hidden sm:flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1 gap-0">
             <button
               onClick={() => setView("list")}
-              className={cn("flex items-center justify-center rounded-md text-xs font-bold transition-all p-1.5 sm:px-3 sm:py-1.5 sm:gap-2",
+              className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
                 view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+              )}
+            >
+              <LayoutGrid className="w-4 h-4" /> List
+            </button>
+            <button
+              onClick={() => setView("map")}
+              className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+              )}
+            >
+              <GitBranch className="w-4 h-4" /> Map
+            </button>
+          </div>
+          {/* Mobile icon-only toggle */}
+          <div className="sm:hidden flex items-center gap-1">
+            <button
+              onClick={() => setView("list")}
+              className={cn("p-2 rounded-lg transition-all",
+                view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "border border-border hover:bg-primary/20"
               )}
               title="List View"
             >
               <LayoutGrid className="w-4 h-4" />
-              <span className="hidden sm:inline">List</span>
             </button>
             <button
               onClick={() => setView("map")}
-              className={cn("flex items-center justify-center rounded-md text-xs font-bold transition-all p-1.5 sm:px-3 sm:py-1.5 sm:gap-2",
-                view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+              className={cn("p-2 rounded-lg transition-all",
+                view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "border border-border hover:bg-primary/20"
               )}
               title="Map View"
             >
               <GitBranch className="w-4 h-4" />
-              <span className="hidden sm:inline">Map</span>
             </button>
           </div>
 
