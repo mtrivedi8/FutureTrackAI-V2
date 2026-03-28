@@ -64,6 +64,7 @@ function buildGraph(tracks, recommendations, currentGrade) {
         status: isDone ? "Completed" : inProgress ? "In Progress" : isUnlocked ? "Available" : "Locked",
         recs: gradeRecs,
         track,
+        gradeData: g,
       });
 
       edges.push({ from: prevId, to: nodeId, unlocked: isUnlocked });
@@ -89,6 +90,23 @@ function buildGraph(tracks, recommendations, currentGrade) {
   });
 
   return { nodes, edges };
+}
+
+// ─── Small reusable helpers ─────────────────────────────────────────────────
+
+function Section({ title, color, children }) {
+  return (
+    <div>
+      <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${color}`}>{title}</p>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+function Chip({ label, color }) {
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${color}`}>{label}</span>
+  );
 }
 
 // ─── SVG edges ───────────────────────────────────────────────────────────────
@@ -326,52 +344,107 @@ export default function RoadmapDemo() {
                 <button onClick={() => setSelectedNode(null)} className="text-white/30 hover:text-white text-2xl leading-none ml-3 shrink-0">×</button>
               </div>
 
-              {selectedNode.recs?.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold">Do these to unlock next step ({selectedNode.recs.length})</p>
-                  {selectedNode.recs.map((rec, i) => {
-                    const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
-                    const statusClass = {
-                      "Completed": "bg-green-900/50 text-green-300 border-green-500/30",
-                      "In Progress": "bg-blue-900/50 text-blue-300 border-blue-500/30",
-                      "Exploring": "bg-violet-900/50 text-violet-300 border-violet-500/30",
-                      "New": "bg-slate-800/50 text-slate-400 border-slate-600/30",
-                    }[rec.status] || "bg-slate-800/50 text-slate-400 border-slate-600/30";
-
-                    return (
-                      <motion.button
-                        key={rec.id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        onClick={() => { setSelectedNode(null); navigate(`/recommendations?id=${rec.id}`); }}
-                        className="w-full flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4 text-white/60" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-xs font-semibold leading-tight">{rec.title}</p>
-                          <p className="text-white/40 text-[10px] mt-0.5 line-clamp-1">{rec.description}</p>
-                          <div className={cn("mt-1 text-[9px] px-2 py-0.5 rounded-full border inline-block font-medium", statusClass)}>
-                            {rec.status || "New"}
-                          </div>
-                        </div>
-                        <ExternalLink className="w-3.5 h-3.5 text-white/20 shrink-0 mt-1" />
-                      </motion.button>
-                    );
-                  })}
+              {selectedNode.isGoal ? (
+                <div className="text-center py-6">
+                  <p className="text-3xl mb-2">🎯</p>
+                  <p className="text-white font-semibold text-sm mb-1">{selectedNode.track?.name}</p>
+                  <p className="text-white/40 text-xs">{selectedNode.track?.college_goals || "Your ultimate career destination"}</p>
+                  <p className="text-white/30 text-xs mt-3">{selectedNode.track?.description}</p>
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-white/30 text-sm">
-                    {selectedNode.isGoal ? "🎯 This is your ultimate career destination!" : "No suggestions linked yet."}
-                  </p>
-                  {!selectedNode.isGoal && (
-                    <button onClick={() => { setSelectedNode(null); navigate("/recommendations"); }}
-                      className="mt-2 text-xs text-violet-400 hover:text-violet-300 underline">
-                      Generate suggestions in Explore →
-                    </button>
+                <div className="space-y-4">
+                  {/* School Courses */}
+                  {selectedNode.gradeData?.school_courses?.length > 0 && (
+                    <Section title="📚 School Courses" color="text-blue-300">
+                      {selectedNode.gradeData.school_courses.map((c, i) => (
+                        <Chip key={i} label={typeof c === "string" ? c : `${c.name}${c.level && c.level !== "Standard" ? " · " + c.level : ""}`} color="bg-blue-900/40 text-blue-300 border-blue-500/20" />
+                      ))}
+                    </Section>
+                  )}
+
+                  {/* Clubs */}
+                  {selectedNode.gradeData?.clubs?.length > 0 && (
+                    <Section title="🏆 Clubs" color="text-emerald-300">
+                      {selectedNode.gradeData.clubs.map((c, i) => <Chip key={i} label={c} color="bg-emerald-900/40 text-emerald-300 border-emerald-500/20" />)}
+                    </Section>
+                  )}
+
+                  {/* Extracurriculars */}
+                  {selectedNode.gradeData?.extracurriculars?.length > 0 && (
+                    <Section title="⚡ Extracurriculars" color="text-amber-300">
+                      {selectedNode.gradeData.extracurriculars.map((c, i) => <Chip key={i} label={c} color="bg-amber-900/40 text-amber-300 border-amber-500/20" />)}
+                    </Section>
+                  )}
+
+                  {/* Volunteer */}
+                  {selectedNode.gradeData?.volunteer_opportunities?.length > 0 && (
+                    <Section title="🤝 Volunteer" color="text-pink-300">
+                      {selectedNode.gradeData.volunteer_opportunities.map((c, i) => <Chip key={i} label={c} color="bg-pink-900/40 text-pink-300 border-pink-500/20" />)}
+                    </Section>
+                  )}
+
+                  {/* Online Courses */}
+                  {selectedNode.gradeData?.online_courses?.length > 0 && (
+                    <Section title="💻 Online Courses" color="text-violet-300">
+                      {selectedNode.gradeData.online_courses.map((c, i) => <Chip key={i} label={c} color="bg-violet-900/40 text-violet-300 border-violet-500/20" />)}
+                    </Section>
+                  )}
+
+                  {/* Summer */}
+                  {selectedNode.gradeData?.summer_activities?.length > 0 && (
+                    <Section title="☀️ Summer Activities" color="text-orange-300">
+                      {selectedNode.gradeData.summer_activities.map((c, i) => <Chip key={i} label={c} color="bg-orange-900/40 text-orange-300 border-orange-500/20" />)}
+                    </Section>
+                  )}
+
+                  {/* Suggestions from Explore */}
+                  {selectedNode.recs?.length > 0 && (
+                    <div>
+                      <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Explore Suggestions ({selectedNode.recs.length})</p>
+                      <div className="space-y-2">
+                        {selectedNode.recs.map((rec, i) => {
+                          const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
+                          const statusClass = {
+                            "Completed": "bg-green-900/50 text-green-300 border-green-500/30",
+                            "In Progress": "bg-blue-900/50 text-blue-300 border-blue-500/30",
+                            "Exploring": "bg-violet-900/50 text-violet-300 border-violet-500/30",
+                            "New": "bg-slate-800/50 text-slate-400 border-slate-600/30",
+                          }[rec.status] || "bg-slate-800/50 text-slate-400 border-slate-600/30";
+                          return (
+                            <motion.button
+                              key={rec.id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.05 }}
+                              onClick={() => { setSelectedNode(null); navigate(`/recommendations?id=${rec.id}`); }}
+                              className="w-full flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                                <Icon className="w-4 h-4 text-white/60" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-xs font-semibold leading-tight">{rec.title}</p>
+                                <p className="text-white/40 text-[10px] mt-0.5 line-clamp-1">{rec.description}</p>
+                                <div className={cn("mt-1 text-[9px] px-2 py-0.5 rounded-full border inline-block font-medium", statusClass)}>
+                                  {rec.status || "New"}
+                                </div>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5 text-white/20 shrink-0 mt-1" />
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedNode.recs?.length && !selectedNode.gradeData?.clubs?.length && !selectedNode.gradeData?.school_courses?.length && (
+                    <div className="text-center py-4">
+                      <p className="text-white/30 text-xs">No data yet.</p>
+                      <button onClick={() => { setSelectedNode(null); navigate("/recommendations"); }}
+                        className="mt-2 text-xs text-violet-400 hover:text-violet-300 underline">
+                        Generate suggestions in Explore →
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
