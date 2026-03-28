@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import GradeTimeline from "@/components/plan/GradeTimeline";
 import GradePlanCard from "@/components/plan/GradePlanCard";
+import RoadmapDemo from "@/pages/RoadmapDemo";
+import { LayoutGrid, GitBranch } from "lucide-react";
 
 
 
@@ -30,6 +32,7 @@ export default function AcademicPlan() {
   const [usage, setUsage] = useState(null);
   const [usageBlocked, setUsageBlocked] = useState(false);
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
+  const [view, setView] = useState("list");
   const pollingRef = useRef(null);
 
   useEffect(() => {
@@ -314,7 +317,26 @@ export default function AcademicPlan() {
               {profile?.school_name ? `${profile.school_name} · ` : ""}Grade {startGrade} → College
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
+            {/* View Toggle */}
+            <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1">
+              <button
+                onClick={() => setView("list")}
+                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                  view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" /> List
+              </button>
+              <button
+                onClick={() => setView("map")}
+                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                  view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+                )}
+              >
+                <GitBranch className="w-4 h-4" /> Map View
+              </button>
+            </div>
             {plan && tracks.length > 0 && (
               <Button
                 onClick={() => generatePlan(true)}
@@ -344,7 +366,9 @@ export default function AcademicPlan() {
         </div>
       </div>
 
-      {(!plan || tracks.length === 0) && generatingTrackIndex === null ? (
+      {view === "map" && plan?.career_tracks?.length > 0 ? (
+        <RoadmapDemo />
+      ) : (!plan || tracks.length === 0) && generatingTrackIndex === null ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <BookOpen className="w-12 h-12 text-primary" />
