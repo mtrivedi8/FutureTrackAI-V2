@@ -276,11 +276,12 @@ Deno.serve(async (req) => {
 
     console.log('[REQUEST] Courses ready:', { middle: middle.length, high: high.length });
 
-    // Generate tracks (synchronously wait)
-    await generateTracks(base44, profileWithEmail, journey, { courses: middle, school_name: schoolName }, { courses: high });
-    
-    console.log('[REQUEST] Complete');
-    return Response.json({ status: 'success' });
+    // Fire-and-forget track generation so mobile connections don't time out
+    generateTracks(base44, profileWithEmail, journey, { courses: middle, school_name: schoolName }, { courses: high })
+      .catch(err => console.error('[REQUEST] Background generateTracks error:', err.message));
+
+    console.log('[REQUEST] Returning immediately, generation running in background');
+    return Response.json({ status: 'generating' });
 
   } catch (error) {
     console.error('[REQUEST] Error:', error.message, error.stack);
