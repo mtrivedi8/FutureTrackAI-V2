@@ -374,18 +374,16 @@ export default function AcademicPlan() {
             <BookOpen className="w-12 h-12 text-primary" />
           </div>
           <div>
-        <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-            <BookOpen className="w-12 h-12 text-primary" />
-          </div>
+            <h2 className="font-heading text-2xl font-bold mb-2">Create Your Academic Plan</h2>
+            <p className="text-muted-foreground max-w-md">
+              Click "Generate My Plan" and AI will create a personalized grade-by-grade academic roadmap with career tracks, classes, clubs, and more.
+            </p>
           </div>
           <Button onClick={generatePlan} disabled={generatingTrackIndex !== null} size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
             <Sparkles className="w-5 h-5" /> Generate My Academic Plan
           </Button>
         </div>
       ) : (!plan || tracks.length === 0) && generatingTrackIndex !== null ? (
-
-      {(!plan || tracks.length === 0) && generatingTrackIndex !== null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -412,8 +410,6 @@ export default function AcademicPlan() {
             <XCircle className="w-4 h-4" /> Cancel generation
           </button>
         </div>
-      )}
-
       ) : (
         <div className="space-y-8">
           {/* Career Track Selector */}
