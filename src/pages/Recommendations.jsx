@@ -210,7 +210,7 @@ export default function Recommendations() {
           </Tabs>
 
           {filtered.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid sm:grid-cols-2 gap-2 sm:gap-3">
               {filtered.map((rec, i) => (
                 <motion.div key={rec.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                   <RecommendationCard recommendation={rec} onClick={setSelected} onStatusChange={loadData} />
