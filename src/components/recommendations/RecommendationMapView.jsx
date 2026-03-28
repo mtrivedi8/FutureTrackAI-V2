@@ -106,7 +106,7 @@ function TrackTree({ track, theme, recommendations, currentGrade, onNodeTap, sel
                   )}
 
                   {isCurrent && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[6px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[6px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
                       YOU
                     </div>
                   )}
