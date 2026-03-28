@@ -119,27 +119,7 @@ export default function Recommendations() {
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* View toggle */}
-          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-            <button
-              onClick={() => setView("list")}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                view === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" /> List
-            </button>
-            <button
-              onClick={() => setView("map")}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                view === "map" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <GitBranch className="w-3.5 h-3.5" /> Map
-            </button>
-          </div>
-
+        <div className="flex items-center gap-2">
           {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
             <GenerateButton
               profile={profile}
@@ -158,6 +138,28 @@ export default function Recommendations() {
           )}
         </div>
       </motion.div>
+
+      {/* View toggle */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center rounded-lg border border-border bg-muted/50 p-1">
+          <button
+            onClick={() => setView("list")}
+            className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+              view === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <LayoutGrid className="w-4 h-4" /> List
+          </button>
+          <button
+            onClick={() => setView("map")}
+            className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+              view === "map" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <GitBranch className="w-4 h-4" /> Roadmap Map
+          </button>
+        </div>
+      </div>
 
       {view === "map" ? (
         <RecommendationMapView
