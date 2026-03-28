@@ -320,12 +320,31 @@ export default function AcademicPlan() {
                 {profile?.school_name ? `${profile.school_name} · ` : ""}Grade {startGrade} → College
               </p>
             </div>
-            {/* View Toggle */}
-            <div className="flex items-center rounded-full border-2 border-primary/30 bg-primary/5 p-1 gap-0 shrink-0">
+            {/* View Toggle - Desktop */}
+            <div className="hidden sm:flex items-center rounded-full border-2 border-primary/30 bg-primary/5 p-1 gap-0 shrink-0">
               <button
                 onClick={() => setView("list")}
-                className={cn("flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold transition-all",
+                className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all",
                   view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" /> List
+              </button>
+              <button
+                onClick={() => setView("map")}
+                className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all",
+                  view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
+                )}
+              >
+                <GitBranch className="w-4 h-4" /> Map
+              </button>
+            </div>
+            {/* View Toggle - Mobile */}
+            <div className="sm:hidden flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setView("list")}
+                className={cn("p-2 rounded-lg transition-all",
+                  view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "border border-border hover:bg-primary/20"
                 )}
                 title="List View"
               >
@@ -333,8 +352,8 @@ export default function AcademicPlan() {
               </button>
               <button
                 onClick={() => setView("map")}
-                className={cn("flex items-center justify-center w-10 h-10 rounded-full text-xs font-bold transition-all",
-                  view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:text-primary"
+                className={cn("p-2 rounded-lg transition-all",
+                  view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "border border-border hover:bg-primary/20"
                 )}
                 title="Map View"
               >
