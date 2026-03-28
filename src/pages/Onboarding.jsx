@@ -305,15 +305,17 @@ export default function Onboarding() {
               className={cn(
                 "w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 shadow-sm hover:shadow-md",
                 form.preferred_learning_style === value
-                  ? "bg-gradient-to-r from-primary/20 to-primary/5 ring-2 ring-primary border border-primary/20 shadow-md"
-                  : "bg-white dark:bg-slate-800 border border-transparent hover:border-primary/20"
-              )
+                  ? "bg-primary bg-opacity-10 ring-2 ring-primary border border-primary shadow-md"
+                  : "bg-white dark:bg-slate-800 border border-muted hover:border-primary"
+              )}
             >
-              <span className="text-4xl flex-shrink-0">{emoji}</span>
-              <div className="flex-1">
-                <p className="font-medium text-foreground">{value}</p>
-                <p className="text-sm text-muted-foreground">{desc}</p>
-              </div>
+              <>
+                <span className="text-4xl flex-shrink-0">{emoji}</span>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">{value}</p>
+                  <p className="text-sm text-muted-foreground">{desc}</p>
+                </div>
+              </>
             </button>
           ))
         </div>
