@@ -515,7 +515,7 @@ export default function AcademicPlan() {
                 >
                   <div className="flex gap-3 pb-2">
                     {tracks.map((track, idx) => (
-                      <div key={idx} className="flex-shrink-0 w-[70vw]">
+                      <div key={idx} className="flex-shrink-0 w-[90vw]">
                         <div className="relative">
                           <button
                             onClick={() => handleTrackSelect(idx)}
