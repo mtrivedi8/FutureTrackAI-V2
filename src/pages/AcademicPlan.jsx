@@ -482,7 +482,8 @@ export default function AcademicPlan() {
             <div className="sm:hidden space-y-3">
               <div 
                 ref={carouselRef}
-                className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
+                className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 onScroll={(e) => {
                   const el = e.target;
                   const itemWidth = window.innerWidth * 0.85 + 12;
