@@ -150,12 +150,12 @@ export default function Onboarding() {
         </div>
       </div>
     ),
-    // Step 1: Name & Avatar
+    // Step 1: Name, Grade & Avatar
     () => (
       <div className="space-y-8">
         <div className="text-center">
           <h2 className="font-heading text-2xl font-bold mb-2">Who are you?</h2>
-          <p className="text-muted-foreground">Pick a name and avatar that represents you</p>
+          <p className="text-muted-foreground">Pick a name, grade, and avatar that represents you</p>
         </div>
         <div>
           <label className="text-sm font-medium mb-2 block">Your name</label>
@@ -167,16 +167,15 @@ export default function Onboarding() {
           />
         </div>
         <div>
-          <label className="text-sm font-medium mb-2 block">Your age</label>
-          <Input
-            type="number"
-            placeholder="How old are you?"
-            value={form.age}
-            onChange={e => setForm(p => ({ ...p, age: e.target.value }))}
-            className="h-12 text-lg"
-            min={10}
-            max={19}
-          />
+          <label className="text-sm font-medium mb-2 block">Your current grade</label>
+          <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
+            <SelectTrigger className="h-12 text-lg"><SelectValue placeholder="Select your grade" /></SelectTrigger>
+            <SelectContent>
+              {[7,8,9,10,11,12].map(g => (
+                <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="text-sm font-medium mb-3 block">Choose your avatar</label>
@@ -202,24 +201,7 @@ export default function Onboarding() {
         </div>
       </div>
     ),
-    // Step 2: Current Grade
-    () => (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="font-heading text-2xl font-bold mb-2">What's your current grade?</h2>
-          <p className="text-muted-foreground">This helps us find the right schools and courses for you</p>
-        </div>
-        <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
-          <SelectTrigger className="h-12 text-lg"><SelectValue placeholder="Select your grade" /></SelectTrigger>
-          <SelectContent>
-            {[7,8,9,10,11,12].map(g => (
-              <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    ),
-    // Step 3: School Info
+    // Step 2: School Info
     () => (
       <div className="space-y-6">
         <div className="text-center">
@@ -266,7 +248,7 @@ export default function Onboarding() {
         </p>
       </div>
     ),
-    // Step 3: Strengths
+    // Step 4: Strengths
     () => (
       <div className="space-y-6">
         <div className="text-center">
@@ -291,7 +273,7 @@ export default function Onboarding() {
         </div>
       </div>
     ),
-    // Step 4: Learning Style
+    // Step 5: Learning Style
     () => (
       <div className="space-y-6">
         <div className="text-center">
@@ -322,7 +304,7 @@ export default function Onboarding() {
         </div>
       </div>
     ),
-    // Step 5: Goals & Dreams
+    // Step 6: Goals & Dreams
     () => (
      <div className="space-y-6">
        <div className="text-center">
@@ -382,13 +364,12 @@ export default function Onboarding() {
   const canProceed = () => {
     switch (step) {
       case 0: return true;
-      case 1: return form.display_name.trim() && form.age;
-      case 2: return form.current_grade; // grade required to show schools
-      case 3: return form.zipcode.trim().length === 5; // zipcode required
-      case 4: return form.interests.length >= 3;
-      case 5: return form.strengths.length >= 1;
-      case 6: return form.preferred_learning_style;
-      case 7: return true;
+      case 1: return form.display_name.trim() && form.current_grade;
+      case 2: return form.zipcode.trim().length === 5; // zipcode required
+      case 3: return form.interests.length >= 3;
+      case 4: return form.strengths.length >= 1;
+      case 5: return form.preferred_learning_style;
+      case 6: return true;
       default: return true;
     }
   };
