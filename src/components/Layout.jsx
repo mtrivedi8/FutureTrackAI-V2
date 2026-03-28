@@ -10,8 +10,7 @@ const navItems = [
 
   { path: "/roadmap", icon: GitBranch, label: "Roadmap" },
   { path: "/progress", icon: TrendingUp, label: "Journey" },
-  { path: null, icon: BarChart2, label: "Track Progress" },
-  { path: "/application-prep", icon: Rocket, label: "Application Prep" },
+  { path: "/college-path", icon: Rocket, label: "College Path" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
