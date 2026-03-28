@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 const STORAGE_KEY = 'recs_generating';
 
-export default function GenerateButton({ profile, existingRecs = [], onGenerated, onNewRec }) {
+export default function GenerateButton({ profile, existingRecs = [], disabled = false, onGenerated, onNewRec }) {
   const [loading, setLoading] = useState(() => !!localStorage.getItem(STORAGE_KEY));
   const pollRef = useRef(null);
   const lastCountRef = useRef(existingRecs.length);
@@ -72,7 +72,7 @@ export default function GenerateButton({ profile, existingRecs = [], onGenerated
   return (
     <Button
       onClick={generateRecommendations}
-      disabled={loading || !profile}
+      disabled={loading || disabled || !profile}
       className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
     >
       {loading ? (

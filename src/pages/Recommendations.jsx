@@ -119,6 +119,7 @@ export default function Recommendations() {
           <GenerateButton
             profile={profile}
             existingRecs={recommendations}
+            disabled={isSearching}
             onGenerated={() => { setIsSearching(false); loadData(); }}
             onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
           />
