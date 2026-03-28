@@ -109,9 +109,9 @@ export default function Recommendations() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="space-y-3 sm:space-y-0 sm:flex sm:items-center justify-between gap-4"
       >
-        <div>
+        <div className="hidden sm:block">
           <h1 className="font-heading text-2xl font-bold text-foreground flex items-center gap-2">
             <Compass className="w-6 h-6 text-primary" />
             Explore Paths
@@ -119,48 +119,62 @@ export default function Recommendations() {
           <p className="text-muted-foreground text-sm mt-1">{recommendations.length} recommendations tailored for you</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
-            <GenerateButton
-              profile={profile}
-              existingRecs={recommendations}
-              disabled={isSearching}
-              onGenerated={() => { setIsSearching(false); loadData(); }}
-              onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
-            />
-          ) : (
-            <Button
-              onClick={() => navigate('/membership')}
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
+        {/* Mobile header */}
+        <div className="sm:hidden">
+          <h1 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+            <Compass className="w-5 h-5 text-primary" />
+            Explore
+          </h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View toggle - compact on mobile */}
+          <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-0.5 sm:p-1">
+            <button
+              onClick={() => setView("list")}
+              className={cn("flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all",
+                view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+              )}
+              title="List View"
             >
-              <Lock className="w-4 h-4" /> Unlock More Suggestions
-            </Button>
-          )}
+              <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setView("map")}
+              className={cn("flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all",
+                view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+              )}
+              title="Map View"
+            >
+              <GitBranch className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Map</span>
+            </button>
+          </div>
+
+          {/* Generate button - stacked on mobile */}
+          <div className="w-full sm:w-auto">
+            {!paymentEnabled || hasMembership || recommendations.length === 0 ? (
+              <GenerateButton
+                profile={profile}
+                existingRecs={recommendations}
+                disabled={isSearching}
+                onGenerated={() => { setIsSearching(false); loadData(); }}
+                onNewRec={(fresh) => { handleNewRec(fresh); setIsSearching(true); }}
+              />
+            ) : (
+              <Button
+                onClick={() => navigate('/membership')}
+                className="w-full sm:w-auto gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 text-xs sm:text-sm"
+              >
+                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Unlock More Suggestions</span>
+                <span className="sm:hidden">Unlock</span>
+              </Button>
+            )}
+          </div>
         </div>
       </motion.div>
-
-      {/* View toggle */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground font-medium">View:</span>
-        <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1">
-          <button
-            onClick={() => setView("list")}
-            className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-              view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
-            )}
-          >
-            <LayoutGrid className="w-4 h-4" /> List
-          </button>
-          <button
-            onClick={() => setView("map")}
-            className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-              view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
-            )}
-          >
-            <GitBranch className="w-4 h-4" /> Map
-          </button>
-        </div>
-      </div>
 
       {view === "map" ? (
         <RecommendationMapView
