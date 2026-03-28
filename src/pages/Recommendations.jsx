@@ -141,19 +141,20 @@ export default function Recommendations() {
 
       {/* View toggle */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-lg border border-border bg-muted/50 p-1">
+        <span className="text-xs text-muted-foreground font-medium">View:</span>
+        <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1">
           <button
             onClick={() => setView("list")}
-            className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-              view === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+              view === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
             )}
           >
             <LayoutGrid className="w-4 h-4" /> List
           </button>
           <button
             onClick={() => setView("map")}
-            className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-              view === "map" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+              view === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
             )}
           >
             <GitBranch className="w-4 h-4" /> Roadmap Map
