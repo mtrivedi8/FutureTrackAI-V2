@@ -53,6 +53,8 @@ export default function Onboarding() {
   });
   const [goalInput, setGoalInput] = useState("");
   const [careerInput, setCareerInput] = useState("");
+  const [interestInput, setInterestInput] = useState("");
+  const [strengthInput, setStrengthInput] = useState("");
 
   const toggleItem = (field, item) => {
     setForm(prev => ({
@@ -227,6 +229,18 @@ export default function Onboarding() {
           <h2 className="font-heading text-2xl font-bold mb-2">What interests you?</h2>
           <p className="text-muted-foreground">Pick at least 3 things you're curious about</p>
         </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add custom interest..."
+            value={interestInput}
+            onChange={e => setInterestInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addToList("interests", interestInput, setInterestInput)}
+            className="h-11"
+          />
+          <Button onClick={() => addToList("interests", interestInput, setInterestInput)} variant="secondary" className="shrink-0">
+            Add
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2 justify-center">
           {INTERESTS.map(interest => (
             <button
@@ -243,6 +257,16 @@ export default function Onboarding() {
             </button>
           ))}
         </div>
+        {(form.interests || []).filter(i => !INTERESTS.includes(i)).length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {(form.interests || []).filter(i => !INTERESTS.includes(i)).map((i, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
+                {i}
+                <button onClick={() => removeFromList("interests", form.interests.indexOf(i))} className="hover:text-destructive">×</button>
+              </span>
+            ))}
+          </div>
+        )}
         <p className="text-center text-sm text-muted-foreground">
           {form.interests.length} selected {form.interests.length < 3 && `(pick ${3 - form.interests.length} more)`}
         </p>
@@ -254,6 +278,18 @@ export default function Onboarding() {
         <div className="text-center">
           <h2 className="font-heading text-2xl font-bold mb-2">Your superpowers <span className="text-3xl">💪</span></h2>
           <p className="text-muted-foreground">What are you naturally good at?</p>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Add custom strength..."
+            value={strengthInput}
+            onChange={e => setStrengthInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addToList("strengths", strengthInput, setStrengthInput)}
+            className="h-11"
+          />
+          <Button onClick={() => addToList("strengths", strengthInput, setStrengthInput)} variant="secondary" className="shrink-0">
+            Add
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2 justify-center">
           {STRENGTHS.map(s => (
@@ -271,6 +307,16 @@ export default function Onboarding() {
             </button>
           ))}
         </div>
+        {(form.strengths || []).filter(s => !STRENGTHS.includes(s)).length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {(form.strengths || []).filter(s => !STRENGTHS.includes(s)).map((s, idx) => (
+              <span key={idx} className="px-3 py-1.5 bg-secondary bg-opacity-10 text-secondary rounded-lg text-sm flex items-center gap-2">
+                {s}
+                <button onClick={() => removeFromList("strengths", form.strengths.indexOf(s))} className="hover:text-destructive">×</button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     ),
     // Step 5: Learning Style
