@@ -63,15 +63,10 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     const existingPlan = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
     console.log('[GENERATE_TRACKS] Existing plan:', existingPlan.length > 0 ? 'Found' : 'Not found');
     
-    const tracks = [];
-    
-    for (let i = 0; i < 3; i++) {
+    const trackPromises = [0, 1, 2].map(async (i) => {
       console.log(`[TRACK_${i}] Starting...`);
-      
       const prompt = `Create ONE career track for: ${studentBase}\nTrack ${i + 1} focus: ${trackHints[i]}\n\nSample courses: ${allCoursesSummary}\n\nBuild grades ${profile.current_grade}-12 roadmap with grades array containing grade number, focus, key_milestone, 4-6 school_courses, clubs, extracurriculars, online_courses, volunteer opportunities, summer activities.`;
-
       const schema = { type: 'object', properties: { track: trackSchema } };
-
       try {
         console.log(`[TRACK_${i}] Calling gpt_5_mini...`);
         let data = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -79,9 +74,7 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
           model: 'gpt_5_mini',
           response_json_schema: schema
         });
-        
         console.log(`[TRACK_${i}] Response received:`, !!data?.track);
-
         if (!data || !data.track) {
           console.log(`[TRACK_${i}] Fallback to claude_sonnet_4_6...`);
           data = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -90,26 +83,27 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
             response_json_schema: schema
           });
         }
-
         if (!data || !data.track) {
           console.error(`[TRACK_${i}] Both models failed`);
-          continue;
+          return null;
         }
-
         console.log(`[TRACK_${i}] Success`);
         const track = data.track;
-        const enhanced = {
+        return {
           ...track,
           grades: (track.grades || []).map(g => ({
             ...g,
             school_courses: (g.school_courses || []).length > 0 ? g.school_courses : allCourses.slice(0, 6)
           }))
         };
-        tracks[i] = enhanced;
       } catch (err) {
         console.error(`[TRACK_${i}] Error:`, err.message);
+        return null;
       }
-    }
+    });
+
+    const results = await Promise.allSettled(trackPromises);
+    const tracks = results.map(r => r.status === 'fulfilled' ? r.value : null);
 
     const valid = tracks.filter(Boolean);
     console.log(`[GENERATE_TRACKS] Valid tracks: ${valid.length}/3`);
