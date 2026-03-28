@@ -16,10 +16,9 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm("Remove this recommendation?")) return;
     setDeleting(true);
-    await base44.entities.Recommendation.delete(recommendation.id);
-    toast.success("Recommendation removed");
+    await base44.entities.Recommendation.update(recommendation.id, { status: "Skipped" });
+    toast.success("Moved to Skipped");
     onUpdated?.();
     onClose();
   };

@@ -150,7 +150,7 @@ export default function Recommendations() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <RecommendationCard recommendation={rec} onClick={setSelected} />
+              <RecommendationCard recommendation={rec} onClick={setSelected} onStatusChange={loadData} />
             </motion.div>
           ))}
         </div>
