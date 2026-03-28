@@ -202,7 +202,7 @@ export default function Recommendations() {
       ) : (
         <>
           <Tabs value={filter} onValueChange={setFilter}>
-            <TabsList className="bg-muted/50 w-full sm:w-auto overflow-x-auto flex">
+            <TabsList className="bg-muted/50 w-full sm:w-auto overflow-x-auto flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {FILTERS.map(f => (
                 <TabsTrigger key={f} value={f} className="text-xs">{f}</TabsTrigger>
               ))}
