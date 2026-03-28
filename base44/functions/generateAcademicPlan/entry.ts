@@ -223,9 +223,14 @@ Deno.serve(async (req) => {
         }
       };
 
-      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Find course catalog for "${schoolName}" in ${profile.city || profile.zipcode}. Extract courses: name, level (Standard/Honors/AP/IB), subject_area, grade_levels, required_or_elective. Return { middle_courses: [...], high_courses: [...] }. Aim 25+ per level.`,
-        model: 'gpt_5_mini',
+      // Check if we have a catalog URL in document_urls to use as source
+      const documentUrls = cache?.document_urls || {};
+      const catalogUrl = documentUrls.course_catalog;
+      const schoolWebsite = documentUrls.school_website;
+
+      let promptBase = `Extract all courses from "${schoolName}"'s course catalog for ${profile.city || profile.zipcode}. Include: name, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area, grade_levels array, required_or_elective. Return { middle_courses: [...], high_courses: [...] }. Aim for 25+ courses per level.`;
+
+      const llmParams = {
         response_json_schema: {
           type: 'object',
           properties: {
@@ -233,11 +238,30 @@ Deno.serve(async (req) => {
             high_courses: courseSchema
           }
         }
-      }).catch(err => {
+      };
+
+      if (catalogUrl) {
+        console.log('[REQUEST] Using catalog URL from document_urls:', catalogUrl);
+        llmParams.prompt = `${promptBase}\n\nOfficial course catalog: ${catalogUrl}`;
+        llmParams.file_urls = [catalogUrl];
+        llmParams.model = 'gpt_5_mini';
+      } else if (schoolWebsite) {
+        console.log('[REQUEST] Using school website from document_urls:', schoolWebsite);
+        llmParams.prompt = `${promptBase}\n\nSchool website: ${schoolWebsite} — search this site for the course catalog.`;
+        llmParams.add_context_from_internet = true;
+        llmParams.model = 'gemini_3_flash';
+      } else {
+        console.log('[REQUEST] No document_urls available, using general LLM knowledge');
+        llmParams.prompt = `Find course catalog for "${schoolName}" in ${profile.city || profile.zipcode}. ${promptBase}`;
+        llmParams.add_context_from_internet = true;
+        llmParams.model = 'gemini_3_flash';
+      }
+
+      const result = await base44.asServiceRole.integrations.Core.InvokeLLM(llmParams).catch(err => {
         console.error('[REQUEST] Course fetch error:', err.message);
         return { middle_courses: [], high_courses: [] };
       });
-      
+
       middle = result.middle_courses || [];
       high = result.high_courses || [];
       
