@@ -92,7 +92,7 @@ export default function RoadmapDemo() {
         {[["bg-green-500","Completed"],["bg-blue-400","In Progress"],["bg-slate-700","Locked"]].map(([dot,label]) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className={cn("w-2 h-2 rounded-full", dot)} />
-            <span className="text-white/40 text-[10px]">{label}</span>
+            <span className="text-white/40 text-[10px] hidden sm:inline">{label}</span>
           </div>
         ))}
       </div>
