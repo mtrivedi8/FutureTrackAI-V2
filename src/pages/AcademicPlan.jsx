@@ -33,7 +33,7 @@ export default function AcademicPlan() {
   const [usageBlocked, setUsageBlocked] = useState(false);
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
   const [view, setView] = useState("list");
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
   const pollingRef = useRef(null);
   const carouselRef = useRef(null);
 
@@ -485,8 +485,8 @@ export default function AcademicPlan() {
                 className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
                 onScroll={(e) => {
                   const el = e.target;
-                  const progress = el.scrollLeft / (el.scrollWidth - el.clientWidth);
-                  setScrollProgress(Math.min(100, progress * 100));
+                  const itemWidth = el.scrollLeft > 0 ? el.querySelector('> div > div')?.offsetWidth + 12 : 0;
+                  if (itemWidth) setActiveCarouselIndex(Math.round(el.scrollLeft / itemWidth));
                 }}
               >
                 <div className="flex gap-3 pb-2">
@@ -519,13 +519,14 @@ export default function AcademicPlan() {
                 </div>
               </div>
               <div className="flex items-center justify-center gap-2 py-2">
-                <div className="w-6 h-1 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-200"
-                    style={{ width: `${scrollProgress}%` }}
+                {tracks.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                      activeCarouselIndex === idx ? 'bg-primary w-6' : 'bg-muted'
+                    }`}
                   />
-                </div>
-                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                ))}
               </div>
             </div>
           </div>
