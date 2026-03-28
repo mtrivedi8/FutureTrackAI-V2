@@ -317,7 +317,7 @@ export default function Onboarding() {
                 </div>
               </>
             </button>
-          ))
+          ))}
         </div>
       </div>
     ),
@@ -344,7 +344,7 @@ export default function Onboarding() {
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {form.goals.map((g, i) => (
-              <span key={i} className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm flex items-center gap-2">
+              <span key={i} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
                 {g}
                 <button onClick={() => removeFromList("goals", i)} className="hover:text-destructive">×</button>
               </span>
@@ -367,7 +367,7 @@ export default function Onboarding() {
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {form.dream_careers.map((c, i) => (
-              <span key={i} className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg text-sm flex items-center gap-2">
+              <span key={i} className="px-3 py-1.5 bg-accent bg-opacity-10 text-accent rounded-lg text-sm flex items-center gap-2">
                 {c}
                 <button onClick={() => removeFromList("dream_careers", i)} className="hover:text-destructive">×</button>
               </span>
@@ -427,7 +427,7 @@ export default function Onboarding() {
               <Button
                 onClick={() => setStep(s => s + 1)}
                 disabled={!canProceed()}
-                className="gap-2 bg-primary hover:bg-primary/90 px-6"
+                className="gap-2 bg-primary hover:bg-primary hover:bg-opacity-90 px-6"
               >
                 {step === 0 ? "Let's Go" : "Next"} <ArrowRight className="w-4 h-4" />
               </Button>
