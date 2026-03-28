@@ -94,6 +94,14 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
+      
+      // Log user login by calling syncUserLogin function
+      try {
+        await base44.functions.invoke('syncUserLogin', {});
+      } catch (syncErr) {
+        console.warn('Failed to sync user login:', syncErr.message);
+      }
+      
       setIsLoadingAuth(false);
     } catch (error) {
       console.error('User auth check failed:', error);
