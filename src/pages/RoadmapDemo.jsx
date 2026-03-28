@@ -8,131 +8,15 @@ import { Loader2, Star, Lock, CheckCircle2, Zap, BookOpen, Lightbulb, Users, Tar
 const TYPE_ICONS = { "Course": BookOpen, "Skill": Lightbulb, "Activity": Users, "Project": Target, "Career Path": Star, "default": Zap };
 
 const TRACK_THEMES = [
-  { bg: "bg-blue-500",    ring: "ring-blue-400",    text: "text-blue-400",    dim: "bg-blue-950/40",   line: "bg-blue-500/40",   emoji: "🚀" },
-  { bg: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-400", dim: "bg-emerald-950/40",line: "bg-emerald-500/40", emoji: "🧬" },
-  { bg: "bg-pink-500",    ring: "ring-pink-400",    text: "text-pink-400",    dim: "bg-pink-950/40",   line: "bg-pink-500/40",   emoji: "🎨" },
+  { bg: "bg-blue-500",    ring: "ring-blue-400",    text: "text-blue-400",    dim: "bg-blue-950/50",    border: "border-blue-500/40",  line: "#3b82f6", emoji: "🚀", label: "text-blue-300" },
+  { bg: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-400", dim: "bg-emerald-950/50", border: "border-emerald-500/40",line: "#10b981", emoji: "🧬", label: "text-emerald-300" },
+  { bg: "bg-pink-500",    ring: "ring-pink-400",    text: "text-pink-400",    dim: "bg-pink-950/50",    border: "border-pink-500/40",  line: "#ec4899", emoji: "🎨", label: "text-pink-300" },
 ];
 
 function getRecsForGrade(recs, grade) {
   const difficulty = grade <= 8 ? "Beginner" : grade <= 10 ? "Intermediate" : "Advanced";
   return recs.filter(r => r.status !== "Skipped" && r.difficulty_level === difficulty).slice(0, 4);
 }
-
-function GradeNode({ g, theme, index, isLast, recommendations, currentGrade, onTap, isSelected }) {
-  const gradeRecs = getRecsForGrade(recommendations, g.grade);
-  const completed = gradeRecs.filter(r => r.status === "Completed").length;
-  const inProgress = gradeRecs.some(r => r.status === "In Progress" || r.status === "Exploring");
-  const allDone = gradeRecs.length > 0 && completed === gradeRecs.length;
-  const isUnlocked = g.grade <= currentGrade + 1;
-  const isCurrent = g.grade === currentGrade;
-
-  return (
-    <div className="flex flex-col items-center">
-      {/* Connector line above (skip for first) */}
-      {index > 0 && (
-        <div className={cn("w-0.5 h-6", isUnlocked ? theme.line : "bg-white/10")} />
-      )}
-
-      {/* Node button */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: index * 0.07 }}
-        onClick={() => isUnlocked && onTap({ g, theme, gradeRecs, allDone, inProgress })}
-        className={cn(
-          "relative flex flex-col items-center justify-center rounded-2xl border transition-all duration-200 w-full px-2 py-3 gap-1",
-          isUnlocked
-            ? isSelected
-              ? `${theme.dim} border-white/40 ring-2 ring-white/30 scale-105 shadow-xl`
-              : `${theme.dim} border-white/10 hover:border-white/30 hover:scale-105`
-            : "bg-slate-900/40 border-white/5 opacity-40 cursor-not-allowed"
-        )}
-      >
-        {/* Grade badge */}
-        <div className={cn(
-          "w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm",
-          allDone ? "bg-green-500 text-white" : isUnlocked ? `${theme.bg} text-white` : "bg-slate-700 text-slate-500"
-        )}>
-          {!isUnlocked ? <Lock className="w-3.5 h-3.5" /> : allDone ? <CheckCircle2 className="w-4 h-4" /> : g.grade}
-        </div>
-
-        {/* Label */}
-        <p className="text-white text-[9px] font-semibold leading-tight text-center line-clamp-2 max-w-[60px]">
-          {g.key_milestone ? g.key_milestone.split(" ").slice(0, 4).join(" ") : `Grade ${g.grade}`}
-        </p>
-
-        {/* Status dot */}
-        {isUnlocked && gradeRecs.length > 0 && (
-          <p className={cn("text-[8px] font-medium", allDone ? "text-green-400" : inProgress ? "text-blue-300" : "text-white/30")}>
-            {completed}/{gradeRecs.length}
-          </p>
-        )}
-
-        {/* Current grade indicator */}
-        {isCurrent && (
-          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[7px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-            YOU
-          </div>
-        )}
-
-        {/* In-progress pulse */}
-        {inProgress && !allDone && (
-          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-400 rounded-full animate-ping" />
-        )}
-      </motion.button>
-
-      {/* Connector line below (skip for last) */}
-      {!isLast && (
-        <div className={cn("w-0.5 h-6", isUnlocked ? theme.line : "bg-white/10")} />
-      )}
-    </div>
-  );
-}
-
-function TrackColumn({ track, theme, recommendations, currentGrade, onNodeTap, selectedKey }) {
-  const grades = (track.grades || []).sort((a, b) => a.grade - b.grade).slice(0, 5);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="flex flex-col items-center gap-0"
-    >
-      {/* Track header */}
-      <div className={cn("w-full rounded-2xl border border-white/10 p-3 mb-3 text-center", theme.dim)}>
-        <div className="text-2xl mb-1">{theme.emoji}</div>
-        <p className={cn("font-bold text-xs leading-tight", theme.text)}>{track.name}</p>
-      </div>
-
-      {/* Grade nodes */}
-      {grades.map((g, i) => (
-        <GradeNode
-          key={g.grade}
-          g={g}
-          theme={theme}
-          index={i}
-          isLast={i === grades.length - 1}
-          recommendations={recommendations}
-          currentGrade={currentGrade}
-          onTap={(data) => onNodeTap({ ...data, trackName: track.name })}
-          isSelected={selectedKey === `${track.name}-${g.grade}`}
-        />
-      ))}
-
-      {/* Goal node */}
-      <div className={cn("w-0.5 h-6", theme.line)} />
-      <div className={cn("w-full rounded-2xl border border-white/10 p-3 text-center", theme.dim)}>
-        <Star className={cn("w-4 h-4 mx-auto mb-1", theme.text)} />
-        <p className="text-white/50 text-[9px] leading-tight line-clamp-2">
-          {track.college_goals ? track.college_goals.split(" ").slice(0, 6).join(" ") + "…" : "Career Goal"}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Bottom Sheet ─────────────────────────────────────────────────────────────
 
 function Section({ title, color, children }) {
   return (
@@ -147,6 +31,126 @@ function Chip({ label, color }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${color}`}>{label}</span>;
 }
 
+// ─── Tree Track ───────────────────────────────────────────────────────────────
+
+function TrackTree({ track, theme, recommendations, currentGrade, onNodeTap, selectedKey }) {
+  const grades = (track.grades || []).sort((a, b) => a.grade - b.grade).slice(0, 6);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={cn("rounded-2xl border p-4", theme.dim, theme.border)}
+    >
+      {/* Root node */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0", theme.bg + "/20 border " + theme.border)}>
+          {theme.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={cn("font-heading font-bold text-sm leading-tight", theme.label)}>{track.name}</p>
+          {track.description && <p className="text-white/30 text-[10px] mt-0.5 line-clamp-1">{track.description}</p>}
+        </div>
+      </div>
+
+      {/* Horizontal tree: root line → nodes → goal */}
+      <div className="overflow-x-auto pb-1">
+        <div className="flex items-center min-w-max gap-0">
+          {/* Stem from root */}
+          <div className="w-4 h-0.5 opacity-30" style={{ backgroundColor: theme.line }} />
+
+          {grades.map((g, i) => {
+            const gradeRecs = getRecsForGrade(recommendations, g.grade);
+            const completed = gradeRecs.filter(r => r.status === "Completed").length;
+            const inProgress = gradeRecs.some(r => r.status === "In Progress" || r.status === "Exploring");
+            const allDone = gradeRecs.length > 0 && completed === gradeRecs.length;
+            const isUnlocked = g.grade <= currentGrade + 1;
+            const isCurrent = g.grade === currentGrade;
+            const nodeKey = `${track.name}-${g.grade}`;
+            const isSelected = selectedKey === nodeKey;
+
+            return (
+              <div key={g.grade} className="flex items-center gap-0">
+                {/* Node */}
+                <motion.button
+                  whileHover={isUnlocked ? { scale: 1.08 } : {}}
+                  whileTap={isUnlocked ? { scale: 0.95 } : {}}
+                  onClick={() => isUnlocked && onNodeTap({ g, theme, gradeRecs, allDone, inProgress, trackName: track.name })}
+                  className={cn(
+                    "relative flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 transition-all duration-200",
+                    "w-[72px] shrink-0",
+                    isSelected
+                      ? "bg-white/15 border-white/40 shadow-lg"
+                      : isUnlocked
+                        ? cn("border-opacity-60", theme.border, "hover:bg-white/10 cursor-pointer")
+                        : "bg-slate-900/30 border-white/5 opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  {/* Grade bubble */}
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                    allDone ? "bg-green-500 text-white" :
+                    isUnlocked ? cn(theme.bg, "text-white") :
+                    "bg-slate-700 text-slate-500"
+                  )}>
+                    {!isUnlocked ? <Lock className="w-3 h-3" /> : allDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : g.grade}
+                  </div>
+
+                  {/* Milestone label */}
+                  <p className="text-white text-[8px] font-semibold leading-tight text-center line-clamp-2 w-full">
+                    {g.key_milestone ? g.key_milestone.split(" ").slice(0, 3).join(" ") : `Grade ${g.grade}`}
+                  </p>
+
+                  {/* Progress count */}
+                  {isUnlocked && gradeRecs.length > 0 && (
+                    <p className={cn("text-[7px] font-medium", allDone ? "text-green-400" : inProgress ? "text-blue-300" : "text-white/25")}>
+                      {completed}/{gradeRecs.length}
+                    </p>
+                  )}
+
+                  {/* YOU ARE HERE badge */}
+                  {isCurrent && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[6px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                      YOU
+                    </div>
+                  )}
+
+                  {/* In-progress pulse */}
+                  {inProgress && !allDone && isUnlocked && (
+                    <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-blue-400 rounded-full animate-ping" />
+                  )}
+                </motion.button>
+
+                {/* Branch line after node (skip after last) */}
+                {i < grades.length - 1 && (
+                  <div className="w-3 h-0.5 opacity-30 shrink-0" style={{ backgroundColor: theme.line }} />
+                )}
+              </div>
+            );
+          })}
+
+          {/* Line to goal */}
+          <div className="w-3 h-0.5 opacity-30 shrink-0" style={{ backgroundColor: theme.line }} />
+
+          {/* Goal node */}
+          <div className={cn(
+            "flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 w-[72px] shrink-0",
+            theme.dim, theme.border
+          )}>
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", theme.bg + "/20")}>
+              <Star className={cn("w-4 h-4", theme.text)} />
+            </div>
+            <p className="text-white/50 text-[8px] leading-tight text-center line-clamp-2">
+              {track.college_goals ? track.college_goals.split(" ").slice(0, 4).join(" ") + "…" : "Goal"}
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function RoadmapDemo() {
@@ -155,7 +159,7 @@ export default function RoadmapDemo() {
   const [tracks, setTracks] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [currentGrade, setCurrentGrade] = useState(9);
-  const [selected, setSelected] = useState(null); // { g, theme, gradeRecs, allDone, inProgress, trackName }
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -197,42 +201,40 @@ export default function RoadmapDemo() {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <h1 className="font-heading text-lg font-bold text-white">Career Roadmap</h1>
-        <p className="text-white/40 text-[10px]">Tap any grade to see what to work on</p>
+        <p className="text-white/40 text-[10px]">Tap any grade node to see activities & suggestions</p>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 py-3 px-4">
-        {[["bg-green-500","Completed"],["bg-blue-400","In Progress"],["bg-slate-700","Locked"]].map(([dot,label]) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className={cn("w-2.5 h-2.5 rounded-full", dot)} />
-            <span className="text-white/40 text-[10px]">{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Origin */}
-      <div className="flex justify-center mb-2 px-4">
+      {/* You are here */}
+      <div className="flex justify-center pt-4 pb-2 px-4">
         <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 rounded-full px-4 py-1.5">
           <GraduationCap className="w-4 h-4 text-amber-400" />
           <span className="text-amber-300 text-xs font-semibold">You are here · Grade {currentGrade}</span>
         </div>
       </div>
 
-      {/* 3-column grid */}
-      <div className="px-3 pb-32 pt-2">
-        <div className="grid grid-cols-3 gap-2 max-w-lg mx-auto items-start">
-          {tracks.slice(0, 3).map((track, i) => (
-            <TrackColumn
-              key={track.name}
-              track={track}
-              theme={TRACK_THEMES[i % TRACK_THEMES.length]}
-              recommendations={recommendations}
-              currentGrade={currentGrade}
-              onNodeTap={setSelected}
-              selectedKey={selectedKey}
-            />
-          ))}
-        </div>
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 py-2 px-4">
+        {[["bg-green-500","Completed"],["bg-blue-400","In Progress"],["bg-slate-700","Locked"]].map(([dot,label]) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <div className={cn("w-2 h-2 rounded-full", dot)} />
+            <span className="text-white/40 text-[10px]">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Track trees */}
+      <div className="px-4 pb-32 pt-2 space-y-3 max-w-2xl mx-auto">
+        {tracks.slice(0, 3).map((track, i) => (
+          <TrackTree
+            key={track.name}
+            track={track}
+            theme={TRACK_THEMES[i % TRACK_THEMES.length]}
+            recommendations={recommendations}
+            currentGrade={currentGrade}
+            onNodeTap={setSelected}
+            selectedKey={selectedKey}
+          />
+        ))}
       </div>
 
       {/* Bottom sheet */}
@@ -260,7 +262,7 @@ export default function RoadmapDemo() {
               <div className="space-y-4">
                 {selected.gradeRecs?.length > 0 && (
                   <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Explore Suggestions ({selected.gradeRecs.length})</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">✨ Explore Suggestions ({selected.gradeRecs.length})</p>
                     <div className="space-y-2">
                       {selected.gradeRecs.map((rec, i) => {
                         const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
