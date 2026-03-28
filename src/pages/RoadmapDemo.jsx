@@ -33,123 +33,7 @@ function Chip({ label, color }) {
 
 // ─── Tree Track ───────────────────────────────────────────────────────────────
 
-function TrackTree({ track, theme, recommendations, currentGrade, onNodeTap, selectedKey }) {
-  const grades = (track.grades || []).sort((a, b) => a.grade - b.grade).slice(0, 6);
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className={cn("rounded-2xl border p-4", theme.dim, theme.border)}
-    >
-      {/* Root node */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0", theme.bg + "/20 border " + theme.border)}>
-          {theme.emoji}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={cn("font-heading font-bold text-sm leading-tight", theme.label)}>{track.name}</p>
-          {track.description && <p className="text-white/30 text-[10px] mt-0.5 line-clamp-1">{track.description}</p>}
-        </div>
-      </div>
-
-      {/* Horizontal tree: root line → nodes → goal */}
-      <div className="overflow-x-auto pb-1">
-        <div className="flex items-center min-w-max gap-0">
-          {/* Stem from root */}
-          <div className="w-4 h-0.5 opacity-30" style={{ backgroundColor: theme.line }} />
-
-          {grades.map((g, i) => {
-            const gradeRecs = getRecsForGrade(recommendations, g.grade);
-            const completed = gradeRecs.filter(r => r.status === "Completed").length;
-            const inProgress = gradeRecs.some(r => r.status === "In Progress" || r.status === "Exploring");
-            const allDone = gradeRecs.length > 0 && completed === gradeRecs.length;
-            const isUnlocked = g.grade <= currentGrade + 1;
-            const isCurrent = g.grade === currentGrade;
-            const nodeKey = `${track.name}-${g.grade}`;
-            const isSelected = selectedKey === nodeKey;
-
-            return (
-              <div key={g.grade} className="flex items-center gap-0">
-                {/* Node */}
-                <motion.button
-                  whileHover={isUnlocked ? { scale: 1.08 } : {}}
-                  whileTap={isUnlocked ? { scale: 0.95 } : {}}
-                  onClick={() => isUnlocked && onNodeTap({ g, theme, gradeRecs, allDone, inProgress, trackName: track.name })}
-                  className={cn(
-                    "relative flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 transition-all duration-200",
-                    "w-[72px] shrink-0",
-                    isSelected
-                      ? "bg-white/15 border-white/40 shadow-lg"
-                      : isUnlocked
-                        ? cn("border-opacity-60", theme.border, "hover:bg-white/10 cursor-pointer")
-                        : "bg-slate-900/30 border-white/5 opacity-40 cursor-not-allowed"
-                  )}
-                >
-                  {/* Grade bubble */}
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                    allDone ? "bg-green-500 text-white" :
-                    isUnlocked ? cn(theme.bg, "text-white") :
-                    "bg-slate-700 text-slate-500"
-                  )}>
-                    {!isUnlocked ? <Lock className="w-3 h-3" /> : allDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : g.grade}
-                  </div>
-
-                  {/* Milestone label */}
-                  <p className="text-white text-[8px] font-semibold leading-tight text-center line-clamp-2 w-full">
-                    {g.key_milestone ? g.key_milestone.split(" ").slice(0, 3).join(" ") : `Grade ${g.grade}`}
-                  </p>
-
-                  {/* Progress count */}
-                  {isUnlocked && gradeRecs.length > 0 && (
-                    <p className={cn("text-[7px] font-medium", allDone ? "text-green-400" : inProgress ? "text-blue-300" : "text-white/25")}>
-                      {completed}/{gradeRecs.length}
-                    </p>
-                  )}
-
-                  {/* YOU ARE HERE badge */}
-                  {isCurrent && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[6px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                      YOU
-                    </div>
-                  )}
-
-                  {/* In-progress pulse */}
-                  {inProgress && !allDone && isUnlocked && (
-                    <div className="absolute top-0.5 right-0.5 w-2 h-2 bg-blue-400 rounded-full animate-ping" />
-                  )}
-                </motion.button>
-
-                {/* Branch line after node (skip after last) */}
-                {i < grades.length - 1 && (
-                  <div className="w-3 h-0.5 opacity-30 shrink-0" style={{ backgroundColor: theme.line }} />
-                )}
-              </div>
-            );
-          })}
-
-          {/* Line to goal */}
-          <div className="w-3 h-0.5 opacity-30 shrink-0" style={{ backgroundColor: theme.line }} />
-
-          {/* Goal node */}
-          <div className={cn(
-            "flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 w-[72px] shrink-0",
-            theme.dim, theme.border
-          )}>
-            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", theme.bg + "/20")}>
-              <Star className={cn("w-4 h-4", theme.text)} />
-            </div>
-            <p className="text-white/50 text-[8px] leading-tight text-center line-clamp-2">
-              {track.college_goals ? track.college_goals.split(" ").slice(0, 4).join(" ") + "…" : "Goal"}
-            </p>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -222,19 +106,102 @@ export default function RoadmapDemo() {
         ))}
       </div>
 
-      {/* Track trees */}
-      <div className="px-4 pb-32 pt-2 space-y-3 max-w-2xl mx-auto">
-        {tracks.slice(0, 3).map((track, i) => (
-          <TrackTree
-            key={track.name}
-            track={track}
-            theme={TRACK_THEMES[i % TRACK_THEMES.length]}
-            recommendations={recommendations}
-            currentGrade={currentGrade}
-            onNodeTap={setSelected}
-            selectedKey={selectedKey}
-          />
-        ))}
+      {/* Track trees - vertical layout */}
+      <div className="px-4 pb-32 pt-2 space-y-8 max-w-2xl mx-auto">
+        {tracks.slice(0, 3).map((track, i) => {
+          const grades = (track.grades || []).sort((a, b) => a.grade - b.grade).slice(0, 6);
+          const theme = TRACK_THEMES[i % TRACK_THEMES.length];
+          return (
+            <div key={track.name}>
+              {/* Track header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0", theme.bg + "/20 border " + theme.border)}>
+                  {theme.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn("font-heading font-bold text-sm leading-tight", theme.label)}>{track.name}</p>
+                  {track.description && <p className="text-white/30 text-[10px] mt-0.5 line-clamp-1">{track.description}</p>}
+                </div>
+              </div>
+
+              {/* Vertical timeline */}
+              <div className="space-y-0">
+                {grades.map((g, idx) => {
+                  const gradeRecs = getRecsForGrade(recommendations, g.grade);
+                  const completed = gradeRecs.filter(r => r.status === "Completed").length;
+                  const inProgress = gradeRecs.some(r => r.status === "In Progress" || r.status === "Exploring");
+                  const allDone = gradeRecs.length > 0 && completed === gradeRecs.length;
+                  const isUnlocked = g.grade <= currentGrade + 1;
+                  const isCurrent = g.grade === currentGrade;
+                  const nodeKey = `${track.name}-${g.grade}`;
+                  const isSelected = selectedKey === nodeKey;
+
+                  return (
+                    <div key={g.grade} className="flex gap-4 relative">
+                      {/* Vertical line connector */}
+                      {idx < grades.length - 1 && (
+                        <div
+                          className="absolute left-4 top-12 w-0.5 h-12"
+                          style={{ backgroundColor: theme.line, opacity: 0.3 }}
+                        />
+                      )}
+
+                      {/* Grade node */}
+                      <motion.button
+                        whileHover={isUnlocked ? { scale: 1.08 } : {}}
+                        whileTap={isUnlocked ? { scale: 0.95 } : {}}
+                        onClick={() => isUnlocked && setSelected({ g, theme, gradeRecs, allDone, inProgress, trackName: track.name })}
+                        className={cn(
+                          "relative flex flex-col items-center gap-2 rounded-xl border p-4 transition-all duration-200 shrink-0 w-24 h-24",
+                          isSelected
+                            ? "bg-white/15 border-white/40 shadow-lg"
+                            : isUnlocked
+                              ? cn("border-opacity-60", theme.border, "hover:bg-white/10 cursor-pointer")
+                              : "bg-slate-900/30 border-white/5 opacity-40 cursor-not-allowed"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold",
+                          allDone ? "bg-green-500 text-white" :
+                          isUnlocked ? cn(theme.bg, "text-white") :
+                          "bg-slate-700 text-slate-500"
+                        )}>
+                          {!isUnlocked ? <Lock className="w-4 h-4" /> : allDone ? <CheckCircle2 className="w-5 h-5" /> : g.grade}
+                        </div>
+
+                        <p className="text-white text-[9px] font-semibold leading-tight text-center line-clamp-2 w-full">
+                          {g.key_milestone ? g.key_milestone.split(" ").slice(0, 2).join(" ") : `Gr. ${g.grade}`}
+                        </p>
+
+                        {isUnlocked && gradeRecs.length > 0 && (
+                          <p className={cn("text-[7px] font-medium", allDone ? "text-green-400" : inProgress ? "text-blue-300" : "text-white/25")}>
+                            {completed}/{gradeRecs.length}
+                          </p>
+                        )}
+
+                        {isCurrent && (
+                          <div className="absolute -right-3 top-1/2 -translate-y-1/2 bg-amber-400 text-slate-900 text-[6px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            YOU
+                          </div>
+                        )}
+
+                        {inProgress && !allDone && isUnlocked && (
+                          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-400 rounded-full animate-ping" />
+                        )}
+                      </motion.button>
+
+                      {/* Details section */}
+                      <div className="flex-1 pt-2">
+                        <p className="text-white/50 text-[9px] mb-1">{g.key_milestone}</p>
+                        {g.focus && <p className="text-white/30 text-[9px] mb-2">{g.focus}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Bottom sheet */}
