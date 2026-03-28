@@ -42,7 +42,7 @@ export default function Layout() {
               return (
                 <button
                   key={label}
-                  onClick={() => toast.info('Personalize your Progress to help you with future.')}
+                  onClick={() => toast.info('Personalize your Progress to help you with future College Application. Start early. Stay intentional. Turn potential into a story colleges can\'t ignore.')}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted w-full text-left"
                 >
                   <Icon className="w-5 h-5" />
@@ -89,7 +89,7 @@ export default function Layout() {
               return (
                 <button
                   key={label}
-                  onClick={() => toast.info('Personalize your Progress to help you with future.')}
+                  onClick={() => toast.info('Personalize your Progress to help you with future College Application. Start early. Stay intentional. Turn potential into a story colleges can\'t ignore.')}
                   className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 text-muted-foreground"
                 >
                   <Icon className="w-5 h-5" />
