@@ -485,8 +485,8 @@ export default function AcademicPlan() {
                 className="overflow-x-auto -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
                 onScroll={(e) => {
                   const el = e.target;
-                  const itemWidth = el.scrollLeft > 0 ? el.querySelector('> div > div')?.offsetWidth + 12 : 0;
-                  if (itemWidth) setActiveCarouselIndex(Math.round(el.scrollLeft / itemWidth));
+                  const itemWidth = window.innerWidth * 0.85 + 12;
+                  setActiveCarouselIndex(Math.max(0, Math.round(el.scrollLeft / itemWidth)));
                 }}
               >
                 <div className="flex gap-3 pb-2">
