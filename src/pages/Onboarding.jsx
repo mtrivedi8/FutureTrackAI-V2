@@ -80,8 +80,10 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setLoading(true);
     const user = await base44.auth.me();
+    const goals = form.goals.length > 0 ? form.goals : ["Get into Good College"];
     const profile = await base44.entities.TeenProfile.create({
       ...form,
+      goals,
       user_email: user.email,
       age: parseInt(form.age) || 0,
       onboarding_completed: true,
@@ -97,7 +99,7 @@ export default function Onboarding() {
       current_grade: form.current_grade,
       interests: form.interests,
       strengths: form.strengths,
-      goals: form.goals,
+      goals,
       dream_careers: form.dream_careers,
       preferred_learning_style: form.preferred_learning_style,
       middle_school_name: form.middle_school_name,
@@ -319,12 +321,11 @@ export default function Onboarding() {
     ),
     // Step 5: Goals & Dreams
     () => (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="font-heading text-2xl font-bold mb-2">Dream big! 🌟</h2>
-          <p className="text-muted-foreground">What are your goals and dream careers?</p>
-          <p className="text-xs text-destructive font-medium mt-1">* Add at least one goal or dream career</p>
-        </div>
+     <div className="space-y-6">
+       <div className="text-center">
+         <h2 className="font-heading text-2xl font-bold mb-2">Dream big! 🌟</h2>
+         <p className="text-muted-foreground">What are your goals and dream careers? (Optional)</p>
+       </div>
         <div>
           <label className="text-sm font-medium mb-2 block">Your goals</label>
           <div className="flex gap-2">
@@ -384,7 +385,7 @@ export default function Onboarding() {
       case 4: return form.interests.length >= 3;
       case 5: return form.strengths.length >= 1;
       case 6: return form.preferred_learning_style;
-      case 7: return form.dream_careers.length >= 1 || form.goals.length >= 1;
+      case 7: return true;
       default: return true;
     }
   };
