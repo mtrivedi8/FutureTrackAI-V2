@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import RoadmapDemo from "./RoadmapDemo";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle, School } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ export default function AcademicPlan() {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [expandedTrack, setExpandedTrack] = useState(null);
   const [usage, setUsage] = useState(null);
+  const [viewMode, setViewMode] = useState("list"); // "list" | "map"
   const [usageBlocked, setUsageBlocked] = useState(false);
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
   const pollingRef = useRef(null);
@@ -303,7 +305,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header with View Toggle */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -314,7 +316,27 @@ export default function AcademicPlan() {
               {profile?.school_name ? `${profile.school_name} · ` : ""}Grade {startGrade} → College
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            {/* View Toggle */}
+            <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1">
+              <button
+                onClick={() => setViewMode("list")}
+                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                  viewMode === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+                )}
+              >
+                📋 List
+              </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                  viewMode === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
+                )}
+              >
+                🗺️ Map
+              </button>
+            </div>
+
             {plan && tracks.length > 0 && (
               <Button
                 onClick={() => generatePlan(true)}
@@ -344,22 +366,24 @@ export default function AcademicPlan() {
         </div>
       </div>
 
-      {(!plan || tracks.length === 0) && generatingTrackIndex === null && (
+      {viewMode === "map" ? (
+        <RoadmapDemo />
+      ) : (!plan || tracks.length === 0) && generatingTrackIndex === null ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <BookOpen className="w-12 h-12 text-primary" />
           </div>
           <div>
-            <h2 className="font-heading text-2xl font-bold mb-2">Create Your Academic Plan</h2>
-            <p className="text-muted-foreground max-w-md">
-              Click "Generate My Plan" and AI will create a personalized grade-by-grade academic roadmap with career tracks, classes, clubs, and more.
-            </p>
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+            <BookOpen className="w-12 h-12 text-primary" />
+          </div>
           </div>
           <Button onClick={generatePlan} disabled={generatingTrackIndex !== null} size="lg" className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
             <Sparkles className="w-5 h-5" /> Generate My Academic Plan
           </Button>
         </div>
-      )}
+      ) : (!plan || tracks.length === 0) && generatingTrackIndex !== null ? (
 
       {(!plan || tracks.length === 0) && generatingTrackIndex !== null && (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
@@ -390,7 +414,7 @@ export default function AcademicPlan() {
         </div>
       )}
 
-      {plan && tracks.length > 0 && (
+      ) : (
         <div className="space-y-8">
           {/* Career Track Selector */}
           <div>
