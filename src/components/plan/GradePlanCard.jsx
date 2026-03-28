@@ -47,7 +47,6 @@ function CourseCard({ course, schoolName, catalogUrl }) {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
-            {subject && <span className="text-[11px] text-muted-foreground">{subject}</span>}
             {req && (
               <span className={cn(
                 "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
@@ -60,6 +59,9 @@ function CourseCard({ course, schoolName, catalogUrl }) {
               <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
                 {credits} cr
               </span>
+            )}
+            {isObj && course.grade_levels && course.grade_levels.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">Gr. {course.grade_levels.join(', ')}</span>
             )}
           </div>
           {prereqs && prereqs !== "None" && prereqs !== "N/A" && (
