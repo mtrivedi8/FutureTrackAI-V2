@@ -3,17 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
 
     // Get all unique zipcodes from SchoolDirectory
     const allSchools = await base44.asServiceRole.entities.SchoolDirectory.list('-updated_date', 10000);
-    const uniqueZipcodes = [...new Set(allSchools.map(s => s.zipcode))].slice(0, 15); // Process 15 per run (reduced to avoid timeout)
+    const allUniqueZips = [...new Set(allSchools.map(s => s.zipcode))].filter(Boolean);
 
-    console.log(`Processing ${uniqueZipcodes.length} unique zipcodes for document discovery`);
+    // Use a rotating index so each run processes a different batch
+    const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'doc_discovery_zip_index' });
+    let currentIndex = settings[0] ? parseInt(settings[0].value) || 0 : 0;
+    if (currentIndex >= allUniqueZips.length) currentIndex = 0;
+
+    // Process only 3 zips per run to avoid timeouts
+    const BATCH_SIZE = 3;
+    const uniqueZipcodes = allUniqueZips.slice(currentIndex, currentIndex + BATCH_SIZE);
+
+    console.log(`[FETCH_DOCS] Processing zips ${currentIndex}–${currentIndex + uniqueZipcodes.length - 1} of ${allUniqueZips.length}`);
 
     let processed = 0;
     let documentsFound = 0;
@@ -37,13 +41,13 @@ Deno.serve(async (req) => {
         const expiresAt = new Date(cache.expires_at);
         if (expiresAt > now) {
           console.log(`Cache still valid for ${schoolName} (${zipcode}) — skipping`);
+          processed++;
           continue;
         }
       }
 
       console.log(`Fetching documents for ${schoolName} (${zipcode})...`);
 
-      // Use LLM to find official school documents
       const docResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Find direct download links and document URLs for "${schoolName}"${city ? ' in ' + city : ''}${zipcode ? ' (zip ' + zipcode + ')' : ''} from their official school/district websites.
 
@@ -80,36 +84,16 @@ Return ONLY direct URLs to official documents/pages. Verify each URL is current 
         continue;
       }
 
-      // Build document_urls object with all discovered URLs
       const documentUrls = {};
       let urlCount = 0;
 
-      if (docResult.school_website) {
-        documentUrls.school_website = docResult.school_website;
-        urlCount++;
-      }
-      if (docResult.district_website) {
-        documentUrls.district_website = docResult.district_website;
-        urlCount++;
-      }
-      if (docResult.course_catalog_url) {
-        documentUrls.course_catalog = docResult.course_catalog_url;
-        urlCount++;
-      }
-      if (docResult.student_handbook_url) {
-        documentUrls.student_handbook = docResult.student_handbook_url;
-        urlCount++;
-      }
-      if (docResult.graduation_requirements_url) {
-        documentUrls.graduation_requirements = docResult.graduation_requirements_url;
-        urlCount++;
-      }
-      if (docResult.program_guide_url) {
-        documentUrls.program_guide = docResult.program_guide_url;
-        urlCount++;
-      }
+      if (docResult.school_website) { documentUrls.school_website = docResult.school_website; urlCount++; }
+      if (docResult.district_website) { documentUrls.district_website = docResult.district_website; urlCount++; }
+      if (docResult.course_catalog_url) { documentUrls.course_catalog = docResult.course_catalog_url; urlCount++; }
+      if (docResult.student_handbook_url) { documentUrls.student_handbook = docResult.student_handbook_url; urlCount++; }
+      if (docResult.graduation_requirements_url) { documentUrls.graduation_requirements = docResult.graduation_requirements_url; urlCount++; }
+      if (docResult.program_guide_url) { documentUrls.program_guide = docResult.program_guide_url; urlCount++; }
 
-      // Create or update cache with document URLs
       const cacheData = {
         school_name: schoolName,
         zipcode: zipcode,
@@ -128,15 +112,25 @@ Return ONLY direct URLs to official documents/pages. Verify each URL is current 
       processed++;
       console.log(`Saved ${urlCount} document URLs for ${schoolName}`);
 
-      // Rate limit to avoid overwhelming LLM
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
+    // Advance index for next run
+    const nextIndex = currentIndex + BATCH_SIZE;
+    const wrappedIndex = nextIndex >= allUniqueZips.length ? 0 : nextIndex;
+    if (settings[0]) {
+      await base44.asServiceRole.entities.AppSettings.update(settings[0].id, { value: String(wrappedIndex) });
+    } else {
+      await base44.asServiceRole.entities.AppSettings.create({ key: 'doc_discovery_zip_index', value: String(wrappedIndex) });
+    }
+
+    console.log(`[FETCH_DOCS] Done. Next run starts at index ${wrappedIndex}`);
     return Response.json({
       status: 'success',
       zipcodes_processed: processed,
       documents_found: documentsFound,
-      message: `Processed ${processed} zipcodes and found ${documentsFound} document URLs`
+      next_index: wrappedIndex,
+      total_zips: allUniqueZips.length,
     });
 
   } catch (error) {
