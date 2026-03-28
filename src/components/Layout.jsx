@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Compass, TrendingUp, User, GraduationCap, Rocket } from "lucide-react";
+import { Home, Compass, TrendingUp, User, GraduationCap, Rocket, BarChart2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -8,6 +9,7 @@ const navItems = [
   { path: "/plan", icon: GraduationCap, label: "My Plan" },
   { path: "/progress", icon: TrendingUp, label: "Progress" },
   { path: "/application-prep", icon: Rocket, label: "Application Prep" },
+  { path: null, icon: BarChart2, label: "Track your Progress" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -36,6 +38,18 @@ export default function Layout() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
+            if (!path) {
+              return (
+                <button
+                  key={label}
+                  onClick={() => toast.info('Personalize your Progress to help you with future.')}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted w-full text-left"
+                >
+                  <Icon className="w-5 h-5" />
+                  {label}
+                </button>
+              );
+            }
             return (
               <Link
                 key={path}
@@ -71,6 +85,18 @@ export default function Layout() {
         <div className="flex items-center justify-around py-2 px-4">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
+            if (!path) {
+              return (
+                <button
+                  key={label}
+                  onClick={() => toast.info('Personalize your Progress to help you with future.')}
+                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 text-muted-foreground"
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Track</span>
+                </button>
+              );
+            }
             return (
               <Link
                 key={path}
