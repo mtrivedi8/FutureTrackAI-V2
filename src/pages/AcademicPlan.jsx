@@ -361,7 +361,7 @@ export default function AcademicPlan() {
               </button>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
+          <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center sm:ml-auto">
             {plan && tracks.length > 0 && (
               <Button
                 onClick={() => generatePlan(true)}
