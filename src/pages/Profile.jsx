@@ -382,7 +382,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
               </div>
               <div className="flex flex-wrap gap-2">
                 {(form.goals || []).map((g, i) => (
-                  <div key={i} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
+                  <div key={i} className="px-3 py-1.5 bg-primary bg-opacity-10 text-foreground rounded-lg text-sm flex items-center gap-2">
                     {g}
                     <button
                       onClick={() => removeFromList("goals", i, form, setForm)}
@@ -418,7 +418,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
               </div>
               <div className="flex flex-wrap gap-2">
                 {(form.dream_careers || []).map((c, i) => (
-                  <div key={i} className="px-3 py-1.5 bg-accent bg-opacity-10 text-accent rounded-lg text-sm flex items-center gap-2">
+                  <div key={i} className="px-3 py-1.5 bg-accent bg-opacity-10 text-foreground rounded-lg text-sm flex items-center gap-2">
                     {c}
                     <button
                       onClick={() => removeFromList("dream_careers", i, form, setForm)}
