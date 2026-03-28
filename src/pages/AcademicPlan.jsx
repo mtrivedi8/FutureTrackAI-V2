@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import RoadmapDemo from "./RoadmapDemo";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle, School } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,7 +28,6 @@ export default function AcademicPlan() {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [expandedTrack, setExpandedTrack] = useState(null);
   const [usage, setUsage] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // "list" | "map"
   const [usageBlocked, setUsageBlocked] = useState(false);
   const [monthlyLimitEnabled, setMonthlyLimitEnabled] = useState(true);
   const pollingRef = useRef(null);
@@ -316,27 +314,7 @@ export default function AcademicPlan() {
               {profile?.school_name ? `${profile.school_name} · ` : ""}Grade {startGrade} → College
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap items-center">
-            {/* View Toggle */}
-            <div className="flex items-center rounded-lg border-2 border-primary/30 bg-primary/5 p-1">
-              <button
-                onClick={() => setViewMode("list")}
-                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-                  viewMode === "list" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
-                )}
-              >
-                📋 List
-              </button>
-              <button
-                onClick={() => setViewMode("map")}
-                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-                  viewMode === "map" ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground hover:bg-primary/20"
-                )}
-              >
-                🗺️ Map
-              </button>
-            </div>
-
+          <div className="flex gap-2 flex-wrap">
             {plan && tracks.length > 0 && (
               <Button
                 onClick={() => generatePlan(true)}
@@ -366,9 +344,7 @@ export default function AcademicPlan() {
         </div>
       </div>
 
-      {viewMode === "map" ? (
-        <RoadmapDemo />
-      ) : (!plan || tracks.length === 0) && generatingTrackIndex === null ? (
+      {(!plan || tracks.length === 0) && generatingTrackIndex === null ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
             <BookOpen className="w-12 h-12 text-primary" />
@@ -518,7 +494,9 @@ export default function AcademicPlan() {
             </>
           )}
         </div>
-      )}
-    </div>
-  );
-}
+        )}
+        </div>
+      );
+    }
+
+    export default AcademicPlan;
