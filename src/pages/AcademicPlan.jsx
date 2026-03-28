@@ -488,7 +488,9 @@ export default function AcademicPlan() {
                   onScroll={(e) => {
                     const el = e.target;
                     const itemWidth = window.innerWidth * 0.7 + 12;
-                    setActiveCarouselIndex(Math.max(0, Math.round(el.scrollLeft / itemWidth)));
+                    const newIndex = Math.max(0, Math.round(el.scrollLeft / itemWidth));
+                    setActiveCarouselIndex(newIndex);
+                    handleTrackSelect(newIndex);
                   }}
                 >
                   <div className="flex gap-3 pb-2">
@@ -498,16 +500,19 @@ export default function AcademicPlan() {
                           <button
                             onClick={() => handleTrackSelect(idx)}
                             className={cn(
-                              "w-full text-left p-4 rounded-2xl border transition-all duration-200",
-                              selectedTrack === idx
+                              "w-full text-left p-4 rounded-2xl border-2 transition-all duration-200",
+                              activeCarouselIndex === idx
                                 ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
                                 : "border-border bg-card hover:border-primary/40"
                             )}
                           >
-                            <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{track.description}</p>
-                            {selectedTrack === idx && (
-                              <div className="mt-2 text-xs text-primary font-medium">Active Track ✓</div>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className="font-heading font-bold text-foreground text-sm flex-1">{track.name}</h3>
+                              {activeCarouselIndex === idx && <span className="text-primary text-lg leading-none">✓</span>}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{track.description}</p>
+                            {activeCarouselIndex === idx && (
+                              <div className="mt-3 text-xs text-primary font-semibold">Active Track →</div>
                             )}
                           </button>
                           {generatingTrackIndex === idx && (
