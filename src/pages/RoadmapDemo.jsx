@@ -258,6 +258,32 @@ export default function RoadmapDemo() {
               </div>
 
               <div className="space-y-4">
+                {selected.gradeRecs?.length > 0 && (
+                  <div>
+                    <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Explore Suggestions ({selected.gradeRecs.length})</p>
+                    <div className="space-y-2">
+                      {selected.gradeRecs.map((rec, i) => {
+                        const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
+                        const sc = { "Completed": "bg-green-900/50 text-green-300 border-green-500/30", "In Progress": "bg-blue-900/50 text-blue-300 border-blue-500/30", "Exploring": "bg-violet-900/50 text-violet-300 border-violet-500/30" }[rec.status] || "bg-slate-800/50 text-slate-400 border-slate-600/30";
+                        return (
+                          <button key={rec.id} onClick={() => { setSelected(null); navigate(`/recommendations?id=${rec.id}`); }}
+                            className="w-full flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left">
+                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                              <Icon className="w-4 h-4 text-white/60" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-xs font-semibold">{rec.title}</p>
+                              <p className="text-white/40 text-[10px] mt-0.5 line-clamp-1">{rec.description}</p>
+                              <div className={cn("mt-1 text-[9px] px-2 py-0.5 rounded-full border inline-block font-medium", sc)}>{rec.status || "New"}</div>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 text-white/20 shrink-0 mt-1" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {selected.g?.school_courses?.length > 0 && (
                   <Section title="📚 School Courses" color="text-blue-300">
                     {selected.g.school_courses.map((c, i) => (
@@ -289,32 +315,6 @@ export default function RoadmapDemo() {
                   <Section title="☀️ Summer" color="text-orange-300">
                     {selected.g.summer_activities.map((c, i) => <Chip key={i} label={c} color="bg-orange-900/40 text-orange-300 border-orange-500/20" />)}
                   </Section>
-                )}
-
-                {selected.gradeRecs?.length > 0 && (
-                  <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Explore Suggestions ({selected.gradeRecs.length})</p>
-                    <div className="space-y-2">
-                      {selected.gradeRecs.map((rec, i) => {
-                        const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
-                        const sc = { "Completed": "bg-green-900/50 text-green-300 border-green-500/30", "In Progress": "bg-blue-900/50 text-blue-300 border-blue-500/30", "Exploring": "bg-violet-900/50 text-violet-300 border-violet-500/30" }[rec.status] || "bg-slate-800/50 text-slate-400 border-slate-600/30";
-                        return (
-                          <button key={rec.id} onClick={() => { setSelected(null); navigate(`/recommendations?id=${rec.id}`); }}
-                            className="w-full flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left">
-                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                              <Icon className="w-4 h-4 text-white/60" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white text-xs font-semibold">{rec.title}</p>
-                              <p className="text-white/40 text-[10px] mt-0.5 line-clamp-1">{rec.description}</p>
-                              <div className={cn("mt-1 text-[9px] px-2 py-0.5 rounded-full border inline-block font-medium", sc)}>{rec.status || "New"}</div>
-                            </div>
-                            <ExternalLink className="w-3.5 h-3.5 text-white/20 shrink-0 mt-1" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 )}
 
                 {!selected.gradeRecs?.length && !selected.g?.clubs?.length && !selected.g?.school_courses?.length && (
