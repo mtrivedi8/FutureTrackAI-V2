@@ -70,7 +70,7 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">
-            Hey {profile?.display_name} {profile?.avatar_emoji}
+            Hey {profile?.display_name}
           </h1>
           <p className="text-muted-foreground mt-1">Start early. Stay intentional. Turn potential into a story colleges can't ignore.</p>
         </div>
