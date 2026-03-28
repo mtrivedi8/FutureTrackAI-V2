@@ -88,6 +88,10 @@
     "avatar_emoji": {
       "type": "string",
       "description": "Chosen avatar emoji"
+    },
+    "account_created_date": {
+      "type": "string",
+      "description": "ISO date when the account was created"
     }
   },
   "required": [

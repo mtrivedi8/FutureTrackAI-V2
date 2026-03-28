@@ -87,6 +87,7 @@ export default function Onboarding() {
       user_email: user.email,
       age: parseInt(form.age) || 0,
       onboarding_completed: true,
+      account_created_date: new Date().toISOString(),
     });
 
     // Kick off recommendations and academic plan generation in background
