@@ -246,7 +246,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
               ) : (
                 <h1 className="font-heading text-2xl font-bold text-foreground">{profile?.display_name}</h1>
               )}
-              <p className="text-sm text-muted-foreground mt-1">Age: {profile?.age} · {profile?.preferred_learning_style} learner</p>
+              <p className="text-sm text-muted-foreground mt-1">{profile?.preferred_learning_style} learner</p>
             </div>
             {!editing ? (
               <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
