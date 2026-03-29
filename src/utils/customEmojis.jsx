@@ -67,28 +67,47 @@ export const CustomEmojis = {
   // Recommendation type icons
   careerPath: (size = 20) => (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 17V10H5V17H3ZM8 17V7H10V17H8ZM13 17V3H15V17H13Z" fill="currentColor"/>
+      {/* Rocket launching upward */}
+      <path d="M10 2C10 2 14 5 14 10H6C6 5 10 2 10 2Z" fill="currentColor" opacity="0.9"/>
+      <rect x="7" y="10" width="6" height="4" rx="1" fill="currentColor"/>
+      <path d="M6 12L4 14V13C4 11.9 4.9 11 6 11V12Z" fill="currentColor" opacity="0.7"/>
+      <path d="M14 12L16 14V13C16 11.9 15.1 11 14 11V12Z" fill="currentColor" opacity="0.7"/>
+      <circle cx="10" cy="8" r="1.5" fill="white" opacity="0.8"/>
+      <path d="M8 14L7 17H9L10 15L11 17H13L12 14H8Z" fill="currentColor" opacity="0.6"/>
     </svg>
   ),
   skill: (size = 20) => (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10 2L12.39 8.26H19L13.81 12.23L16.2 18.5L10 14.53L3.8 18.5L6.19 12.23L1 8.26H7.61L10 2Z" fill="currentColor"/>
+      {/* Lightning bolt inside a circle - power/skill */}
+      <circle cx="10" cy="10" r="8" fill="currentColor" opacity="0.15"/>
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+      <path d="M11.5 4L7 11H10.5L8.5 16L14 9H10.5L11.5 4Z" fill="currentColor"/>
     </svg>
   ),
   course: (size = 20) => (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 3H18V5H2V3ZM2 6H18V18H2V6ZM4 8V16H16V8H4Z" fill="currentColor"/>
+      {/* Open book with a bookmark */}
+      <path d="M3 4C3 3.45 3.45 3 4 3H9.5V15H4C3.45 15 3 14.55 3 14V4Z" fill="currentColor" opacity="0.8"/>
+      <path d="M10.5 3H16C16.55 3 17 3.45 17 4V14C17 14.55 16.55 15 16 15H10.5V3Z" fill="currentColor" opacity="0.5"/>
+      <path d="M10 3V15" stroke="white" strokeWidth="1" opacity="0.6"/>
+      <path d="M5 17H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M13 3V8L11.5 6.5L10.5 8V3" fill="white" opacity="0.9"/>
     </svg>
   ),
   activity: (size = 20) => (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M10 6V10L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Heartbeat / activity line */}
+      <circle cx="10" cy="10" r="8" fill="currentColor" opacity="0.12"/>
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+      <polyline points="3,10 6,10 7.5,6 9.5,14 11.5,8 13,10 17,10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
     </svg>
   ),
   project: (size = 20) => (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 2H18V18H2V2ZM4 4V16H16V4H4ZM6 6H14V8H6V6ZM6 10H14V12H6V10Z" fill="currentColor"/>
+      {/* Gear / cog - building/making things */}
+      <circle cx="10" cy="10" r="3" fill="currentColor"/>
+      <path d="M10 2V4.5M10 15.5V18M2 10H4.5M15.5 10H18M4.22 4.22L5.99 5.99M14.01 14.01L15.78 15.78M15.78 4.22L14.01 5.99M5.99 14.01L4.22 15.78" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <circle cx="10" cy="10" r="5.5" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.4"/>
     </svg>
   ),
 };
