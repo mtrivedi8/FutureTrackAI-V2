@@ -15,31 +15,25 @@ const levelColors = {
   "Standard": "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-function CourseCard({ course, schoolName, catalogUrl }) {
+function CourseCard({ course }) {
   const isObj = typeof course === "object" && course !== null;
   const name = isObj ? course.name : course;
   const credits = isObj ? course.credits : null;
   const level = isObj ? course.level : null;
-  const subject = isObj ? course.subject_area : null;
   const req = isObj ? course.required_or_elective : null;
   const recommended = isObj ? course.recommended_for_track : false;
   const prereqs = isObj ? course.prerequisites : null;
 
-  const href = catalogUrl || `https://www.google.com/search?q=${encodeURIComponent(name + (schoolName ? " " + schoolName + " course catalog" : " course catalog"))}`;
-
   return (
     <div className={cn(
-      "rounded-xl border p-3 text-sm transition-all",
+      "rounded-xl border p-3 text-sm",
       recommended ? "border-primary/40 bg-primary/5" : "border-border bg-card"
     )}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             {recommended && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-            <a href={href} target="_blank" rel="noopener noreferrer"
-              className="font-semibold text-foreground hover:text-primary hover:underline transition-colors text-sm leading-tight">
-              {name}
-            </a>
+            <span className="font-semibold text-foreground text-sm leading-tight">{name}</span>
             {level && level !== "Standard" && (
               <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium", levelColors[level] || "bg-muted text-muted-foreground border-border")}>
                 {level}
@@ -233,7 +227,7 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{subj}</h4>
                     <div className="grid grid-cols-1 gap-2">
                       {bySubject[subj].map((course, i) => (
-                        <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
+                        <CourseCard key={i} course={course} />
                       ))}
                     </div>
                   </div>
