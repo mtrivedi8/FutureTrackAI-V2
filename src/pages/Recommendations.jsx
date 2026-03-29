@@ -38,6 +38,10 @@ export default function Recommendations() {
       base44.entities.AppSettings.filter({}),
       base44.entities.CareerPlan.filter({ user_email: user.email }),
     ]);
+    if (!profiles.length || !profiles[0].onboarding_completed) {
+      navigate('/onboarding');
+      return;
+    }
     setHasMembership(memberships.length > 0);
     const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
     setPaymentEnabled(paymentSetting ? paymentSetting.value === 'true' : false);
