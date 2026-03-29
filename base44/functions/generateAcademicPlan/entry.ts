@@ -51,21 +51,38 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       }
     };
 
-    const studentBase = `Student: ${profile.display_name}, age ${profile.age}, grade ${profile.current_grade}. Interests: ${(profile.interests || []).join(', ')}. Strengths: ${(profile.strengths || []).join(', ')}. Dream Careers: ${(profile.dream_careers || []).join(', ')}.`;
+    // Re-fetch latest profile from DB to get most up-to-date interests/strengths/goals/dreams
+    let freshProfile = profile;
+    try {
+      const latestProfiles = await base44.asServiceRole.entities.TeenProfile.filter({ user_email: profile.user_email });
+      if (latestProfiles[0]) {
+        freshProfile = { ...profile, ...latestProfiles[0] };
+        console.log('[GENERATE_TRACKS] Refreshed profile from DB');
+      }
+    } catch (err) {
+      console.warn('[GENERATE_TRACKS] Could not refresh profile, using passed profile:', err.message);
+    }
+
+    const studentBase = `Student: ${freshProfile.display_name}, age ${freshProfile.age}, grade ${freshProfile.current_grade}. Interests: ${(freshProfile.interests || []).join(', ')}. Strengths: ${(freshProfile.strengths || []).join(', ')}. Goals: ${(freshProfile.goals || []).join(', ')}. Dream Careers: ${(freshProfile.dream_careers || []).join(', ')}.`;
     const allCoursesSummary = allCourses.slice(0, 30).map(c => `${c.name} (${c.subject_area})`).join(', ');
 
+    // Derive 3 distinct track hints from the fresh profile
+    const dreams = freshProfile.dream_careers || [];
+    const interests = freshProfile.interests || [];
+    const goals = freshProfile.goals || [];
     const trackHints = [
-      (profile.dream_careers || []).slice(0, 2).join(', ') || 'technology',
-      'creative/business/arts',
-      'emerging interdisciplinary field',
+      dreams.slice(0, 2).join(' & ') || interests[0] || 'STEM / Technology',
+      dreams[2] || interests[1] || goals[0] || 'Creative / Business / Arts',
+      `Interdisciplinary combining ${interests.slice(0, 2).join(' + ') || 'emerging fields'}`,
     ];
+    console.log('[GENERATE_TRACKS] Track hints:', trackHints);
 
     const existingPlan = await base44.asServiceRole.entities.CareerPlan.filter({ user_email: profile.user_email });
     console.log('[GENERATE_TRACKS] Existing plan:', existingPlan.length > 0 ? 'Found' : 'Not found');
     
     const trackPromises = [0, 1, 2].map(async (i) => {
       console.log(`[TRACK_${i}] Starting...`);
-      const prompt = `Create ONE career track for: ${studentBase}\nTrack ${i + 1} focus: ${trackHints[i]}\n\nSample courses: ${allCoursesSummary}\n\nBuild grades ${profile.current_grade}-12 roadmap with grades array containing grade number, focus, key_milestone, 4-6 school_courses, clubs, extracurriculars, online_courses, volunteer opportunities, summer activities.`;
+      const prompt = `Create ONE career track for: ${studentBase}\nTrack ${i + 1} focus: ${trackHints[i]}\nGoals: ${(freshProfile.goals || []).join(', ')}\n\nSample courses: ${allCoursesSummary}\n\nBuild grades ${freshProfile.current_grade}-12 roadmap with grades array containing grade number, focus, key_milestone, 4-6 school_courses, clubs, extracurriculars, online_courses, volunteer opportunities, summer activities. Tailor everything tightly to this student's unique interests, strengths, and career goals.`;
       const schema = { type: 'object', properties: { track: trackSchema } };
       try {
         console.log(`[TRACK_${i}] Calling gpt_5_mini...`);
