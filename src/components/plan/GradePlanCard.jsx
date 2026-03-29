@@ -111,195 +111,187 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
         </div>
       </div>
 
-
-
-      {/* Graduation Requirements */}
-      {schoolInfo?.graduation_requirements && Object.values(schoolInfo.graduation_requirements).some(Boolean) && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-primary" /> Graduation Requirements
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {[
-              { label: "Total Credits", val: schoolInfo.graduation_requirements.total_credits },
-              { label: "English", val: schoolInfo.graduation_requirements.english_credits },
-              { label: "Math", val: schoolInfo.graduation_requirements.math_credits },
-              { label: "Science", val: schoolInfo.graduation_requirements.science_credits },
-              { label: "Social Studies", val: schoolInfo.graduation_requirements.social_studies_credits },
-              { label: "World Language", val: schoolInfo.graduation_requirements.world_language_credits },
-              { label: "Arts", val: schoolInfo.graduation_requirements.arts_credits },
-              { label: "PE / Health", val: schoolInfo.graduation_requirements.pe_health_credits },
-              { label: "Electives", val: schoolInfo.graduation_requirements.elective_credits },
-              { label: "Other", val: schoolInfo.graduation_requirements.other_credits },
-            ].filter(r => r.val != null && r.val !== '' && r.val !== 0).map(r => {
-              const display = String(r.val);
-              return (
-                <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
-                  <p className="text-xs text-muted-foreground">{r.label}</p>
-                  <p className="text-sm font-bold text-foreground">{display} {typeof r.val === 'number' ? 'cr' : ''}</p>
-                </div>
-              );
-            })}
-          </div>
-          {schoolInfo.graduation_requirements.notes && (
-            <p className="text-xs text-muted-foreground mt-3 border-t border-border pt-2">{schoolInfo.graduation_requirements.notes}</p>
+      {/* Two-column layout on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left column */}
+        <div className="space-y-5">
+          {/* Graduation Requirements */}
+          {schoolInfo?.graduation_requirements && Object.values(schoolInfo.graduation_requirements).some(Boolean) && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-primary" /> Graduation Requirements
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { label: "Total Credits", val: schoolInfo.graduation_requirements.total_credits },
+                  { label: "English", val: schoolInfo.graduation_requirements.english_credits },
+                  { label: "Math", val: schoolInfo.graduation_requirements.math_credits },
+                  { label: "Science", val: schoolInfo.graduation_requirements.science_credits },
+                  { label: "Social Studies", val: schoolInfo.graduation_requirements.social_studies_credits },
+                  { label: "World Language", val: schoolInfo.graduation_requirements.world_language_credits },
+                  { label: "Arts", val: schoolInfo.graduation_requirements.arts_credits },
+                  { label: "PE / Health", val: schoolInfo.graduation_requirements.pe_health_credits },
+                  { label: "Electives", val: schoolInfo.graduation_requirements.elective_credits },
+                  { label: "Other", val: schoolInfo.graduation_requirements.other_credits },
+                ].filter(r => r.val != null && r.val !== '' && r.val !== 0).map(r => {
+                  const display = String(r.val);
+                  return (
+                    <div key={r.label} className="bg-muted/50 rounded-lg px-3 py-2 text-center">
+                      <p className="text-xs text-muted-foreground">{r.label}</p>
+                      <p className="text-sm font-bold text-foreground">{display} {typeof r.val === 'number' ? 'cr' : ''}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {schoolInfo.graduation_requirements.notes && (
+                <p className="text-xs text-muted-foreground mt-3 border-t border-border pt-2">{schoolInfo.graduation_requirements.notes}</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Enrollment Process — Collapsible */}
-      {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <button
-            onClick={() => setEnrollmentOpen(o => !o)}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
-          >
-            <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-primary" /> Course Enrollment Process
-            </h3>
-            {enrollmentOpen
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-          </button>
-          {enrollmentOpen && (
-            <div className="px-4 pb-4 space-y-2">
-              {[
-                { label: "How to Register", val: schoolInfo.enrollment_process.how_to_register },
-                { label: "Timeline", val: schoolInfo.enrollment_process.registration_timeline },
-                { label: "Counselor / Advisor", val: schoolInfo.enrollment_process.advisor_counselor_info },
-                { label: "AP / Honors Enrollment", val: schoolInfo.enrollment_process.ap_honors_enrollment },
-                { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
-                { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
-                { label: "Notes", val: schoolInfo.enrollment_process.notes },
-              ].filter(r => r.val).map(r => {
-                const display = typeof r.val === 'object' ? JSON.stringify(r.val) : r.val;
-                return (
-                  <div key={r.label} className="flex gap-2 text-xs">
-                    <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
-                    <span className="text-muted-foreground">{display}</span>
+          {/* Enrollment Process */}
+          {schoolInfo?.enrollment_process && Object.values(schoolInfo.enrollment_process).some(Boolean) && (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <button
+                onClick={() => setEnrollmentOpen(o => !o)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
+              >
+                <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" /> Course Enrollment Process
+                </h3>
+                {enrollmentOpen
+                  ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              </button>
+              {enrollmentOpen && (
+                <div className="px-4 pb-4 space-y-2">
+                  {[
+                    { label: "How to Register", val: schoolInfo.enrollment_process.how_to_register },
+                    { label: "Timeline", val: schoolInfo.enrollment_process.registration_timeline },
+                    { label: "Counselor / Advisor", val: schoolInfo.enrollment_process.advisor_counselor_info },
+                    { label: "AP / Honors Enrollment", val: schoolInfo.enrollment_process.ap_honors_enrollment },
+                    { label: "Level Change Process", val: schoolInfo.enrollment_process.level_change_process },
+                    { label: "Registration Portal", val: schoolInfo.enrollment_process.registration_portal },
+                    { label: "Notes", val: schoolInfo.enrollment_process.notes },
+                  ].filter(r => r.val).map(r => {
+                    const display = typeof r.val === 'object' ? JSON.stringify(r.val) : r.val;
+                    return (
+                      <div key={r.label} className="flex gap-2 text-xs">
+                        <span className="font-semibold text-foreground min-w-[130px] shrink-0">{r.label}:</span>
+                        <span className="text-muted-foreground">{display}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* School Courses grouped by subject */}
+          {courses.length > 0 && (() => {
+            const bySubject = {};
+            courses.forEach(c => {
+              const subj = (typeof c === 'object' && c.subject_area) ? c.subject_area : 'Other';
+              if (!bySubject[subj]) bySubject[subj] = [];
+              bySubject[subj].push(c);
+            });
+            const subjects = Object.keys(bySubject).sort();
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
+                    <BookOpen className="w-4 h-4" />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* School Courses grouped by subject */}
-      {courses.length > 0 && (() => {
-        const bySubject = {};
-        courses.forEach(c => {
-          const subj = (typeof c === 'object' && c.subject_area) ? c.subject_area : 'Other';
-          if (!bySubject[subj]) bySubject[subj] = [];
-          bySubject[subj].push(c);
-        });
-        const subjects = Object.keys(bySubject).sort();
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              {(schoolInfo?.catalog_url || schoolInfo?.school_website) ? (
-                <a href={schoolInfo.catalog_url || schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
-                  className="font-heading font-semibold text-sm text-foreground hover:text-primary hover:underline transition-colors flex items-center gap-1">
-                  School Courses <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : (
-                <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
-              )}
-              <span className="text-xs text-muted-foreground">📚 From course catalog</span>
-              {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
-                <div className="flex items-center gap-2 text-xs ml-auto">
-                  {schoolInfo.school_website && (
-                    <a href={schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
-                      className="text-primary hover:underline font-medium flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" /> School Website
+                  {(schoolInfo?.catalog_url || schoolInfo?.school_website) ? (
+                    <a href={schoolInfo.catalog_url || schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
+                      className="font-heading font-semibold text-sm text-foreground hover:text-primary hover:underline transition-colors flex items-center gap-1">
+                      School Courses <ExternalLink className="w-3 h-3" />
                     </a>
+                  ) : (
+                    <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
                   )}
-                  {schoolInfo.catalog_url && (
-                    <a href={schoolInfo.catalog_url} target="_blank" rel="noopener noreferrer"
-                      className="text-primary hover:underline font-medium flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" /> Course Catalog
-                    </a>
+                  <span className="text-xs text-muted-foreground">📚 From course catalog</span>
+                  {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
+                    <div className="flex items-center gap-2 text-xs ml-auto">
+                      {schoolInfo.school_website && (
+                        <a href={schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
+                          className="text-primary hover:underline font-medium flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> School Website
+                        </a>
+                      )}
+                      {schoolInfo.catalog_url && (
+                        <a href={schoolInfo.catalog_url} target="_blank" rel="noopener noreferrer"
+                          className="text-primary hover:underline font-medium flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Course Catalog
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-            {subjects.map(subj => (
-              <div key={subj} className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{subj}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {bySubject[subj].map((course, i) => (
-                    <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
-                  ))}
-                </div>
+                {subjects.map(subj => (
+                  <div key={subj} className="space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{subj}</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {bySubject[subj].map((course, i) => (
+                        <CourseCard key={i} course={course} schoolName={schoolName} catalogUrl={schoolInfo?.catalog_url} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        );
-      })()}
-
-      {/* Special Programs */}
-      {Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600">
-              <GraduationCap className="w-4 h-4" />
-            </div>
-            <h3 className="font-heading font-semibold text-sm">Special Programs</h3>
-            <span className="text-[10px] text-muted-foreground">⭐ AP / Honors / IB</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {gradeData.special_programs.map((p, i) => (
-              <a key={i}
-                href={`https://www.google.com/search?q=${encodeURIComponent(p + (schoolName ? " " + schoolName : ""))}`}
-                target="_blank" rel="noopener noreferrer"
-                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-700 hover:opacity-70 transition-opacity">
-                {p}
-              </a>
-            ))}
-          </div>
+            );
+          })()}
         </div>
-      )}
 
-      {/* Special Programs Header */}
-      {(Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0) || Array.isArray(gradeData.clubs) || Array.isArray(gradeData.extracurriculars) || Array.isArray(gradeData.volunteer_opportunities) ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">✨</span>
-            <h3 className="font-heading font-semibold text-sm text-foreground">Special Programs & Opportunities</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">Collaborate with local businesses and explore diverse opportunities</p>
-        </div>
-      ) : null}
-
-      {/* Other sections */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sections.map(({ key, label, icon: Icon, color, tagColor }) => {
-          const items = Array.isArray(gradeData[key]) ? gradeData[key] : [];
-          if (!items.length) return null;
-          return (
-            <div key={key} className="rounded-2xl bg-card border border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", color)}>
-                  <Icon className="w-4 h-4" />
+        {/* Right column: Special Programs & Opportunities */}
+        <div className="space-y-5">
+          {Array.isArray(gradeData.special_programs) && gradeData.special_programs.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-600">
+                  <GraduationCap className="w-4 h-4" />
                 </div>
-                <h3 className="font-heading font-semibold text-sm text-foreground">{label}</h3>
+                <h3 className="font-heading font-semibold text-sm">Special Programs</h3>
+                <span className="text-[10px] text-muted-foreground">⭐ AP / Honors / IB</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {items.map((item, i) => (
+                {gradeData.special_programs.map((p, i) => (
                   <a key={i}
-                    href={`https://www.google.com/search?q=${encodeURIComponent(item + (schoolName ? " " + schoolName : ""))}`}
+                    href={`https://www.google.com/search?q=${encodeURIComponent(p + (schoolName ? " " + schoolName : ""))}`}
                     target="_blank" rel="noopener noreferrer"
-                    className={cn("px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70 transition-opacity cursor-pointer", tagColor)}>
-                    {item}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-700 hover:opacity-70 transition-opacity">
+                    {p}
                   </a>
                 ))}
               </div>
             </div>
-          );
-        })}
+          )}
+
+          {sections.map(({ key, label, icon: Icon, color, tagColor }) => {
+            const items = Array.isArray(gradeData[key]) ? gradeData[key] : [];
+            if (!items.length) return null;
+            return (
+              <div key={key} className="rounded-2xl bg-card border border-border p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", color)}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-heading font-semibold text-sm text-foreground">{label}</h3>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {items.map((item, i) => (
+                    <a key={i}
+                      href={`https://www.google.com/search?q=${encodeURIComponent(item + (schoolName ? " " + schoolName : ""))}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className={cn("px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70 transition-opacity cursor-pointer", tagColor)}>
+                      {item}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
