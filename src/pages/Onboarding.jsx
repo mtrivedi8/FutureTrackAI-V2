@@ -38,7 +38,6 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     display_name: "",
-    age: "",
     avatar_emoji: "🚀",
     zipcode: "",
     city: "",
@@ -87,7 +86,6 @@ export default function Onboarding() {
       ...form,
       goals,
       user_email: user.email,
-      age: parseInt(form.age) || 0,
       onboarding_completed: true,
       account_created_date: new Date().toISOString(),
     });
@@ -96,7 +94,6 @@ export default function Onboarding() {
     const cleanProfile = {
       user_email: user.email,
       display_name: form.display_name,
-      age: parseInt(form.age) || 0,
       zipcode: form.zipcode,
       city: form.city,
       current_grade: form.current_grade,
