@@ -93,16 +93,29 @@ Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
     console.log('LLM raw result:', JSON.stringify(result).slice(0, 500));
 
     const recs = result.recommendations || [];
+
+    // Fetch all existing titles to prevent duplicates
+    const existing = await base44.asServiceRole.entities.Recommendation.filter({ user_email: user.email });
+    const existingTitlesSet = new Set(existing.map(r => r.title?.toLowerCase().trim()));
+
+    let created = 0;
     for (const rec of recs) {
+      const titleKey = rec.title?.toLowerCase().trim();
+      if (!titleKey || existingTitlesSet.has(titleKey)) {
+        console.log(`Skipping duplicate: ${rec.title}`);
+        continue;
+      }
+      existingTitlesSet.add(titleKey);
       await base44.asServiceRole.entities.Recommendation.create({
         ...rec,
         user_email: user.email,
         status: 'New',
       });
+      created++;
     }
 
-    console.log(`Generated ${recs.length} recommendations for ${user.email}`);
-    return Response.json({ count: recs.length });
+    console.log(`Generated ${created} new recommendations (skipped ${recs.length - created} duplicates) for ${user.email}`);
+    return Response.json({ count: created });
   } catch (error) {
     console.error('generateRecommendations error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
