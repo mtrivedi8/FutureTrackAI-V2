@@ -134,9 +134,10 @@ export default function AcademicPlan() {
         generatingPlanId = created.id;
       }
 
-      const [recs, updates] = await Promise.all([
+      const [recs, updates, journeyEntries] = await Promise.all([
         base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
         base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
+        base44.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200),
       ]);
 
       const journey = {
@@ -148,6 +149,8 @@ export default function AcademicPlan() {
         moods: updates.slice(0, 10).map(u => u.mood).filter(Boolean),
         adapt_mode: adaptToProgress,
         regenerate_track_index: trackIndex,
+        completed_courses: journeyEntries.filter(e => e.type === 'School Course').map(e => `${e.title}${e.grade ? ' (Grade ' + e.grade + ')' : ''}`),
+        completed_activities: journeyEntries.filter(e => e.type !== 'School Course').map(e => `${e.title} [${e.type}]${e.grade ? ' Gr.' + e.grade : ''}`),
       };
 
       let response;

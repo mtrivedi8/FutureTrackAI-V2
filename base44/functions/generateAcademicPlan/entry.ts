@@ -63,7 +63,15 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
       console.warn('[GENERATE_TRACKS] Could not refresh profile, using passed profile:', err.message);
     }
 
-    const studentBase = `Student: ${freshProfile.display_name}, age ${freshProfile.age}, grade ${freshProfile.current_grade}. Interests: ${(freshProfile.interests || []).join(', ')}. Strengths: ${(freshProfile.strengths || []).join(', ')}. Goals: ${(freshProfile.goals || []).join(', ')}. Dream Careers: ${(freshProfile.dream_careers || []).join(', ')}.`;
+    const journeyParts = [
+      (journey.completed_courses || []).length > 0 ? `Courses already taken: ${journey.completed_courses.join(', ')}` : '',
+      (journey.completed_activities || []).length > 0 ? `Activities/internships done: ${journey.completed_activities.join(', ')}` : '',
+      (journey.completed_recommendations || []).length > 0 ? `Completed suggestions: ${journey.completed_recommendations.join(', ')}` : '',
+      (journey.skills_gained || []).length > 0 ? `Skills gained: ${journey.skills_gained.join(', ')}` : '',
+    ].filter(Boolean);
+    const journeyContext = journeyParts.length > 0 ? ' Journey so far — ' + journeyParts.join('. ') + '.' : '';
+
+    const studentBase = `Student: ${freshProfile.display_name}, age ${freshProfile.age}, grade ${freshProfile.current_grade}. Interests: ${(freshProfile.interests || []).join(', ')}. Strengths: ${(freshProfile.strengths || []).join(', ')}. Goals: ${(freshProfile.goals || []).join(', ')}. Dream Careers: ${(freshProfile.dream_careers || []).join(', ')}.${journeyContext}`;
     const allCoursesSummary = allCourses.slice(0, 30).map(c => `${c.name} (${c.subject_area})`).join(', ');
 
     // Derive 3 distinct track hints from the fresh profile

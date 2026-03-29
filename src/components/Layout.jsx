@@ -1,14 +1,14 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Compass, TrendingUp, User, GraduationCap, Rocket } from "lucide-react";
+import { Home, Compass, TrendingUp, User, BookOpen, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "/", icon: Home, label: "Home" },
+  { path: "/", icon: Home, label: "Dashboard" },
+  { path: "/plan", icon: BookOpen, label: "Roadmap" },
   { path: "/recommendations", icon: Compass, label: "Explore" },
-  { path: "/plan", icon: GraduationCap, label: "Roadmap" },
-  { path: "/progress", icon: TrendingUp, label: "Journey" },
-  { path: "/college-path", icon: Rocket, label: "College Path" },
+  { path: "/journey", icon: Trophy, label: "Journey" },
+  { path: "/progress", icon: TrendingUp, label: "Progress" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -37,18 +37,6 @@ export default function Layout() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
-            if (!path) {
-              return (
-                <button
-                  key={label}
-                  onClick={() => toast.info('Personalize your Progress to help you with future College Application. Start early. Stay intentional. Turn potential into a story colleges can\'t ignore.')}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted w-full text-left"
-                >
-                  <Icon className="w-5 h-5" />
-                  {label}
-                </button>
-              );
-            }
             return (
               <Link
                 key={path}
@@ -69,7 +57,7 @@ export default function Layout() {
         <div className="p-4">
           <div className="rounded-xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 p-4">
             <p className="text-xs font-medium text-foreground mb-1">Pro Tip 💡</p>
-            <p className="text-xs text-muted-foreground">Log your progress regularly to get better recommendations!</p>
+            <p className="text-xs text-muted-foreground">Log your journey entries to get better roadmap & suggestions!</p>
           </div>
         </div>
       </aside>
@@ -84,18 +72,6 @@ export default function Layout() {
         <div className="flex items-center justify-around py-2 px-4">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
-            if (!path) {
-              return (
-                <button
-                  key={label}
-                  onClick={() => toast.info('Personalize your Progress to help you with future College Application. Start early. Stay intentional. Turn potential into a story colleges can\'t ignore.')}
-                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 text-muted-foreground"
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">Track</span>
-                </button>
-              );
-            }
             return (
               <Link
                 key={path}
