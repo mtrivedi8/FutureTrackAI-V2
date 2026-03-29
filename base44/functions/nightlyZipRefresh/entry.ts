@@ -23,84 +23,39 @@ Deno.serve(async (req) => {
     // Get current rotation index
     const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'nightly_zip_refresh_index' });
     let currentIndex = settings[0] ? parseInt(settings[0].value) || 0 : 0;
-    if (currentIndex >= uniqueZips.length) currentIndex = 0; // wrap around
+    if (currentIndex >= uniqueZips.length) currentIndex = 0;
 
     const zip = uniqueZips[currentIndex];
-    console.log(`[NIGHTLY] Processing zip ${zip} (${currentIndex + 1}/${uniqueZips.length})`);
-
-    // Step 1: Refresh school directory for this zip via LLM
     const schoolsInZip = allSchools.filter(s => s.zipcode === zip);
-    console.log(`[NIGHTLY] Found ${schoolsInZip.length} existing schools for zip ${zip}`);
+    console.log(`[NIGHTLY] Processing zip ${zip} (${currentIndex + 1}/${uniqueZips.length}), ${schoolsInZip.length} schools`);
 
-    const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Find all middle schools and high schools located in or serving US zip code ${zip}. For each school return: school_name, school_type (middle, high, or middle_high), city, state, district, and official website URL if known. Return empty array if nothing found.`,
-      add_context_from_internet: true,
-      model: 'gemini_3_flash',
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          schools: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                school_name: { type: 'string' },
-                school_type: { type: 'string', enum: ['middle', 'high', 'middle_high'] },
-                city: { type: 'string' },
-                state: { type: 'string' },
-                district: { type: 'string' },
-                website: { type: 'string' }
-              }
-            }
-          }
-        }
+    // Batch-fetch all existing caches for this zip at once
+    const allCaches = await base44.asServiceRole.entities.SchoolDocumentCache.filter({ zipcode: zip });
+    const cacheByName = {};
+    for (const c of allCaches) cacheByName[c.school_name] = c;
+
+    // Find the first school with a missing or expired cache
+    let schoolToRefresh = null;
+    let existingCache = null;
+    for (const school of schoolsInZip) {
+      const cache = cacheByName[school.school_name];
+      if (!cache || !cache.expires_at || new Date(cache.expires_at) <= new Date()) {
+        schoolToRefresh = school;
+        existingCache = cache || null;
+        break;
       }
-    }).catch(err => {
-      console.error(`[NIGHTLY] School lookup failed for zip ${zip}:`, err.message);
-      return { schools: [] };
-    });
-
-    const freshSchools = llmResult.schools || [];
-    console.log(`[NIGHTLY] LLM returned ${freshSchools.length} schools for zip ${zip}`);
-
-    // Delete stale records for this zip and re-insert fresh ones
-    for (const s of schoolsInZip) {
-      await base44.asServiceRole.entities.SchoolDirectory.delete(s.id);
     }
-    for (const school of freshSchools) {
-      await base44.asServiceRole.entities.SchoolDirectory.create({ ...school, zipcode: zip });
-    }
-    console.log(`[NIGHTLY] Directory refreshed for zip ${zip}: ${freshSchools.length} schools`);
 
-    // Step 2: Refresh ONE school's course catalog docs per run (to avoid timeout)
-    const schoolsToProcess = freshSchools.length > 0 ? freshSchools : schoolsInZip;
     let docsRefreshed = 0;
 
-    // Find the first school that needs a refresh (cache expired or missing)
-    const schoolToRefresh = await (async () => {
-      for (const school of schoolsToProcess) {
-        const existing = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
-          school_name: school.school_name,
-          zipcode: zip
-        });
-        const cache = existing[0];
-        if (!cache || !cache.expires_at || new Date(cache.expires_at) <= new Date()) {
-          return { school, cache };
-        }
-      }
-      return null;
-    })();
-
     if (schoolToRefresh) {
-      const { school, cache } = schoolToRefresh;
-      const schoolName = school.school_name;
-      const city = school.city || '';
-
+      const schoolName = schoolToRefresh.school_name;
+      const city = schoolToRefresh.city || '';
       console.log(`[NIGHTLY] Fetching course catalog for ${schoolName}...`);
 
       const docResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: `Find official document URLs for "${schoolName}"${city ? ' in ' + city : ''} (zip ${zip}). Search their official school/district website for:
-1. Course Catalog PDF or webpage (high school and middle school)
+1. Course Catalog PDF or webpage
 2. School website homepage
 3. Graduation requirements page or document
 4. Program guide (AP/Honors/IB if offered)
@@ -137,8 +92,8 @@ Return ONLY verified URLs from official sources.`,
           expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         };
 
-        if (cache) {
-          await base44.asServiceRole.entities.SchoolDocumentCache.update(cache.id, cacheData);
+        if (existingCache) {
+          await base44.asServiceRole.entities.SchoolDocumentCache.update(existingCache.id, cacheData);
         } else {
           await base44.asServiceRole.entities.SchoolDocumentCache.create(cacheData);
         }
@@ -146,7 +101,7 @@ Return ONLY verified URLs from official sources.`,
         console.log(`[NIGHTLY] Docs updated for ${schoolName}: ${Object.keys(documentUrls).length} URLs`);
       }
     } else {
-      console.log(`[NIGHTLY] All schools in zip ${zip} have valid cache — skipping doc refresh`);
+      console.log(`[NIGHTLY] All schools in zip ${zip} have valid cache — skipping`);
     }
 
     // Advance the rotation index
@@ -157,12 +112,11 @@ Return ONLY verified URLs from official sources.`,
       await base44.asServiceRole.entities.AppSettings.create({ key: 'nightly_zip_refresh_index', value: String(nextIndex) });
     }
 
-    console.log(`[NIGHTLY] Done. Next run will process zip index ${nextIndex} (${uniqueZips[nextIndex] || 'wrap'})`);
+    console.log(`[NIGHTLY] Done. Next run: zip index ${nextIndex}`);
 
     return Response.json({
       status: 'success',
       zip,
-      schools_refreshed: freshSchools.length,
       docs_refreshed: docsRefreshed,
       next_zip_index: nextIndex,
       total_zips: uniqueZips.length,
