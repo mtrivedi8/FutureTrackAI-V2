@@ -11,9 +11,24 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Get all unique zip codes from directory
-    const allSchools = await base44.asServiceRole.entities.SchoolDirectory.list('-created_date', 10000);
-    const uniqueZips = [...new Set(allSchools.map(s => s.zipcode))].filter(Boolean);
+    // Load all settings in one call
+    const allSettings = await base44.asServiceRole.entities.AppSettings.filter({});
+    const settingsByKey = {};
+    for (const s of allSettings) settingsByKey[s.key] = s;
+
+    // Get or build cached zip list (avoid fetching 10k records every run)
+    let uniqueZips = [];
+    const zipListSetting = settingsByKey['nightly_zip_list'];
+    if (zipListSetting?.value) {
+      uniqueZips = JSON.parse(zipListSetting.value);
+    } else {
+      // Build zip list once and cache it
+      const allSchools = await base44.asServiceRole.entities.SchoolDirectory.list('-created_date', 10000);
+      uniqueZips = [...new Set(allSchools.map(s => s.zipcode))].filter(Boolean);
+      const zipJson = JSON.stringify(uniqueZips);
+      await base44.asServiceRole.entities.AppSettings.create({ key: 'nightly_zip_list', value: zipJson });
+      console.log(`[NIGHTLY] Built zip list cache: ${uniqueZips.length} zips`);
+    }
 
     if (uniqueZips.length === 0) {
       console.log('[NIGHTLY] No zip codes in directory yet. Run importNCESSchools first.');
@@ -21,12 +36,14 @@ Deno.serve(async (req) => {
     }
 
     // Get current rotation index
-    const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'nightly_zip_refresh_index' });
-    let currentIndex = settings[0] ? parseInt(settings[0].value) || 0 : 0;
+    const indexSetting = settingsByKey['nightly_zip_refresh_index'];
+    let currentIndex = indexSetting ? parseInt(indexSetting.value) || 0 : 0;
     if (currentIndex >= uniqueZips.length) currentIndex = 0;
 
     const zip = uniqueZips[currentIndex];
-    const schoolsInZip = allSchools.filter(s => s.zipcode === zip);
+
+    // Fetch only schools for this specific zip (not all schools)
+    const schoolsInZip = await base44.asServiceRole.entities.SchoolDirectory.filter({ zipcode: zip });
     console.log(`[NIGHTLY] Processing zip ${zip} (${currentIndex + 1}/${uniqueZips.length}), ${schoolsInZip.length} schools`);
 
     // Batch-fetch all existing caches for this zip at once
@@ -106,8 +123,8 @@ Return ONLY verified URLs from official sources.`,
 
     // Advance the rotation index
     const nextIndex = (currentIndex + 1) % uniqueZips.length;
-    if (settings[0]) {
-      await base44.asServiceRole.entities.AppSettings.update(settings[0].id, { value: String(nextIndex) });
+    if (indexSetting) {
+      await base44.asServiceRole.entities.AppSettings.update(indexSetting.id, { value: String(nextIndex) });
     } else {
       await base44.asServiceRole.entities.AppSettings.create({ key: 'nightly_zip_refresh_index', value: String(nextIndex) });
     }
