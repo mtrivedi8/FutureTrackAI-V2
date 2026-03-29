@@ -232,6 +232,19 @@ export default function AcademicPlan() {
 
   const currentGrade = profile?.current_grade || 9;
   const startGrade = currentGrade;
+
+  const cleanTrackName = (name) => {
+    if (!name) return name;
+    let cleaned = name;
+    // Remove user's display name or first name
+    if (profile?.display_name) {
+      const firstName = profile.display_name.split(' ')[0];
+      cleaned = cleaned.replace(new RegExp(`\\b${firstName}'s?\\b`, 'gi'), '').replace(new RegExp(`\\b${profile.display_name}'s?\\b`, 'gi'), '');
+    }
+    // Remove word "Track"
+    cleaned = cleaned.replace(/\bTrack\b/gi, '').replace(/\s{2,}/g, ' ').trim().replace(/^[-:,\s]+|[-:,\s]+$/g, '').trim();
+    return cleaned || name;
+  };
   const grades = Array.from({ length: 13 - startGrade }, (_, i) => startGrade + i);
 
   const tracks = (plan?.career_tracks || []).filter(t => t && t.name);
@@ -456,7 +469,7 @@ export default function AcademicPlan() {
                       )}
                     >
                       {track.emoji && <div className="text-2xl mb-2" style={{display: 'none'}}>{track.emoji}</div>}
-                      <h3 className="font-heading font-bold text-foreground text-sm">{track.name}</h3>
+                      <h3 className="font-heading font-bold text-foreground text-sm">{cleanTrackName(track.name)}</h3>
                       <p className={`text-xs text-muted-foreground mt-1 ${expandedTrack === idx ? '' : 'line-clamp-2'}`}>{track.description}</p>
                       {track.description && track.description.length > 80 && (
                         <span
@@ -527,7 +540,7 @@ export default function AcademicPlan() {
                             )}
                           >
                             <div className="flex items-start justify-between gap-2 mb-1">
-                              <h3 className="font-heading font-bold text-foreground text-sm flex-1">{track.name}</h3>
+                              <h3 className="font-heading font-bold text-foreground text-sm flex-1">{cleanTrackName(track.name)}</h3>
                               {activeCarouselIndex === idx && <span className="text-primary text-lg leading-none">✓</span>}
                             </div>
                             <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{track.description}</p>
