@@ -167,9 +167,116 @@ export default function RoadmapDemo() {
 
       {/* Main layout */}
       <div className="px-4 pb-32 pt-4 max-w-7xl mx-auto">
-        {/* Tracks grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tracks.slice(0, 3).map((track, i) => {
+            const grades = (track.grades || []).sort((a, b) => a.grade - b.grade).slice(0, 6);
+            const theme = TRACK_THEMES[i % TRACK_THEMES.length];
 
+            return (
+              <motion.div
+                key={track.name}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className={cn("rounded-2xl border p-4 flex flex-col h-full", theme.dim, theme.border)}
+              >
+                {/* Track header */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0", theme.bg + "/20 border " + theme.border)}>
+                    {theme.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("font-heading font-bold text-xs leading-tight", theme.label)}>{track.name}</p>
+                    {track.description && <p className="text-white/30 text-[8px] mt-0.5 line-clamp-1">{track.description}</p>}
+                  </div>
+                </div>
+
+                {/* Vertical timeline */}
+                <div className="flex-1 space-y-2">
+                  {grades.map((g, idx) => {
+                    const gradeRecs = getRecsForGrade(recommendations, g.grade);
+                    const completed = gradeRecs.filter(r => r.status === "Completed").length;
+                    const inProgress = gradeRecs.some(r => r.status === "In Progress" || r.status === "Exploring");
+                    const allDone = gradeRecs.length > 0 && completed === gradeRecs.length;
+                    const isUnlocked = g.grade <= currentGrade + 1;
+                    const isCurrent = g.grade === currentGrade;
+                    const nodeKey = `${track.name}-${g.grade}`;
+                    const isSelected = selectedKey === nodeKey;
+
+                    return (
+                      <div key={g.grade} className="flex gap-3 relative">
+                        {/* Vertical line */}
+                        {idx < grades.length - 1 && (
+                          <div
+                            className="absolute left-3.5 top-10 w-0.5 h-8"
+                            style={{ backgroundColor: theme.line, opacity: 0.3 }}
+                          />
+                        )}
+
+                        {/* Grade node */}
+                        <motion.button
+                          whileHover={isUnlocked ? { scale: 1.05 } : {}}
+                          whileTap={isUnlocked ? { scale: 0.95 } : {}}
+                          onClick={() => isUnlocked && setSelected({ g, theme, gradeRecs, allDone, inProgress, trackName: track.name })}
+                          className={cn(
+                            "relative flex flex-col items-center gap-1 rounded-lg border px-2 py-3 transition-all duration-200 shrink-0 w-20 h-20",
+                            isSelected
+                              ? "bg-white/15 border-white/40 shadow-lg"
+                              : isUnlocked
+                                ? cn("border-opacity-60", theme.border, "hover:bg-white/10 cursor-pointer")
+                                : "bg-slate-900/30 border-white/5 opacity-40 cursor-not-allowed"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                            allDone ? "bg-green-500 text-white" :
+                            isUnlocked ? cn(theme.bg, "text-white") :
+                            "bg-slate-700 text-slate-500"
+                          )}>
+                            {!isUnlocked ? <Lock className="w-3 h-3" /> : allDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : g.grade}
+                          </div>
+
+                          <p className="text-white text-[7px] font-semibold leading-tight text-center line-clamp-2 w-full">
+                            {g.key_milestone ? g.key_milestone.split(" ").slice(0, 2).join(" ") : `Gr. ${g.grade}`}
+                          </p>
+
+                          {isUnlocked && gradeRecs.length > 0 && (
+                            <p className={cn("text-[6px] font-medium", allDone ? "text-green-400" : inProgress ? "text-blue-300" : "text-white/25")}>
+                              {completed}/{gradeRecs.length}
+                            </p>
+                          )}
+
+                          {isCurrent && (
+                            <div className="absolute -right-2.5 top-1/2 -translate-y-1/2 bg-amber-400 text-slate-900 text-[5px] font-bold px-1 py-0.5 rounded-full whitespace-nowrap">
+                              YOU
+                            </div>
+                          )}
+
+                          {inProgress && !allDone && isUnlocked && (
+                            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping" />
+                          )}
+                        </motion.button>
+
+                        {/* Details section */}
+                        <div className="flex-1 pt-1 min-w-0">
+                          <p className="text-white/50 text-[7px] leading-tight line-clamp-1">{g.key_milestone}</p>
+                          {g.focus && <p className="text-white/30 text-[6px] leading-tight line-clamp-1 mt-0.5">{g.focus}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Goal marker */}
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <div className="flex items-center gap-2 text-[7px]">
+                    <Star className="w-3 h-3 text-white/40" />
+                    <p className="text-white/40 line-clamp-1">{track.college_goals || "College Goal"}</p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
