@@ -104,7 +104,7 @@ export default function Dashboard() {
         ) : (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center">
             <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">Click "Get New Suggestions" to receive your first AI recommendations!</p>
+            <p className="text-muted-foreground">Click <strong>Explore</strong> or <strong>Roadmap</strong> to get personalized AI recommendations!</p>
           </div>
         )}
       </motion.div>
