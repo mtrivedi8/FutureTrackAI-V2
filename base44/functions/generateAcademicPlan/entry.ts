@@ -82,7 +82,22 @@ async function generateTracks(base44, profile, journey, schoolMiddleResult, scho
     
     const trackPromises = [0, 1, 2].map(async (i) => {
       console.log(`[TRACK_${i}] Starting...`);
-      const prompt = `Create ONE career track for: ${studentBase}\nTrack ${i + 1} focus: ${trackHints[i]}\nGoals: ${(freshProfile.goals || []).join(', ')}\n\nSample courses: ${allCoursesSummary}\n\nBuild grades ${freshProfile.current_grade}-12 roadmap with grades array containing grade number, focus, key_milestone, 4-6 school_courses, clubs, extracurriculars, online_courses, volunteer opportunities, summer activities. Tailor everything tightly to this student's unique interests, strengths, and career goals.`;
+      const prompt = `Create ONE career track for: ${studentBase}
+Track ${i + 1} focus: ${trackHints[i]}
+Goals: ${(freshProfile.goals || []).join(', ')}
+
+Sample courses: ${allCoursesSummary}
+
+Build grades ${freshProfile.current_grade}-12 roadmap. For each grade include:
+- grade, focus, key_milestone
+- 4-6 school_courses tailored to this track
+- clubs: REAL named clubs/teams at their school or nationally recognized ones (e.g. Math League, Robotics, Model UN, DECA, Science Olympiad, Debate)
+- extracurriculars: ELITE, named programs and competitions (e.g. AMC 10/12, AIME, Science Olympiad, MATHCOUNTS, DECA, Model UN, FIRST Robotics, hackathons, Regeneron ISEF, Siemens Competition, National History Bowl, journalism competitions, art portfolio programs). Match to the student's interests.
+- online_courses: REAL named courses from Coursera, edX, MIT OpenCourseWare, Stanford Online, Khan Academy, or similar. Include provider name and course title.
+- volunteer_opportunities: Specific named volunteer programs, tutoring orgs, community orgs relevant to career track (e.g. Code.org, tutoring centers, hospital volunteering, environmental orgs)
+- summer_activities: ELITE named summer programs with real program names — research internships, pre-college programs (e.g. RSI, PRIMES, COSMOS, iD Tech, Yale Young Global Scholars, Wharton Leadership), summer jobs, and spring/summer/winter INTERNSHIPS when the student is in 10th grade or above (e.g. shadowing programs, company internships, lab internships, local business internships, nonprofit internships). Always suggest at least 1 internship opportunity per grade for 10th grade and up.
+
+Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with real program names — never generic descriptions. Tailor everything tightly to this student's unique interests, strengths, and dream careers.`;
       const schema = { type: 'object', properties: { track: trackSchema } };
       try {
         console.log(`[TRACK_${i}] Calling gpt_5_mini...`);
