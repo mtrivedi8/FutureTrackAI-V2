@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck } from "lucide-react";
+import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck, StopCircle } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -59,6 +59,7 @@ export default function Profile() {
   const [togglingPayment, setTogglingPayment] = useState(false);
   const [togglingLimit, setTogglingLimit] = useState(false);
   const [allSettings, setAllSettings] = useState([]);
+  const [abortingAll, setAbortingAll] = useState(false);
 
   const loadProfile = async () => {
     const u = await base44.auth.me();
@@ -567,6 +568,35 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
                 >
                   {togglingLimit ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   {monthlyLimitEnabled ? '📊 Enabled' : '♾️ Unlimited'}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Abort all running sessions</p>
+                  <p className="text-xs text-muted-foreground">Stop any stuck plan generation or explore sessions for all users</p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    setAbortingAll(true);
+                    // Clear all is_generating flags on CareerPlans
+                    const allPlans = await base44.entities.CareerPlan.list();
+                    await Promise.all(
+                      allPlans
+                        .filter(p => p.is_generating)
+                        .map(p => base44.entities.CareerPlan.update(p.id, { is_generating: false }))
+                    );
+                    // Clear localStorage generation keys
+                    localStorage.removeItem('recs_generating');
+                    toast.success(`Aborted all running sessions`);
+                    setAbortingAll(false);
+                  }}
+                  disabled={abortingAll}
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0 gap-2"
+                >
+                  {abortingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <StopCircle className="w-4 h-4" />}
+                  Abort All
                 </Button>
               </div>
               <div className="flex items-center justify-between">
