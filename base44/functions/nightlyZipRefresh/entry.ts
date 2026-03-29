@@ -72,25 +72,29 @@ Deno.serve(async (req) => {
     }
     console.log(`[NIGHTLY] Directory refreshed for zip ${zip}: ${freshSchools.length} schools`);
 
-    // Step 2: Refresh course catalog documents for schools in this zip
+    // Step 2: Refresh ONE school's course catalog docs per run (to avoid timeout)
     const schoolsToProcess = freshSchools.length > 0 ? freshSchools : schoolsInZip;
     let docsRefreshed = 0;
 
-    for (const school of schoolsToProcess) {
+    // Find the first school that needs a refresh (cache expired or missing)
+    const schoolToRefresh = await (async () => {
+      for (const school of schoolsToProcess) {
+        const existing = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
+          school_name: school.school_name,
+          zipcode: zip
+        });
+        const cache = existing[0];
+        if (!cache || !cache.expires_at || new Date(cache.expires_at) <= new Date()) {
+          return { school, cache };
+        }
+      }
+      return null;
+    })();
+
+    if (schoolToRefresh) {
+      const { school, cache } = schoolToRefresh;
       const schoolName = school.school_name;
       const city = school.city || '';
-
-      const existingCache = await base44.asServiceRole.entities.SchoolDocumentCache.filter({
-        school_name: schoolName,
-        zipcode: zip
-      });
-      const cache = existingCache[0];
-
-      // Skip if cache is still valid (not expired)
-      if (cache && cache.expires_at && new Date(cache.expires_at) > new Date()) {
-        console.log(`[NIGHTLY] Cache still valid for ${schoolName} — skipping`);
-        continue;
-      }
 
       console.log(`[NIGHTLY] Fetching course catalog for ${schoolName}...`);
 
@@ -118,32 +122,31 @@ Return ONLY verified URLs from official sources.`,
         return null;
       });
 
-      if (!docResult) continue;
+      if (docResult) {
+        const documentUrls = {};
+        if (docResult.school_website) documentUrls.school_website = docResult.school_website;
+        if (docResult.course_catalog_url) documentUrls.course_catalog = docResult.course_catalog_url;
+        if (docResult.graduation_requirements_url) documentUrls.graduation_requirements = docResult.graduation_requirements_url;
+        if (docResult.program_guide_url) documentUrls.program_guide = docResult.program_guide_url;
 
-      const documentUrls = {};
-      if (docResult.school_website) documentUrls.school_website = docResult.school_website;
-      if (docResult.course_catalog_url) documentUrls.course_catalog = docResult.course_catalog_url;
-      if (docResult.graduation_requirements_url) documentUrls.graduation_requirements = docResult.graduation_requirements_url;
-      if (docResult.program_guide_url) documentUrls.program_guide = docResult.program_guide_url;
+        const cacheData = {
+          school_name: schoolName,
+          zipcode: zip,
+          document_urls: documentUrls,
+          cached_date: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        };
 
-      const cacheData = {
-        school_name: schoolName,
-        zipcode: zip,
-        document_urls: documentUrls,
-        cached_date: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      if (cache) {
-        await base44.asServiceRole.entities.SchoolDocumentCache.update(cache.id, cacheData);
-      } else {
-        await base44.asServiceRole.entities.SchoolDocumentCache.create(cacheData);
+        if (cache) {
+          await base44.asServiceRole.entities.SchoolDocumentCache.update(cache.id, cacheData);
+        } else {
+          await base44.asServiceRole.entities.SchoolDocumentCache.create(cacheData);
+        }
+        docsRefreshed = 1;
+        console.log(`[NIGHTLY] Docs updated for ${schoolName}: ${Object.keys(documentUrls).length} URLs`);
       }
-
-      docsRefreshed++;
-      console.log(`[NIGHTLY] Docs updated for ${schoolName}: ${Object.keys(documentUrls).length} URLs`);
-
-      await new Promise(r => setTimeout(r, 500));
+    } else {
+      console.log(`[NIGHTLY] All schools in zip ${zip} have valid cache — skipping doc refresh`);
     }
 
     // Advance the rotation index
