@@ -19,7 +19,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   // Load debug mode setting on mount
   useEffect(() => {
     const loadDebugMode = async () => {
-      const settings = await base44.entities.AppSettings.filter({ key: 'debug_mode' });
+      const settings = await base44.entities.AppSettings.filter({ key: 'debug_logging' });
       setDebugMode(settings[0]?.value === 'true');
     };
     loadDebugMode().catch(() => setDebugMode(false));
