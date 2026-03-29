@@ -63,12 +63,12 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
+      <main className="md:ml-64 min-h-screen pb-20 md:pb-0 safe-area-top">
         <Outlet />
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border z-40 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border z-40 safe-area-bottom select-none">
         <div className="flex items-center justify-around py-2 px-4">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
@@ -77,7 +77,7 @@ export default function Layout() {
                 key={path}
                 to={path}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
+                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 select-none",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
