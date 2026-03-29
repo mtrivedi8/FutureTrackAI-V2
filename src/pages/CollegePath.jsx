@@ -1,5 +1,9 @@
-import { Rocket, TrendingUp, BookOpen, Award, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Rocket, TrendingUp, BookOpen, Award, ArrowRight, Lock } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 
 const features = [
   {
@@ -25,6 +29,43 @@ const features = [
 ];
 
 export default function CollegePath() {
+  const navigate = useNavigate();
+  const [paymentGated, setPaymentGated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      const user = await base44.auth.me();
+      const [memberships, allSettings] = await Promise.all([
+        base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+        base44.entities.AppSettings.filter({}),
+      ]);
+      const paymentEnabled = allSettings.find(s => s.key === 'payment_enabled')?.value === 'true';
+      setPaymentGated(paymentEnabled && memberships.length === 0);
+      setLoading(false);
+    };
+    check();
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" /></div>;
+
+  if (paymentGated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6">
+        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
+          <Lock className="w-10 h-10 text-primary" />
+        </div>
+        <div>
+          <h2 className="font-heading text-2xl font-bold mb-2">College Path is a Premium Feature</h2>
+          <p className="text-muted-foreground max-w-sm">Track your complete academic journey and build compelling college applications. Subscribe to unlock.</p>
+        </div>
+        <Button onClick={() => navigate('/membership')} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg">
+          <Lock className="w-4 h-4" /> Unlock with Subscription
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">

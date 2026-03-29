@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import ProgressForm from "../components/progress/ProgressForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, Calendar } from "lucide-react";
+import { Plus, TrendingUp, Calendar, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import moment from "moment";
 
@@ -21,17 +22,27 @@ const typeColors = {
 };
 
 export default function Progress() {
+  const navigate = useNavigate();
   const [updates, setUpdates] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [paymentGated, setPaymentGated] = useState(false);
 
   const loadData = async () => {
     const user = await base44.auth.me();
-    const [ups, recs] = await Promise.all([
+    const [ups, recs, memberships, allSettings] = await Promise.all([
       base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 100),
       base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100),
+      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      base44.entities.AppSettings.filter({}),
     ]);
+    const paymentEnabled = allSettings.find(s => s.key === 'payment_enabled')?.value === 'true';
+    if (paymentEnabled && memberships.length === 0) {
+      setPaymentGated(true);
+      setLoading(false);
+      return;
+    }
     setUpdates(ups);
     setRecommendations(recs);
     setLoading(false);
@@ -43,6 +54,23 @@ export default function Progress() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (paymentGated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6">
+        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
+          <Lock className="w-10 h-10 text-primary" />
+        </div>
+        <div>
+          <h2 className="font-heading text-2xl font-bold mb-2">Your Journey is a Premium Feature</h2>
+          <p className="text-muted-foreground max-w-sm">Track your progress, log milestones, and see how far you've come. Subscribe to unlock your full journey log.</p>
+        </div>
+        <Button onClick={() => navigate('/membership')} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg">
+          <Lock className="w-4 h-4" /> Unlock with Subscription
+        </Button>
       </div>
     );
   }
