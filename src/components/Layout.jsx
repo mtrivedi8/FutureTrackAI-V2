@@ -8,7 +8,6 @@ const navItems = [
   { path: "/recommendations", icon: Compass, label: "Explore" },
   { path: "/plan", icon: BookOpen, label: "Roadmap" },
   { path: "/journey", icon: Trophy, label: "Journey" },
-  { path: "/progress", icon: TrendingUp, label: "Progress" },
   { path: "/college-path", icon: GraduationCap, label: "College Path" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
