@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Home, Compass, TrendingUp, User, BookOpen, Trophy } from "lucide-react";
+import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ const navItems = [
   { path: "/plan", icon: BookOpen, label: "Roadmap" },
   { path: "/journey", icon: Trophy, label: "Journey" },
   { path: "/progress", icon: TrendingUp, label: "Progress" },
+  { path: "/college-path", icon: GraduationCap, label: "College Path" },
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
