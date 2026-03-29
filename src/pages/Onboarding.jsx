@@ -260,7 +260,7 @@ export default function Onboarding() {
         {(form.interests || []).filter(i => !INTERESTS.includes(i)).length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {(form.interests || []).filter(i => !INTERESTS.includes(i)).map((i, idx) => (
-              <span key={idx} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
+              <span key={idx} className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm flex items-center gap-2">
                 {i}
                 <button onClick={() => removeFromList("interests", form.interests.indexOf(i))} className="hover:text-destructive">×</button>
               </span>
@@ -310,7 +310,7 @@ export default function Onboarding() {
         {(form.strengths || []).filter(s => !STRENGTHS.includes(s)).length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {(form.strengths || []).filter(s => !STRENGTHS.includes(s)).map((s, idx) => (
-              <span key={idx} className="px-3 py-1.5 bg-secondary bg-opacity-10 text-secondary rounded-lg text-sm flex items-center gap-2">
+              <span key={idx} className="px-3 py-1.5 bg-secondary/10 text-secondary rounded-lg text-sm flex items-center gap-2">
                 {s}
                 <button onClick={() => removeFromList("strengths", form.strengths.indexOf(s))} className="hover:text-destructive">×</button>
               </span>
@@ -334,7 +334,7 @@ export default function Onboarding() {
               className={cn(
                 "w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 shadow-sm hover:shadow-md",
                 form.preferred_learning_style === value
-                  ? "bg-primary bg-opacity-10 ring-2 ring-primary border border-primary shadow-md"
+                  ? "bg-primary/10 ring-2 ring-primary border border-primary shadow-md"
                   : "bg-white dark:bg-slate-800 border border-muted hover:border-primary"
               )}
             >
@@ -373,7 +373,7 @@ export default function Onboarding() {
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {form.goals.map((g, i) => (
-              <span key={i} className="px-3 py-1.5 bg-primary bg-opacity-10 text-primary rounded-lg text-sm flex items-center gap-2">
+              <span key={i} className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm flex items-center gap-2">
                 {g}
                 <button onClick={() => removeFromList("goals", i)} className="hover:text-destructive">×</button>
               </span>
@@ -396,7 +396,7 @@ export default function Onboarding() {
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {form.dream_careers.map((c, i) => (
-              <span key={i} className="px-3 py-1.5 bg-accent bg-opacity-10 text-accent rounded-lg text-sm flex items-center gap-2">
+              <span key={i} className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg text-sm flex items-center gap-2">
                 {c}
                 <button onClick={() => removeFromList("dream_careers", i)} className="hover:text-destructive">×</button>
               </span>
