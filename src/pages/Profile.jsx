@@ -578,16 +578,9 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
                 <Button
                   onClick={async () => {
                     setAbortingAll(true);
-                    // Clear all is_generating flags on CareerPlans
-                    const allPlans = await base44.entities.CareerPlan.list();
-                    await Promise.all(
-                      allPlans
-                        .filter(p => p.is_generating)
-                        .map(p => base44.entities.CareerPlan.update(p.id, { is_generating: false }))
-                    );
-                    // Clear localStorage generation keys
+                    const res = await base44.functions.invoke('abortAllSessions', {});
                     localStorage.removeItem('recs_generating');
-                    toast.success(`Aborted all running sessions`);
+                    toast.success(`Aborted ${res.data?.aborted ?? 0} running sessions across all users`);
                     setAbortingAll(false);
                   }}
                   disabled={abortingAll}
