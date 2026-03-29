@@ -27,9 +27,9 @@ export default function GenerateButton({ profile, existingRecs = [], disabled = 
         } else {
           stableRounds++;
         }
-        // Stop after 2 stable rounds (no new recs) or if we've accumulated 5+ new recs
+        // Stop after 3 stable rounds with no new recs
         const totalNew = fresh.length - prevCount;
-        if (stableRounds >= 2 || totalNew >= 5) {
+        if (stableRounds >= 3) {
           clearInterval(pollRef.current);
           localStorage.removeItem(STORAGE_KEY);
           setLoading(false);

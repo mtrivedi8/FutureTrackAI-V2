@@ -28,7 +28,10 @@ export default function Recommendations() {
   const [isSearching, setIsSearching] = useState(false);
   const pollRef = useRef(null);
 
-  const handleNewRec = (freshRecs) => setRecommendations(freshRecs);
+  const handleNewRec = (freshRecs) => {
+    const unique = freshRecs.filter((r, idx, arr) => arr.findIndex(x => x.title === r.title) === idx);
+    setRecommendations(unique);
+  };
 
   const loadData = async (autoGenerate = false) => {
     const user = await base44.auth.me();
@@ -83,7 +86,8 @@ export default function Recommendations() {
         }
       }, 3000);
     } else {
-      setRecommendations(recs);
+      const unique = recs.filter((r, idx, arr) => arr.findIndex(x => x.title === r.title) === idx);
+      setRecommendations(unique);
     }
 
     setLoading(false);
