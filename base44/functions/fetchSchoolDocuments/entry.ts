@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
     let currentIndex = settings[0] ? parseInt(settings[0].value) || 0 : 0;
     if (currentIndex >= allUniqueZips.length) currentIndex = 0;
 
-    // Process only 3 zips per run to avoid timeouts
-    const BATCH_SIZE = 3;
+    // Process only 1 zip per run to avoid timeouts
+    const BATCH_SIZE = 1;
     const uniqueZipcodes = allUniqueZips.slice(currentIndex, currentIndex + BATCH_SIZE);
 
     console.log(`[FETCH_DOCS] Processing zips ${currentIndex}–${currentIndex + uniqueZipcodes.length - 1} of ${allUniqueZips.length}`);
@@ -48,8 +48,13 @@ Deno.serve(async (req) => {
 
       console.log(`Fetching documents for ${schoolName} (${zipcode})...`);
 
-      const docResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Find direct download links and document URLs for "${schoolName}"${city ? ' in ' + city : ''}${zipcode ? ' (zip ' + zipcode + ')' : ''} from their official school/district websites.
+      const llmTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('LLM timeout after 25s')), 25000)
+      );
+
+      const docResult = await Promise.race([
+        base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Find direct download links and document URLs for "${schoolName}"${city ? ' in ' + city : ''}${zipcode ? ' (zip ' + zipcode + ')' : ''} from their official school/district websites.
 
 Search for and return URLs to:
 1. Course Catalog PDF or webpage (middle school and high school)
@@ -60,21 +65,23 @@ Search for and return URLs to:
 6. District website homepage
 
 Return ONLY direct URLs to official documents/pages. Verify each URL is current and accessible.`,
-        add_context_from_internet: true,
-        model: 'gemini_3_flash',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            school_website: { type: 'string' },
-            district_website: { type: 'string' },
-            course_catalog_url: { type: 'string' },
-            student_handbook_url: { type: 'string' },
-            graduation_requirements_url: { type: 'string' },
-            program_guide_url: { type: 'string' },
-            notes: { type: 'string' }
+          add_context_from_internet: true,
+          model: 'gemini_3_flash',
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              school_website: { type: 'string' },
+              district_website: { type: 'string' },
+              course_catalog_url: { type: 'string' },
+              student_handbook_url: { type: 'string' },
+              graduation_requirements_url: { type: 'string' },
+              program_guide_url: { type: 'string' },
+              notes: { type: 'string' }
+            }
           }
-        }
-      }).catch(err => {
+        }),
+        llmTimeout
+      ]).catch(err => {
         console.warn(`Document lookup failed for ${schoolName}:`, err.message);
         return null;
       });
