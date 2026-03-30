@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { base44 } from "@/api/base44Client";
 import StatsOverview from "../components/dashboard/StatsOverview";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
@@ -16,7 +17,7 @@ export default function Dashboard() {
   const [progressUpdates, setProgressUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const user = await base44.auth.me();
     const profiles = await base44.entities.TeenProfile.filter({ user_email: user.email });
     if (!profiles.length) {
@@ -37,16 +38,9 @@ export default function Dashboard() {
     if (recs.length === 0) {
       autoGenerateRecs(p, user.email);
     }
-  };
+  }, [navigate]);
 
-  const autoGenerateRecs = async (p, email) => {
-    await base44.functions.invoke('generateRecommendations', {
-      profile: p,
-      existingTitles: [],
-    }).catch(err => console.error('autoGenerateRecs error:', err));
-    const fresh = await base44.entities.Recommendation.filter({ user_email: email }, '-created_date', 50);
-    setRecommendations(fresh);
-  };
+  usePullToRefresh(loadData);
 
   useEffect(() => { loadData(); }, []);
 

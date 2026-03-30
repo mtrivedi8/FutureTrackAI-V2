@@ -653,6 +653,32 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
         >
           <RotateCcw className="w-4 h-4" /> Start From Scratch
         </Button>
+        <Button
+          variant="ghost"
+          className="text-destructive hover:text-destructive gap-2"
+          onClick={async () => {
+            if (!confirm("PERMANENTLY delete your account and all data? This cannot be undone.")) return;
+            const user = await base44.auth.me();
+            const [profiles, plans, recs, updates, journeys] = await Promise.all([
+              base44.entities.TeenProfile.filter({ user_email: user.email }),
+              base44.entities.CareerPlan.filter({ user_email: user.email }),
+              base44.entities.Recommendation.filter({ user_email: user.email }),
+              base44.entities.ProgressUpdate.filter({ user_email: user.email }),
+              base44.entities.JourneyEntry.filter({ user_email: user.email }),
+            ]);
+            await Promise.all([
+              ...profiles.map(r => base44.entities.TeenProfile.delete(r.id)),
+              ...plans.map(r => base44.entities.CareerPlan.delete(r.id)),
+              ...recs.map(r => base44.entities.Recommendation.delete(r.id)),
+              ...updates.map(r => base44.entities.ProgressUpdate.delete(r.id)),
+              ...journeys.map(r => base44.entities.JourneyEntry.delete(r.id)),
+            ]);
+            toast.success("Account data deleted.");
+            base44.auth.logout();
+          }}
+        >
+          🗑️ Delete Account
+        </Button>
       </div>
     </div>
   );

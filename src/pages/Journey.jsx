@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Trophy, Dumbbell, Briefcase, Laptop, Heart, Star, Zap, CheckCircle2, Clock, Trash2 } from "lucide-react";
@@ -27,14 +28,15 @@ export default function Journey() {
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("All");
 
-  useEffect(() => { loadEntries(); }, []);
-
-  const loadEntries = async () => {
+  const loadEntries = useCallback(async () => {
     const user = await base44.auth.me();
     const data = await base44.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200);
     setEntries(data);
     setLoading(false);
-  };
+  }, []);
+
+  usePullToRefresh(loadEntries);
+  useEffect(() => { loadEntries(); }, [loadEntries]);
 
   const handleSaved = async (newEntry) => {
     setShowForm(false);

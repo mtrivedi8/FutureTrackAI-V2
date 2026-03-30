@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { recommendationIcons } from "@/utils/customEmojis";
@@ -21,6 +22,7 @@ const statusColors = {
 };
 
 export default function RecommendationCard({ recommendation, onClick, onStatusChange }) {
+  const [localStatus, setLocalStatus] = useState(recommendation.status);
   const config = typeConfig[recommendation.type] || typeConfig["Skill"];
   const Icon = config.icon;
   const isCustomIcon = typeof Icon === 'function' && Icon.length === 1;
@@ -44,8 +46,8 @@ export default function RecommendationCard({ recommendation, onClick, onStatusCh
             {recommendation.description}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className={cn("text-[10px]", statusColors[recommendation.status])}>
-              {recommendation.status || "New"}
+            <Badge variant="secondary" className={cn("text-[10px]", statusColors[localStatus])}>
+              {localStatus || "New"}
             </Badge>
             {recommendation.difficulty_level && (
               <Badge variant="outline" className="text-[10px]">
@@ -61,13 +63,14 @@ export default function RecommendationCard({ recommendation, onClick, onStatusCh
                   <button
                     key={s}
                     onClick={async () => {
+                      setLocalStatus(s);
                       await base44.entities.Recommendation.update(recommendation.id, { status: s });
                       toast.success(`Marked as ${s}`);
                       onStatusChange?.();
                     }}
                     className={cn(
-                      "text-[10px] px-2 py-1 rounded-lg border font-medium transition-colors",
-                      isActive
+                      "text-[10px] px-2 py-1 rounded-lg border font-medium transition-colors select-none",
+                      localStatus === s
                         ? s === "Completed" ? "bg-green-500/20 text-green-700 border-green-300" : s === "In Progress" ? "bg-secondary/20 text-secondary border-secondary/40" : "bg-primary/20 text-primary border-primary/40"
                         : "bg-muted text-muted-foreground border-border hover:bg-muted/70"
                     )}

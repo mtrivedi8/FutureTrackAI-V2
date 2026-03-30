@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { base44 } from "@/api/base44Client";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 import RecommendationDetail from "../components/recommendations/RecommendationDetail";
@@ -99,6 +100,9 @@ export default function Recommendations() {
       if (found) setSelected(found);
     }
   };
+
+  const refresh = useCallback(() => loadData(false), []);
+  usePullToRefresh(refresh);
 
   useEffect(() => { loadData(true); }, []);
 
