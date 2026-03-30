@@ -70,26 +70,33 @@ Deno.serve(async (req) => {
       const city = schoolToRefresh.city || '';
       console.log(`[NIGHTLY] Fetching course catalog for ${schoolName}...`);
 
-      const docResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `Find official document URLs for "${schoolName}"${city ? ' in ' + city : ''} (zip ${zip}). Search their official school/district website for:
+      const llmTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('LLM timeout after 25s')), 25000)
+      );
+
+      const docResult = await Promise.race([
+        base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Find official document URLs for "${schoolName}"${city ? ' in ' + city : ''} (zip ${zip}). Search their official school/district website for:
 1. Course Catalog PDF or webpage
 2. School website homepage
 3. Graduation requirements page or document
 4. Program guide (AP/Honors/IB if offered)
 
 Return ONLY verified URLs from official sources.`,
-        add_context_from_internet: true,
-        model: 'gemini_3_flash',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            school_website: { type: 'string' },
-            course_catalog_url: { type: 'string' },
-            graduation_requirements_url: { type: 'string' },
-            program_guide_url: { type: 'string' }
+          add_context_from_internet: true,
+          model: 'gemini_3_flash',
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              school_website: { type: 'string' },
+              course_catalog_url: { type: 'string' },
+              graduation_requirements_url: { type: 'string' },
+              program_guide_url: { type: 'string' }
+            }
           }
-        }
-      }).catch(err => {
+        }),
+        llmTimeout
+      ]).catch(err => {
         console.error(`[NIGHTLY] Doc lookup failed for ${schoolName}:`, err.message);
         return null;
       });
