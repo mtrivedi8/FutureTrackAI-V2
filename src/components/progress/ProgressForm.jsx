@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import NativeSelect from "@/components/NativeSelect";
 import { X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -64,12 +64,7 @@ export default function ProgressForm({ recommendations = [], onClose, onCreated 
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-2 block">Type</label>
-            <Select value={form.update_type} onValueChange={v => setForm(p => ({ ...p, update_type: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {UPDATE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <NativeSelect value={form.update_type} onValueChange={v => setForm(p => ({ ...p, update_type: v }))} options={UPDATE_TYPES} />
           </div>
 
           <div>
@@ -94,12 +89,12 @@ export default function ProgressForm({ recommendations = [], onClose, onCreated 
           {recommendations.length > 0 && (
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-2 block">Related to</label>
-              <Select value={form.recommendation_id} onValueChange={v => setForm(p => ({ ...p, recommendation_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select a recommendation (optional)" /></SelectTrigger>
-                <SelectContent>
-                  {recommendations.map(r => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={form.recommendation_id}
+                onValueChange={v => setForm(p => ({ ...p, recommendation_id: v }))}
+                placeholder="Select a recommendation (optional)"
+                options={recommendations.map(r => ({ value: r.id, label: r.title }))}
+              />
             </div>
           )}
 

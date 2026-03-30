@@ -1,4 +1,6 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import PageTransition from "./PageTransition";
 import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -14,6 +16,7 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (location.pathname === "/onboarding") {
     return <Outlet />;
@@ -64,26 +67,30 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="md:ml-64 min-h-screen pb-20 md:pb-0 safe-area-top">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
       </main>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border z-40 safe-area-bottom select-none">
-        <div className="flex items-center justify-around py-2 px-4">
+        <div className="flex items-center justify-around py-1 px-2">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = location.pathname === path;
             return (
-              <Link
+              <button
                 key={path}
-                to={path}
+                onClick={() => navigate(path)}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 select-none",
+                  "flex flex-col items-center gap-1 min-w-[48px] min-h-[48px] px-3 py-2 rounded-xl transition-all duration-200 select-none justify-center",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <Icon className={cn("w-5 h-5", isActive && "scale-110")} />
                 <span className="text-[10px] font-medium">{label}</span>
-              </Link>
+              </button>
             );
           })}
         </div>

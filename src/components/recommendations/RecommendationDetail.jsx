@@ -2,7 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import NativeSelect from "@/components/NativeSelect";
 import { X, Star, ExternalLink, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -107,16 +107,7 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
           <div className="space-y-4 pt-2 border-t border-border">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-2 block">Status</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NativeSelect value={status} onValueChange={setStatus} options={statusOptions} />
             </div>
 
             <div>

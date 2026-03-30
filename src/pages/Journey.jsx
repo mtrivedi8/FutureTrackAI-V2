@@ -40,7 +40,8 @@ export default function Journey() {
 
   const handleSaved = async (newEntry) => {
     setShowForm(false);
-    await loadEntries();
+    // Optimistically add to list instantly
+    setEntries(prev => [newEntry, ...prev]);
     // Auto-match recommendations with similar titles and mark as Completed
     try {
       const user = await base44.auth.me();
@@ -60,6 +61,8 @@ export default function Journey() {
       console.error("Auto-match error:", e);
     }
     toast.success("Journey entry saved!");
+    // Sync with server in background
+    loadEntries();
   };
 
   const handleDelete = async (id) => {
