@@ -311,7 +311,7 @@ export default function RoadmapDemo() {
                         const Icon = TYPE_ICONS[rec.type] || TYPE_ICONS.default;
                         const sc = { "Completed": "bg-green-900/50 text-green-300 border-green-500/30", "In Progress": "bg-blue-900/50 text-blue-300 border-blue-500/30", "Exploring": "bg-violet-900/50 text-violet-300 border-violet-500/30" }[rec.status] || "bg-slate-800/50 text-slate-400 border-slate-600/30";
                         return (
-                          <button key={rec.id} onClick={() => { setSelected(null); navigate(`/recommendations?id=${rec.id}`); }}
+                          <button key={rec.id} onClick={() => { setSelected(null); navigate(`/recommendations/${rec.id}`, { state: { title: rec.title } }); }}
                             className="w-full flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left">
                             <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
                               <Icon className="w-4 h-4 text-white/60" />

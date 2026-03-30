@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Plus, BookOpen, Trophy, Dumbbell, Briefcase, Laptop, Heart, Star, Zap, 
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import JourneyEntryForm from "@/components/journey/JourneyEntryForm";
+
 
 const TYPE_CONFIG = {
   "School Course":    { icon: BookOpen,  color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -23,9 +24,9 @@ const TYPE_CONFIG = {
 const GRADE_LABELS = { 7:"7th", 8:"8th", 9:"9th", 10:"10th", 11:"11th", 12:"12th" };
 
 export default function Journey() {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("All");
 
   const loadEntries = useCallback(async () => {
@@ -37,33 +38,6 @@ export default function Journey() {
 
   usePullToRefresh(loadEntries);
   useEffect(() => { loadEntries(); }, [loadEntries]);
-
-  const handleSaved = async (newEntry) => {
-    setShowForm(false);
-    // Optimistically add to list instantly
-    setEntries(prev => [newEntry, ...prev]);
-    // Auto-match recommendations with similar titles and mark as Completed
-    try {
-      const user = await base44.auth.me();
-      const recs = await base44.entities.Recommendation.filter({ user_email: user.email });
-      const titleLower = newEntry.title.toLowerCase();
-      const matches = recs.filter(r =>
-        r.status !== "Completed" &&
-        (r.title.toLowerCase().includes(titleLower) || titleLower.includes(r.title.toLowerCase()))
-      );
-      for (const rec of matches) {
-        await base44.entities.Recommendation.update(rec.id, { status: "Completed" });
-      }
-      if (matches.length > 0) {
-        toast.success(`Marked ${matches.length} suggestion${matches.length > 1 ? "s" : ""} as Completed! 🎉`);
-      }
-    } catch (e) {
-      console.error("Auto-match error:", e);
-    }
-    toast.success("Journey entry saved!");
-    // Sync with server in background
-    loadEntries();
-  };
 
   const handleDelete = async (id) => {
     await base44.entities.JourneyEntry.delete(id);
@@ -95,7 +69,7 @@ export default function Journey() {
           <h1 className="font-heading text-2xl font-bold text-foreground">My Journey</h1>
           <p className="text-muted-foreground text-sm mt-1">{entries.length} entries · used to personalize your roadmap & suggestions</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
+        <Button onClick={() => navigate("/journey/new")} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
           <Plus className="w-4 h-4" /> Add Entry
         </Button>
       </div>
@@ -117,7 +91,7 @@ export default function Journey() {
           <BookOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <h3 className="font-heading font-semibold text-foreground mb-1">Log your journey</h3>
           <p className="text-muted-foreground text-sm mb-4">Add courses, activities, sports, and programs you've done. Your roadmap and suggestions will adapt.</p>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
+          <Button onClick={() => navigate("/journey/new")} className="gap-2">
             <Plus className="w-4 h-4" /> Add Your First Entry
           </Button>
         </div>
@@ -163,11 +137,7 @@ export default function Journey() {
         </div>
       )}
 
-      <AnimatePresence>
-        {showForm && (
-          <JourneyEntryForm onSave={handleSaved} onClose={() => setShowForm(false)} />
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }

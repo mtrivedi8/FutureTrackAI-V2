@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { base44 } from "@/api/base44Client";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
-import RecommendationDetail from "../components/recommendations/RecommendationDetail";
+// RecommendationDetail is now a dedicated route page
 import RecommendationMapView from "../components/recommendations/RecommendationMapView";
 import GenerateButton from "../components/dashboard/GenerateButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +20,7 @@ export default function Recommendations() {
   const [recommendations, setRecommendations] = useState([]);
   const [tracks, setTracks] = useState([]);
   const [currentGrade, setCurrentGrade] = useState(9);
-  const [selected, setSelected] = useState(null);
+  // selected state kept for URL-based opening
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("list"); // "list" | "map"
   const [loading, setLoading] = useState(true);
@@ -93,12 +93,10 @@ export default function Recommendations() {
 
     setLoading(false);
 
+    // handle ?id=... deep-link by navigating to detail route
     const urlParams = new URLSearchParams(window.location.search);
     const recId = urlParams.get("id");
-    if (recId) {
-      const found = recs.find(r => r.id === recId);
-      if (found) setSelected(found);
-    }
+    if (recId) navigate(`/recommendations/${recId}`, { replace: true });
   };
 
   const refresh = useCallback(() => loadData(false), []);
@@ -225,7 +223,7 @@ export default function Recommendations() {
             <div className="grid grid-cols-1 gap-2 sm:gap-3">
               {filtered.map((rec, i) => (
                 <motion.div key={rec.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <RecommendationCard recommendation={rec} onClick={setSelected} onStatusChange={loadData} />
+                  <RecommendationCard recommendation={rec} onClick={(r) => navigate(`/recommendations/${r.id}`, { state: { title: r.title } })} onStatusChange={loadData} />
                 </motion.div>
               ))}
             </div>
@@ -244,13 +242,7 @@ export default function Recommendations() {
         </>
       )}
 
-      {selected && (
-        <RecommendationDetail
-          recommendation={selected}
-          onClose={() => setSelected(null)}
-          onUpdated={loadData}
-        />
-      )}
+
     </div>
   );
 }

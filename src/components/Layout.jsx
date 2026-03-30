@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import TopHeader from "./TopHeader";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "./PageTransition";
 import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap } from "lucide-react";
@@ -67,6 +68,7 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="md:ml-64 min-h-screen pb-20 md:pb-0 safe-area-top">
+        <TopHeader />
         <AnimatePresence mode="wait">
           <PageTransition key={location.pathname}>
             <Outlet />

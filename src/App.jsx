@@ -18,6 +18,8 @@ import ThankYou from './pages/ThankYou';
 import RoadmapDemo from './pages/RoadmapDemo';
 import CollegePath from './pages/CollegePath';
 import Journey from './pages/Journey';
+import RecommendationDetailPage from './pages/RecommendationDetailPage';
+import JourneyNewPage from './pages/JourneyNewPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,6 +54,8 @@ const AuthenticatedApp = () => {
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/college-path" element={<CollegePath />} />
         <Route path="/journey" element={<Journey />} />
+        <Route path="/journey/new" element={<JourneyNewPage />} />
+        <Route path="/recommendations/:id" element={<RecommendationDetailPage />} />
         <Route path="/roadmap" element={<RoadmapDemo />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
