@@ -100,7 +100,7 @@ export default function Onboarding() {
 
     // Kick off recommendations and academic plan generation in background
     const cleanProfile = {
-      user_email: user.email,
+      user_email: userEmail,
       display_name: form.display_name,
       zipcode: form.zipcode,
       city: form.city,
