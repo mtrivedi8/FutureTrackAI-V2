@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,15 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await base44.auth.me();
+      setUserEmail(user.email);
+    };
+    fetchUser();
+  }, []);
   const [form, setForm] = useState({
     display_name: "",
     avatar_emoji: "🚀",
@@ -80,12 +89,11 @@ export default function Onboarding() {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const user = await base44.auth.me();
     const goals = form.goals.length > 0 ? form.goals : ["Get into Good College"];
     const profile = await base44.entities.TeenProfile.create({
       ...form,
       goals,
-      user_email: user.email,
+      user_email: userEmail,
       onboarding_completed: true,
       account_created_date: new Date().toISOString(),
     });
