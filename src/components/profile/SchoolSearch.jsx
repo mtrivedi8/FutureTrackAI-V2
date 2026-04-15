@@ -66,7 +66,10 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
       }
     } catch (err) {
       addDebugStep(`❌ ERROR: ${err.message}`);
-      setZipError(`Error: ${err.message}. Try typing manually.`);
+      // Silently fail — user can still type school name manually
+      setMiddleSchools([]);
+      setHighSchools([]);
+      setZipError(null);
     }
     setLoading(false);
   };
@@ -106,7 +109,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
       setDocStatus('harvesting');
       base44.functions.invoke('harvestSchoolDocuments', { school_name: schoolName, zipcode: zip, city })
         .then(() => setDocStatus('harvested'))
-        .catch(() => setDocStatus('not_found'));
+        .catch(() => setDocStatus(null));
     } catch {
       setDocStatus('not_found');
     }
