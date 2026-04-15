@@ -34,10 +34,7 @@ export default function Dashboard() {
     setProgressUpdates(updates);
     setLoading(false);
 
-    // Auto-generate suggestions on first visit
-    if (recs.length === 0) {
-      autoGenerateRecs(p, user.email);
-    }
+
   }, [navigate]);
 
   usePullToRefresh(loadData);
