@@ -1,0 +1,64 @@
+{
+  "name": "ProgressUpdate",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the teen"
+    },
+    "recommendation_id": {
+      "type": "string",
+      "description": "ID of the related recommendation"
+    },
+    "update_type": {
+      "type": "string",
+      "enum": [
+        "Achievement",
+        "Milestone",
+        "Reflection",
+        "Interest Change",
+        "Feedback"
+      ],
+      "description": "Type of progress update"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the update"
+    },
+    "description": {
+      "type": "string",
+      "description": "Details about the progress"
+    },
+    "mood": {
+      "type": "string",
+      "enum": [
+        "Excited",
+        "Motivated",
+        "Curious",
+        "Neutral",
+        "Struggling",
+        "Uncertain"
+      ],
+      "description": "How the teen is feeling"
+    },
+    "new_interests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Any new interests discovered"
+    },
+    "skills_gained": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Skills gained from this update"
+    }
+  },
+  "required": [
+    "user_email",
+    "update_type",
+    "title"
+  ]
+}
