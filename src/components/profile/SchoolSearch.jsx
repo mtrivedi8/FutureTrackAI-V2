@@ -14,7 +14,11 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   const [debugSteps, setDebugSteps] = useState([]);
   const [debugMode, setDebugMode] = useState(false);
   const [docStatus, setDocStatus] = useState(null); // null | 'checking' | 'found' | 'harvesting' | 'harvested' | 'not_found'
+  const [searching, setSearching] = useState(false);
   const debounceRef = useRef(null);
+  const pollRef = useRef(null);
+
+  useEffect(() => () => clearInterval(pollRef.current), []);
 
   // Load debug mode setting on mount
   useEffect(() => {
@@ -30,8 +34,47 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     setDebugSteps(prev => [...prev.slice(-4), step]);
   };
 
+  const applyResults = (list) => {
+    const middle = list.filter(s => s.school_type === 'middle' || s.school_type === 'middle_high');
+    const high = list.filter(s => s.school_type === 'high' || s.school_type === 'middle_high');
+    setMiddleSchools(middle);
+    setHighSchools(high);
+    setShowMiddleList(middle.length > 0);
+    setShowHighList(high.length > 0);
+    return middle.length > 0 || high.length > 0;
+  };
+
+  const pollForResults = (zip) => {
+    clearInterval(pollRef.current);
+    setSearching(true);
+    addDebugStep(`🔎 Searching the web for schools near ${zip} (this can take a minute)...`);
+    let attempts = 0;
+    const maxAttempts = 24; // ~2 minutes at 5s each
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const fresh = await apiClient.entities.SchoolDirectory.filter({ zipcode: zip });
+        if (fresh.length > 0) {
+          clearInterval(pollRef.current);
+          setSearching(false);
+          const found = applyResults(fresh);
+          addDebugStep(found ? `✅ Ready! Select a school below.` : `❌ No results. Try typing the school name.`);
+          if (!found) setZipError('No schools found. Try typing the school name manually.');
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollRef.current);
+          setSearching(false);
+          addDebugStep(`❌ Search timed out. Try typing the school name.`);
+          setZipError('No schools found. Try typing the school name manually.');
+        }
+      } catch {
+        clearInterval(pollRef.current);
+        setSearching(false);
+      }
+    }, 5000);
+  };
+
   const lookupZip = async (zip) => {
-    if (!/^\d{5}$/.test(zip)) { 
+    if (!/^\d{5}$/.test(zip)) {
       setMiddleSchools([]);
       setHighSchools([]);
       setShowMiddleList(false);
@@ -41,24 +84,24 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     setLoading(true);
     setZipError(null);
     setDebugSteps([]);
+    clearInterval(pollRef.current);
+    setSearching(false);
     try {
       addDebugStep(`⏳ Step 1: Calling lookupSchoolsByZip(${zip})...`);
       const res = await apiClient.functions.invoke('lookupSchoolsByZip', { zipcode: zip });
-      
-      addDebugStep(`✅ Step 2: Response status ${res.status}`);
+
       const list = res.data?.schools || [];
-      addDebugStep(`📊 Step 3: Got ${list.length} schools (source: ${res.data?.source || '?'})`);
-      
-      const middle = list.filter(s => s.school_type === 'middle' || s.school_type === 'middle_high');
-      const high = list.filter(s => s.school_type === 'high' || s.school_type === 'middle_high');
-      addDebugStep(`🏫 Step 4: Filtered: ${middle.length} middle + ${high.length} high`);
-      
-      setMiddleSchools(middle);
-      setHighSchools(high);
-      setShowMiddleList(middle.length > 0);
-      setShowHighList(high.length > 0);
-      
-      if (middle.length === 0 && high.length === 0) {
+      const source = res.data?.source;
+      addDebugStep(`📊 Step 2: source=${source || '?'}, ${list.length} cached schools`);
+
+      if (source === 'pending') {
+        setLoading(false);
+        pollForResults(zip);
+        return;
+      }
+
+      const found = applyResults(list);
+      if (!found) {
         addDebugStep(`❌ No results. Try typing school name.`);
         setZipError('No schools found. Try typing the school name manually.');
       } else {
@@ -141,7 +184,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
           <label className="text-sm font-medium mb-2 block">Your zip code</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
+            {(loading || searching) && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
             <Input
               value={zipcode}
               onChange={handleZipInput}
@@ -150,6 +193,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
               maxLength={5}
             />
           </div>
+          {searching && <p className="text-xs text-muted-foreground mt-1">Searching the web for schools near you — this can take a minute...</p>}
           {zipError && <p className="text-xs text-destructive mt-1 font-medium">{zipError}</p>}
           {debugMode && debugSteps.length > 0 && (
             <div className="mt-2 text-xs bg-muted/60 rounded-lg p-2.5 space-y-0.5 max-h-48 overflow-y-auto border border-border">

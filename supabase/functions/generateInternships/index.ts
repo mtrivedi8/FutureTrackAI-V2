@@ -23,6 +23,8 @@ const schema = {
           location: { type: 'string' },
           eligibility: { type: 'string' },
           selectivity: { type: 'string', enum: ['Open', 'Competitive', 'Selective', 'Highly Selective'] },
+          admission_model: { type: 'string', enum: ['Pay to Play', 'Selective', 'Both'] },
+          application_method: { type: 'string', enum: ['Online Application', 'Email Inquiry', 'Both'] },
           contact_email: { type: 'string' },
           path_to_get_in: { type: 'string' },
         },
@@ -70,9 +72,11 @@ Find ${perTrack} REAL internships, research programs, or structured pre-professi
 5. Search the organization's official page for a real admissions/coordinator/contact email address for questions about the program. Only include contact_email if you actually find one published on an official source — leave it blank otherwise. Never invent an email address.
 6. eligibility: one sentence on who qualifies (grade, citizenship, GPA, etc. if known).
 7. selectivity: your best estimate (Open, Competitive, Selective, or Highly Selective) based on the program's reputation and acceptance rate if known.
-8. path_to_get_in: 2-3 concrete sentences of specific, actionable advice for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations).
+8. admission_model: how you actually get a spot — "Pay to Play" if it's tuition/fee-based enrollment with little to no merit screening (e.g. most pre-college summer camps), "Selective" if admission is merit-based/competitive with no significant cost barrier (e.g. research programs, corporate internships, government programs), or "Both" if it's competitive AND has a real tuition/fee (e.g. elite pre-college research programs with paid tuition).
+9. application_method: the actual next step to pursue it — "Online Application" if there's a formal online application/portal to fill out, "Email Inquiry" if the realistic next step is emailing a coordinator/admissions contact to ask about applying (common for smaller or informal opportunities), or "Both" if a formal application exists but reaching out directly is also a real, useful step.
+10. path_to_get_in: 2-3 concrete sentences of specific, actionable advice for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations).
 
-For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, contact_email, path_to_get_in.`;
+For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in.`;
 
   const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 10 });
   return result?.internships || [];

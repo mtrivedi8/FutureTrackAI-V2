@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send } from "lucide-react";
+import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send, CreditCard, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/api/apiClient";
 
@@ -23,6 +23,26 @@ const selectivityColors = {
   "Selective": "bg-secondary/10 text-secondary",
   "Highly Selective": "bg-accent/10 text-accent",
 };
+
+function AdmissionModelBadges({ admissionModel }) {
+  if (!admissionModel) return null;
+  const showPay = admissionModel === "Pay to Play" || admissionModel === "Both";
+  const showSelective = admissionModel === "Selective" || admissionModel === "Both";
+  return (
+    <>
+      {showPay && (
+        <Badge variant="secondary" className="text-[10px] gap-1 bg-yellow-500/10 text-yellow-700">
+          <CreditCard className="w-2.5 h-2.5" /> Pay to Play
+        </Badge>
+      )}
+      {showSelective && (
+        <Badge variant="secondary" className="text-[10px] gap-1 bg-blue-500/10 text-blue-600">
+          <Trophy className="w-2.5 h-2.5" /> Selective
+        </Badge>
+      )}
+    </>
+  );
+}
 
 function buildEmailDraft({ internship, profile }) {
   const grade = profile?.current_grade;
@@ -46,6 +66,13 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
   const [pathOpen, setPathOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [draft, setDraft] = useState(null);
+
+  // Show whichever action is actually relevant for how this program is
+  // pursued - a legacy record with no application_method still shows both,
+  // matching the previous always-show-both behavior.
+  const method = internship.application_method;
+  const showApply = !!internship.application_url && method !== "Email Inquiry";
+  const showCompose = method !== "Online Application";
 
   const updateStatus = async (s) => {
     setLocalStatus(s);
@@ -78,6 +105,7 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
           {internship.selectivity && (
             <Badge variant="secondary" className={cn("text-[10px]", selectivityColors[internship.selectivity])}>{internship.selectivity}</Badge>
           )}
+          <AdmissionModelBadges admissionModel={internship.admission_model} />
           {internship.contact_email && (
             <Badge variant="secondary" className="text-[10px] gap-1 bg-green-500/10 text-green-600"><Mail className="w-2.5 h-2.5" />Email found</Badge>
           )}
@@ -110,10 +138,10 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap mt-auto">
-        {internship.application_url && (
+        {showApply && (
           <a href={internship.application_url} target="_blank" rel="noopener noreferrer">
             <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2">
-              Visit <ExternalLink className="w-2.5 h-2.5" />
+              Apply <ExternalLink className="w-2.5 h-2.5" />
             </Button>
           </a>
         )}
@@ -122,9 +150,11 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
             <Compass className="w-3 h-3" /> Path to Get In
           </Button>
         )}
-        <Button size="sm" className="h-7 text-[10px] gap-1 px-2 bg-gradient-to-r from-primary to-accent" onClick={openCompose}>
-          <Mail className="w-3 h-3" /> Compose Email
-        </Button>
+        {showCompose && (
+          <Button size="sm" className="h-7 text-[10px] gap-1 px-2 bg-gradient-to-r from-primary to-accent" onClick={openCompose}>
+            <Mail className="w-3 h-3" /> Compose Email
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-border/50">
