@@ -70,9 +70,9 @@ ${excludeKeys.size ? `Already suggested (do NOT repeat): ${[...excludeKeys].join
 Find ${perTrack} REAL internships, research programs, or structured pre-professional experiences for the ${season} cycle that:
 1. Fit this student's grade level (${grade}) — if under 10th grade, prioritize junior/pipeline programs, shadowing, or entry-level structured programs rather than formal paid internships which are rare before 10th grade.
 2. Align tightly with "${bucketLabel}" and this student's interests and dream careers.
-3. Are REAL, named programs/organizations with a genuine, working application URL (official program pages, company career pages, or well-known boards). Never invent a fake URL.
-4. Include a realistic application deadline for the ${season} cycle, or "Rolling" if year-round.
-5. Search the organization's official page for a real admissions/coordinator/contact email address for questions about the program. Only include contact_email if you actually find one published on an official source — leave it blank otherwise. Never invent an email address.
+3. Are REAL, well-known, named programs/organizations you're confident actually exist, with their genuine official application URL if you know it. Never invent a fake URL - leave application_url blank rather than guessing.
+4. Include a realistic application deadline for the ${season} cycle if you know it, or "Rolling" if year-round, or leave blank if unsure.
+5. contact_email: only include this if you're confident of a real, commonly-published contact address for the program - leave blank otherwise. Never invent an email address.
 6. eligibility: one sentence on who qualifies (grade, citizenship, GPA, etc. if known).
 7. selectivity: your best estimate (Open, Competitive, Selective, or Highly Selective) based on the program's reputation and acceptance rate if known.
 8. admission_model: how you actually get a spot — "Pay to Play" if it's tuition/fee-based enrollment with little to no merit screening (e.g. most pre-college summer camps), "Selective" if admission is merit-based/competitive with no significant cost barrier (e.g. research programs, corporate internships, government programs), or "Both" if it's competitive AND has a real tuition/fee (e.g. elite pre-college research programs with paid tuition).
@@ -81,7 +81,12 @@ Find ${perTrack} REAL internships, research programs, or structured pre-professi
 
 Be efficient - a short, high-confidence list beats an exhaustive search. For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in.`;
 
-  const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 2, effort: 'low', maxTokens: 4000 });
+  // No web search here - verifying contact emails/URLs per item across
+  // several buckets proved too heavy to complete reliably (silent
+  // compute-time-limit failures even at low effort). Rely on the model's
+  // own knowledge of real, well-known programs instead; contact_email/
+  // application_url will often be blank rather than search-verified.
+  const result = await invokeLLM({ source: 'generateInternships', prompt, schema, effort: 'high', maxTokens: 4000 });
   return result?.internships || [];
 }
 
