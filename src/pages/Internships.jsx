@@ -7,13 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Briefcase, Sparkles, Loader2, ChevronDown, ChevronRight, Layers } from "lucide-react";
+import { Briefcase, Sparkles, Loader2, ChevronDown, ChevronRight, Layers, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 function nextSummerYear() {
   const now = new Date();
   return now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+}
+
+/** Summer + application window for a given grade, relative to the student's current grade. */
+function cycleForGrade(currentGrade, targetGrade) {
+  const yearsAhead = targetGrade - (currentGrade || 9);
+  const summerYear = nextSummerYear() + yearsAhead;
+  return {
+    summer: `Summer ${summerYear}`,
+    applyWindow: `Apply Sep ${summerYear - 1}–Feb ${summerYear}`,
+  };
 }
 
 function ProfileContextCard({ profile, plan, journeyCount, perTrack, setPerTrack, generating, onGenerate }) {
@@ -80,8 +90,65 @@ function ProfileContextCard({ profile, plan, journeyCount, perTrack, setPerTrack
   );
 }
 
+function GradeSection({ grade, currentGrade, items, defaultOpen, profile, onStatusChange }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const { summer, applyWindow } = cycleForGrade(currentGrade, grade);
+
+  return (
+    <div className="rounded-xl border border-border bg-background overflow-hidden">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted/30 transition-colors" disabled={items.length === 0}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex flex-col items-center justify-center shrink-0">
+                <span className="text-sm font-bold text-primary leading-none">{grade}</span>
+                <span className="text-[8px] text-primary/70 leading-none mt-0.5">Gr.</span>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-foreground text-sm">Grade {grade}</span>
+                  <Badge variant="secondary" className="text-[10px] gap-1 bg-muted text-muted-foreground">
+                    <Clock className="w-2.5 h-2.5" /> Upcoming
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{summer} · {applyWindow}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {items.length > 0 && <Badge variant="secondary">{items.length} program{items.length !== 1 ? "s" : ""}</Badge>}
+              {items.length > 0 && (open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />)}
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        {items.length > 0 && (
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 pt-0">
+              {items.map((internship) => (
+                <InternshipCard key={internship.id} internship={internship} profile={profile} onStatusChange={onStatusChange} />
+              ))}
+            </div>
+          </CollapsibleContent>
+        )}
+      </Collapsible>
+    </div>
+  );
+}
+
 function TrackSection({ label, description, items, defaultOpen, profile, onStatusChange }) {
   const [open, setOpen] = useState(defaultOpen);
+  const currentGrade = profile?.current_grade || 9;
+
+  const byGrade = useMemo(() => {
+    const map = new Map([[9, []], [10, []], [11, []], [12, []]]);
+    for (const internship of items) {
+      const grades = internship.grade_levels?.length > 0 ? internship.grade_levels : [currentGrade];
+      for (const g of grades) {
+        if (map.has(g)) map.get(g).push(internship);
+      }
+    }
+    return map;
+  }, [items, currentGrade]);
+
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="rounded-2xl border border-border bg-card overflow-hidden">
       <CollapsibleTrigger asChild>
@@ -97,10 +164,23 @@ function TrackSection({ label, description, items, defaultOpen, profile, onStatu
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 pt-0">
-          {items.map((internship) => (
-            <InternshipCard key={internship.id} internship={internship} profile={profile} onStatusChange={onStatusChange} />
-          ))}
+        <div className="space-y-2 p-4 pt-0">
+          {[9, 10, 11, 12]
+            // Only show the current grade, the next one up, and anything
+            // further out that already has real suggestions - an empty
+            // "Grade 12" placeholder means nothing to a 9th grader yet.
+            .filter((grade) => grade >= currentGrade && grade <= currentGrade + 1 || (byGrade.get(grade) || []).length > 0)
+            .map((grade) => (
+              <GradeSection
+                key={grade}
+                grade={grade}
+                currentGrade={currentGrade}
+                items={byGrade.get(grade) || []}
+                defaultOpen={grade === currentGrade}
+                profile={profile}
+                onStatusChange={onStatusChange}
+              />
+            ))}
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -149,17 +229,25 @@ export default function Internships() {
 
     const prevCount = internships.length;
     let stableRounds = 0;
+    let totalRounds = 0;
+    // Buckets (General + each career track) are generated one at a time on
+    // the backend now, so there can be long quiet gaps between batches of
+    // new rows arriving - stay patient rather than giving up early.
+    const MAX_STABLE_ROUNDS = 20; // ~60s of no change
+    const MAX_TOTAL_ROUNDS = 100; // ~5 min hard cap
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
+        totalRounds++;
         const user = await apiClient.auth.me();
         const fresh = await apiClient.entities.Internship.filter({ user_email: user.email }, "-created_date", 200);
         if (fresh.length > prevCount) {
           setInternships(fresh);
+          stableRounds = 0;
         } else {
           stableRounds++;
         }
-        if (stableRounds >= 4) {
+        if (stableRounds >= MAX_STABLE_ROUNDS || totalRounds >= MAX_TOTAL_ROUNDS) {
           clearInterval(pollRef.current);
           setGenerating(false);
           if (fresh.length > prevCount) toast.success(`${fresh.length - prevCount} new internships found! 🎉`);

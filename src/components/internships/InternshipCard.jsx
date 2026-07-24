@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send, CreditCard, Trophy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send, CreditCard, Trophy, Target, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/api/apiClient";
 
@@ -145,7 +145,7 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
             </Button>
           </a>
         )}
-        {internship.path_to_get_in && (
+        {(internship.path_to_get_in || internship.path_steps?.length > 0) && (
           <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2" onClick={() => setPathOpen(true)}>
             <Compass className="w-3 h-3" /> Path to Get In
           </Button>
@@ -177,11 +177,47 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
       </div>
 
       <Dialog open={pathOpen} onOpenChange={setPathOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Path to Get In</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Compass className="w-4 h-4 text-primary" /> Path to Get In</DialogTitle>
+            <DialogDescription>
+              Roadmap to build toward <span className="font-semibold text-foreground">{internship.organization}{internship.organization && internship.title ? " — " : ""}{internship.title}</span>
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{internship.path_to_get_in}</p>
+
+          {internship.path_to_get_in && (
+            <div className="flex items-start gap-3 rounded-xl bg-primary/5 border border-primary/10 p-3">
+              <Target className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground">{internship.path_to_get_in}</p>
+            </div>
+          )}
+
+          {internship.path_steps?.length > 0 ? (
+            <div className="space-y-4 mt-2">
+              {internship.path_steps.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 pb-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">{step.timeframe}</Badge>
+                      {step.category && <span className="text-xs text-muted-foreground">{step.category}</span>}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                    {step.description && <p className="text-sm text-muted-foreground mt-0.5">{step.description}</p>}
+                    {step.resource_url && (
+                      <a href={step.resource_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1">
+                        {step.resource_url.replace(/^https?:\/\//, "")} <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !internship.path_to_get_in && (
+            <p className="text-sm text-muted-foreground">No path details available for this program yet.</p>
+          )}
         </DialogContent>
       </Dialog>
 
