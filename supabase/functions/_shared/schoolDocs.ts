@@ -41,7 +41,7 @@ export async function discoverSchoolDocuments(opts: {
 3. Graduation requirements page or document
 4. Program guide (AP/Honors/IB if offered)
 
-Return ONLY verified URLs from official sources. Be quick and direct.`,
+Each field must be either a real, directly-usable URL starting with http:// or https://, or omitted entirely. Never put explanations, hedging, or unverified guesses in a URL field - if you are not sure of the exact URL, leave that field out.`,
     webSearch: true,
     maxUses: 3,
     effort: 'low',
@@ -57,11 +57,13 @@ Return ONLY verified URLs from official sources. Be quick and direct.`,
     },
   });
 
+  const isRealUrl = (v: unknown): v is string => typeof v === 'string' && /^https?:\/\/\S+$/.test(v.trim());
+
   const documentUrls: SchoolDocumentUrls = {};
-  if (docResult?.school_website) documentUrls.school_website = docResult.school_website;
-  if (docResult?.course_catalog_url) documentUrls.course_catalog = docResult.course_catalog_url;
-  if (docResult?.graduation_requirements_url) documentUrls.graduation_requirements = docResult.graduation_requirements_url;
-  if (docResult?.program_guide_url) documentUrls.program_guide = docResult.program_guide_url;
+  if (isRealUrl(docResult?.school_website)) documentUrls.school_website = docResult.school_website.trim();
+  if (isRealUrl(docResult?.course_catalog_url)) documentUrls.course_catalog = docResult.course_catalog_url.trim();
+  if (isRealUrl(docResult?.graduation_requirements_url)) documentUrls.graduation_requirements = docResult.graduation_requirements_url.trim();
+  if (isRealUrl(docResult?.program_guide_url)) documentUrls.program_guide = docResult.program_guide_url.trim();
 
   const cacheData = {
     school_name: schoolName,
@@ -71,13 +73,11 @@ Return ONLY verified URLs from official sources. Be quick and direct.`,
     expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
   };
 
-  let cacheId = cache?.id ?? null;
-  if (cache) {
-    await supabaseAdmin.from('school_document_cache').update(cacheData).eq('id', cache.id);
-  } else {
-    const { data: inserted } = await supabaseAdmin.from('school_document_cache').insert(cacheData).select().single();
-    cacheId = inserted?.id ?? null;
-  }
+  const { data: upserted } = await supabaseAdmin
+    .from('school_document_cache')
+    .upsert(cacheData, { onConflict: 'school_name,zipcode' })
+    .select()
+    .single();
 
-  return { cacheId, documentUrls, fromCache: false };
+  return { cacheId: upserted?.id ?? cache?.id ?? null, documentUrls, fromCache: false };
 }

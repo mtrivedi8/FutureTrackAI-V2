@@ -113,7 +113,7 @@ async function fetchCourseCatalog(rawSchoolName: string, profile: any, grade: nu
 
   const { documentUrls } = await withTimeout(
     discoverSchoolDocuments({ schoolName, zipcode: profile.zipcode, city: profile.city, source: 'generateAcademicPlan' }),
-    45000,
+    60000,
     { cacheId: null, documentUrls: {}, fromCache: false }
   );
 
@@ -186,19 +186,22 @@ async function fetchCourseCatalog(rawSchoolName: string, profile: any, grade: nu
     if (isHighSchoolGrade) high = fallbackHigh; else middle = fallbackMiddle;
   }
 
+  // Preserve document_urls discovered by a slower-than-expected
+  // discoverSchoolDocuments call that finished after our timeout fallback
+  // already fired, instead of clobbering them with the empty fallback.
+  const { data: latestCacheRow } = await supabaseAdmin
+    .from('school_document_cache').select('document_urls').eq('school_name', schoolName).eq('zipcode', profile.zipcode).limit(1);
+  const mergedDocumentUrls = { ...(latestCacheRow?.[0]?.document_urls || {}), ...documentUrls };
+
   const cacheData = {
     school_name: schoolName,
     zipcode: profile.zipcode,
-    document_urls: documentUrls,
+    document_urls: mergedDocumentUrls,
     cached_data: { school_name: schoolName, middle_courses: middle, high_courses: high },
     cached_date: new Date().toISOString(),
     expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
   };
-  if (cache) {
-    await supabaseAdmin.from('school_document_cache').update(cacheData).eq('id', cache.id);
-  } else {
-    await supabaseAdmin.from('school_document_cache').insert(cacheData);
-  }
+  await supabaseAdmin.from('school_document_cache').upsert(cacheData, { onConflict: 'school_name,zipcode' });
 
   return { middle, high, documentUrls };
 }
