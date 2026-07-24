@@ -7,11 +7,13 @@ import { logEvent } from '../_shared/log.ts';
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
 async function searchAndCache(zipcode: string, userEmail: string) {
-  await logEvent('lookupSchoolsByZip', 'info', `background search started for zip ${zipcode}`, undefined, userEmail);
   try {
     const result = await invokeLLM({ source: 'lookupSchoolsByZip',
-      prompt: `Find all middle schools and high schools in the ${zipcode} zip code area. For each school, provide: school_name, school_type (middle or high), city, state, district. Return as JSON array.`,
+      prompt: `Find middle schools and high schools in the ${zipcode} zip code area. For each school, provide: school_name, school_type (middle or high), city, state, district. Return as JSON array. Be quick and direct - a short, high-confidence list is better than an exhaustive search.`,
       webSearch: true,
+      maxUses: 2,
+      effort: 'low',
+      maxTokens: 2000,
       schema: {
         type: 'object',
         properties: {
@@ -32,6 +34,7 @@ async function searchAndCache(zipcode: string, userEmail: string) {
       },
     });
 
+    const seen = new Set<string>();
     const schools = (result?.schools || [])
       .filter((s: any) => s.school_name)
       .map((s: any) => ({
@@ -42,7 +45,13 @@ async function searchAndCache(zipcode: string, userEmail: string) {
         district: s.district || '',
         zipcode,
         website: '',
-      }));
+      }))
+      .filter((s: any) => {
+        const key = s.school_name.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     if (schools.length > 0) {
       // Cache in school_directory so future lookups for this zip are instant and free.
@@ -76,7 +85,6 @@ Deno.serve(async (req) => {
     // function is allowed to run synchronously - kick it off in the
     // background and let the client poll school_directory for results.
     const hasWaitUntil = typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function';
-    await logEvent('lookupSchoolsByZip', 'info', `dispatching background search, hasWaitUntil=${hasWaitUntil}`, undefined, user.email);
     const work = searchAndCache(zipcode, user.email);
     try {
       if (hasWaitUntil) {

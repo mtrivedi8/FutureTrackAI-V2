@@ -4,6 +4,8 @@ import { invokeLLM } from '../_shared/llm.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { logEvent } from '../_shared/log.ts';
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
+
 const schema = {
   type: 'object',
   properties: {
@@ -76,27 +78,20 @@ Find ${perTrack} REAL internships, research programs, or structured pre-professi
 9. application_method: the actual next step to pursue it — "Online Application" if there's a formal online application/portal to fill out, "Email Inquiry" if the realistic next step is emailing a coordinator/admissions contact to ask about applying (common for smaller or informal opportunities), or "Both" if a formal application exists but reaching out directly is also a real, useful step.
 10. path_to_get_in: 2-3 concrete sentences of specific, actionable advice for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations).
 
-For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in.`;
+Be efficient - a short, high-confidence list beats an exhaustive search. For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in.`;
 
-  const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 10 });
+  const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 4, effort: 'medium', maxTokens: 4000 });
   return result?.internships || [];
 }
 
-Deno.serve(async (req) => {
-  const opt = handleOptions(req);
-  if (opt) return opt;
-
+async function runGeneration(user: { email: string }, perTrack: number) {
   try {
-    const user = await getAuthedUser(req);
-    if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
-
-    const { perTrack } = await req.json().catch(() => ({}));
-    const countPerBucket = Math.min(Math.max(parseInt(perTrack) || 6, 1), 10);
+    const countPerBucket = Math.min(Math.max(perTrack || 6, 1), 10);
 
     const { data: profiles } = await supabaseAdmin
       .from('teen_profiles').select('*').eq('user_email', user.email).limit(1);
     const profile = profiles?.[0];
-    if (!profile) return jsonResponse({ error: 'Profile not found' }, 404);
+    if (!profile) return;
 
     const { data: plans } = await supabaseAdmin
       .from('career_plans').select('*').eq('user_email', user.email).limit(1);
@@ -163,8 +158,38 @@ Deno.serve(async (req) => {
         bucketCount: buckets.length,
       }, user.email);
     }
+  } catch (error) {
+    console.error('generateInternships background error:', (error as Error).message);
+    await logEvent('generateInternships', 'error', 'Background generation error', { message: (error as Error)?.message }, user.email);
+  }
+}
 
-    return jsonResponse({ count: created });
+Deno.serve(async (req) => {
+  const opt = handleOptions(req);
+  if (opt) return opt;
+
+  try {
+    const user = await getAuthedUser(req);
+    if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+    const { perTrack } = await req.json().catch(() => ({}));
+
+    // Each bucket makes its own web-search LLM call, which can take well
+    // over a minute - run them in the background and let the client poll
+    // the internships table, rather than blocking this request (which would
+    // risk hitting the edge function's compute-time limit).
+    const work = runGeneration(user, parseInt(perTrack) || 6);
+    try {
+      if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+        EdgeRuntime.waitUntil(work);
+      } else {
+        work.catch((err) => console.error('runGeneration error:', err.message));
+      }
+    } catch {
+      // ignore - work is already running regardless
+    }
+
+    return jsonResponse({ status: 'generating' });
   } catch (error) {
     console.error('generateInternships error:', (error as Error).message);
     await logEvent('generateInternships', 'error', 'Top-level handler error', { message: (error as Error)?.message });
