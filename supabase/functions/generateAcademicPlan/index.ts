@@ -157,6 +157,8 @@ Deno.serve(async (req) => {
     const user = await getAuthedUser(req);
     if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
+    await logEvent('generateAcademicPlan', 'info', 'invocation received', undefined, user.email);
+
     const { data: allSettings = [] } = await supabaseAdmin.from('app_settings').select('*');
     const monthlyLimitEnabled = allSettings.find((s) => s.key === 'monthly_limit_enabled')?.value !== 'false';
 
@@ -166,6 +168,7 @@ Deno.serve(async (req) => {
         .from('usage_credits').select('*').eq('user_email', user.email).eq('month', month).limit(1);
       const record = usage?.[0];
       if (record && (record.blocked || record.total_cost >= 5.0)) {
+        await logEvent('generateAcademicPlan', 'warn', 'blocked by usage cap', { record }, user.email);
         return jsonResponse({ error: 'USAGE_CAP_REACHED' }, 429);
       }
     }
