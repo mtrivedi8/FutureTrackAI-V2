@@ -221,6 +221,8 @@ async function generateTracks(profile: any, journey: any, orderedCourses: any[],
 Track ${i + 1} focus: ${trackHints[i]}
 Goals: ${(freshProfile.goals || []).join(', ')}
 
+name: a professional career-track title describing the FIELD, 2-6 words (e.g. "Astrophysics & Data Science Track", "Business & Entrepreneurship Track"). Never use the student's own name (${freshProfile.display_name}) as the track name.
+
 This school's actual course catalog (name (subject, grades it's offered in)): ${allCoursesSummary || 'Not available - use realistic standard/honors/AP course names for this grade band.'}
 
 Build grades ${grade}-12 roadmap. For each grade year, ONLY select school_courses from the catalog above whose grade_levels include (or are the closest available to) that specific grade - never assign a grade 11 physics elective to a 9th grader. If the catalog has no course for a subject area at that grade, choose the closest earlier prerequisite from the catalog instead of inventing one. For each grade include:
@@ -238,8 +240,13 @@ Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with
         const data = await invokeLLM({ source: 'generateAcademicPlan', prompt, schema: { type: 'object', properties: { track: trackSchema } }, effort: 'medium', maxTokens: 6000 });
         if (!data?.track) return null;
         const track = data.track;
+        // Defensive fallback in case the model names the track after the
+        // student despite the instruction not to (seen in practice).
+        const isNamedAfterStudent = track.name && freshProfile.display_name &&
+          track.name.trim().toLowerCase() === freshProfile.display_name.trim().toLowerCase();
         return {
           ...track,
+          name: isNamedAfterStudent ? `${trackHints[i]} Track` : track.name,
           grades: (track.grades || []).map((g: any) => {
             const gradeMatched = coursesForPrompt.filter((c) => (c.grade_levels || []).includes(g.grade));
             return {
