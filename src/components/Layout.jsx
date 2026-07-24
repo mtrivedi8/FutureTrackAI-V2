@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import TopHeader from "./TopHeader";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "./PageTransition";
-import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap } from "lucide-react";
+import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const navItems = [
   { path: "/", icon: Home, label: "Dashboard" },
   { path: "/recommendations", icon: Compass, label: "Explore" },
   { path: "/plan", icon: BookOpen, label: "Roadmap" },
+  { path: "/internships", icon: Briefcase, label: "Internships" },
   { path: "/journey", icon: Trophy, label: "Journey" },
   { path: "/college-path", icon: GraduationCap, label: "College Path" },
   { path: "/profile", icon: User, label: "Profile" },

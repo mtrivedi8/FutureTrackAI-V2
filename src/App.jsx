@@ -20,6 +20,7 @@ import CollegePath from './pages/CollegePath';
 import Journey from './pages/Journey';
 import RecommendationDetailPage from './pages/RecommendationDetailPage';
 import JourneyNewPage from './pages/JourneyNewPage';
+import Internships from './pages/Internships';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/plan" element={<AcademicPlan />} />
+        <Route path="/internships" element={<Internships />} />
         <Route path="/membership" element={<Membership />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/college-path" element={<CollegePath />} />
