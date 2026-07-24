@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import StatsOverview from "../components/dashboard/StatsOverview";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 
@@ -18,8 +18,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const user = await base44.auth.me();
-    const profiles = await base44.entities.TeenProfile.filter({ user_email: user.email });
+    const user = await apiClient.auth.me();
+    const profiles = await apiClient.entities.TeenProfile.filter({ user_email: user.email });
     if (!profiles.length) {
       navigate("/onboarding");
       return;
@@ -27,8 +27,8 @@ export default function Dashboard() {
     const p = profiles[0];
     setProfile(p);
     const [recs, updates] = await Promise.all([
-      base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50),
-      base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50),
+      apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50),
+      apiClient.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50),
     ]);
     setRecommendations(recs);
     setProgressUpdates(updates);

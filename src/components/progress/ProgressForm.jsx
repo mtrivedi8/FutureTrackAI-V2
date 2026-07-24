@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,8 +35,8 @@ export default function ProgressForm({ recommendations = [], onClose, onCreated 
   const handleSubmit = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
-    const user = await base44.auth.me();
-    await base44.entities.ProgressUpdate.create({
+    const user = await apiClient.auth.me();
+    await apiClient.entities.ProgressUpdate.create({
       ...form,
       user_email: user.email,
     });

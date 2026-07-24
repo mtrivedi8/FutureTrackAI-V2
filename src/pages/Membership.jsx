@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, CheckCircle, GraduationCap, Brain, BookOpen } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function Membership() {
   const handleCheckout = async () => {
     setLoading(true);
     setError(null);
-    const response = await base44.functions.invoke('createCheckout', {});
+    const response = await apiClient.functions.invoke('createCheckout', {});
     const { redirectUrl, error: err } = response.data;
     if (err || !redirectUrl) {
       setError(err || 'Failed to start checkout. Please try again.');
@@ -83,7 +83,7 @@ export default function Membership() {
           <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground text-center space-y-1">
             <p>✅ Up to 20 AI career plan generations per month</p>
             <p>⚡ Usage resets every month automatically</p>
-            <p>🔒 Secure payment powered by Base44 Payments</p>
+            <p>🔒 Secure payment powered by Stripe</p>
           </div>
         </div>
       </div>

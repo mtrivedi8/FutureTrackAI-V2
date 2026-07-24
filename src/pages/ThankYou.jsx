@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, GraduationCap } from "lucide-react";
 
@@ -10,8 +10,8 @@ export default function ThankYou() {
 
   useEffect(() => {
     const check = async () => {
-      const user = await base44.auth.me();
-      const memberships = await base44.entities.Membership.filter({ user_email: user.email, status: "active" });
+      const user = await apiClient.auth.me();
+      const memberships = await apiClient.entities.Membership.filter({ user_email: user.email, status: "active" });
       setActive(memberships.length > 0);
       setChecking(false);
     };
@@ -20,8 +20,8 @@ export default function ThankYou() {
     let attempts = 0;
     const interval = setInterval(async () => {
       attempts++;
-      const user = await base44.auth.me();
-      const memberships = await base44.entities.Membership.filter({ user_email: user.email, status: "active" });
+      const user = await apiClient.auth.me();
+      const memberships = await apiClient.entities.Membership.filter({ user_email: user.email, status: "active" });
       if (memberships.length > 0 || attempts >= 8) {
         setActive(memberships.length > 0);
         setChecking(false);

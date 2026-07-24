@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Loader2, Star, Lock, CheckCircle2, Zap, BookOpen, Lightbulb, Users, Target, ExternalLink, GraduationCap } from "lucide-react";
 
 const TYPE_ICONS = { "Course": BookOpen, "Skill": Lightbulb, "Activity": Users, "Project": Target, "Career Path": Star, "default": Zap };
@@ -111,11 +111,11 @@ export default function RoadmapDemo() {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const user = await base44.auth.me();
+    const user = await apiClient.auth.me();
     const [plans, recs, profiles] = await Promise.all([
-      base44.entities.CareerPlan.filter({ user_email: user.email }),
-      base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 100),
-      base44.entities.TeenProfile.filter({ user_email: user.email }),
+      apiClient.entities.CareerPlan.filter({ user_email: user.email }),
+      apiClient.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 100),
+      apiClient.entities.TeenProfile.filter({ user_email: user.email }),
     ]);
     if (profiles[0]?.current_grade) setCurrentGrade(profiles[0].current_grade);
     setRecommendations(recs);

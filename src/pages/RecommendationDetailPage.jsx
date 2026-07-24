@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import NativeSelect from "@/components/NativeSelect";
@@ -25,8 +25,8 @@ export default function RecommendationDetailPage() {
   useEffect(() => {
     if (!recId) { navigate("/recommendations"); return; }
     (async () => {
-      const user = await base44.auth.me();
-      const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
+      const user = await apiClient.auth.me();
+      const recs = await apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
       const found = recs.find(r => r.id === recId);
       if (!found) { navigate("/recommendations"); return; }
       setRec(found);
@@ -38,14 +38,14 @@ export default function RecommendationDetailPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Recommendation.update(rec.id, { status, rating });
+    await apiClient.entities.Recommendation.update(rec.id, { status, rating });
     toast.success("Updated!");
     setSaving(false);
     navigate(-1);
   };
 
   const handleSkip = async () => {
-    await base44.entities.Recommendation.update(rec.id, { status: "Skipped" });
+    await apiClient.entities.Recommendation.update(rec.id, { status: "Skipped" });
     toast.success("Moved to Skipped");
     navigate(-1);
   };

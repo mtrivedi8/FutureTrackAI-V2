@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import NativeSelect from "@/components/NativeSelect";
@@ -17,7 +17,7 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
 
   const handleDelete = async () => {
     setDeleting(true);
-    await base44.entities.Recommendation.update(recommendation.id, { status: "Skipped" });
+    await apiClient.entities.Recommendation.update(recommendation.id, { status: "Skipped" });
     toast.success("Moved to Skipped");
     onUpdated?.();
     onClose();
@@ -25,7 +25,7 @@ export default function RecommendationDetail({ recommendation, onClose, onUpdate
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Recommendation.update(recommendation.id, { status, rating });
+    await apiClient.entities.Recommendation.update(recommendation.id, { status, rating });
     toast.success("Recommendation updated!");
     onUpdated?.();
     setSaving(false);

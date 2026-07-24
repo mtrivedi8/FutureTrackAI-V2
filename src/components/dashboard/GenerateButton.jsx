@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,8 +17,8 @@ export default function GenerateButton({ profile, existingRecs = [], disabled = 
     let stableRounds = 0;
     pollRef.current = setInterval(async () => {
       try {
-        const user = await base44.auth.me();
-        const fresh = await base44.entities.Recommendation.filter({ user_email: user.email }, '-created_date', 100);
+        const user = await apiClient.auth.me();
+        const fresh = await apiClient.entities.Recommendation.filter({ user_email: user.email }, '-created_date', 100);
         if (fresh.length > lastCountRef.current) {
           // New recs arrived — show them immediately
           onNewRec?.(fresh);
@@ -61,7 +61,7 @@ export default function GenerateButton({ profile, existingRecs = [], disabled = 
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ prevCount }));
     toast.info('Generating suggestions — you can browse other pages!');
 
-    base44.functions.invoke('generateRecommendations', {
+    apiClient.functions.invoke('generateRecommendations', {
       profile,
       existingTitles: existingRecs.map(r => r.title),
     }).catch(err => console.error('generateRecommendations invoke error:', err));

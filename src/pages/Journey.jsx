@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Trophy, Dumbbell, Briefcase, Laptop, Heart, Star, Zap, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,8 +30,8 @@ export default function Journey() {
   const [filterType, setFilterType] = useState("All");
 
   const loadEntries = useCallback(async () => {
-    const user = await base44.auth.me();
-    const data = await base44.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200);
+    const user = await apiClient.auth.me();
+    const data = await apiClient.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200);
     setEntries(data);
     setLoading(false);
   }, []);
@@ -40,7 +40,7 @@ export default function Journey() {
   useEffect(() => { loadEntries(); }, [loadEntries]);
 
   const handleDelete = async (id) => {
-    await base44.entities.JourneyEntry.delete(id);
+    await apiClient.entities.JourneyEntry.delete(id);
     setEntries(prev => prev.filter(e => e.id !== id));
   };
 

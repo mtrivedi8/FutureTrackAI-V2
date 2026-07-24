@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, ChevronRight, BookOpen, Trophy, RefreshCw, AlertTriangle, Zap, XCircle, School } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,13 +54,13 @@ export default function AcademicPlan() {
     try {
       setLoading(true);
       setLoadError(false);
-      const user = await base44.auth.me();
-    const allSettings = await base44.entities.AppSettings.filter({});
+      const user = await apiClient.auth.me();
+    const allSettings = await apiClient.entities.AppSettings.filter({});
     const [profiles, plans, memberships, usageRecords] = await Promise.all([
-      base44.entities.TeenProfile.filter({ user_email: user.email }),
-      base44.entities.CareerPlan.filter({ user_email: user.email }),
-      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
-      base44.entities.UsageCredit.filter({ user_email: user.email, month: new Date().toISOString().slice(0, 7) }),
+      apiClient.entities.TeenProfile.filter({ user_email: user.email }),
+      apiClient.entities.CareerPlan.filter({ user_email: user.email }),
+      apiClient.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      apiClient.entities.UsageCredit.filter({ user_email: user.email, month: new Date().toISOString().slice(0, 7) }),
     ]);
     const paymentEnabled = allSettings.find(s => s.key === 'payment_enabled') ? allSettings.find(s => s.key === 'payment_enabled').value === 'true' : true;
     const monthlyLimitEnabledSetting = allSettings.find(s => s.key === 'monthly_limit_enabled') ? allSettings.find(s => s.key === 'monthly_limit_enabled').value !== 'false' : true;
@@ -97,7 +97,7 @@ export default function AcademicPlan() {
   const startPolling = (userEmail, isFullPlan = false) => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(async () => {
-      const plans = await base44.entities.CareerPlan.filter({ user_email: userEmail });
+      const plans = await apiClient.entities.CareerPlan.filter({ user_email: userEmail });
       const p = plans[0];
       if (p && !p.is_generating && p.career_tracks?.length > 0) {
         clearInterval(pollingRef.current);
@@ -120,24 +120,24 @@ export default function AcademicPlan() {
     }
 
     try {
-      const user = await base44.auth.me();
+      const user = await apiClient.auth.me();
       const currentGrade = profile.current_grade || 9;
 
       // Mark as generating in DB so re-visits know it's in progress
-      const existingForMark = await base44.entities.CareerPlan.filter({ user_email: user.email });
+      const existingForMark = await apiClient.entities.CareerPlan.filter({ user_email: user.email });
       let generatingPlanId = null;
       if (existingForMark[0]) {
-        await base44.entities.CareerPlan.update(existingForMark[0].id, { is_generating: true });
+        await apiClient.entities.CareerPlan.update(existingForMark[0].id, { is_generating: true });
         generatingPlanId = existingForMark[0].id;
       } else {
-        const created = await base44.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
+        const created = await apiClient.entities.CareerPlan.create({ user_email: user.email, is_generating: trackIndex !== null });
         generatingPlanId = created.id;
       }
 
       const [recs, updates, journeyEntries] = await Promise.all([
-        base44.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
-        base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
-        base44.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200),
+        apiClient.entities.Recommendation.filter({ user_email: user.email }, "-updated_date", 50),
+        apiClient.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 30),
+        apiClient.entities.JourneyEntry.filter({ user_email: user.email }, "-created_date", 200),
       ]);
 
       const journey = {
@@ -176,7 +176,7 @@ export default function AcademicPlan() {
             high_school_name: profile.high_school_name,
             school_name: profile.school_name,
           };
-          response = await base44.functions.invoke('generateAcademicPlan', { profile: cleanProfile, journey });
+          response = await apiClient.functions.invoke('generateAcademicPlan', { profile: cleanProfile, journey });
           break;
         } catch (invokeErr) {
           retries++;
@@ -192,9 +192,9 @@ export default function AcademicPlan() {
         toast.error('Monthly usage limit reached. Your credits reset next month.');
         setUsageBlocked(true);
         setGeneratingTrackIndex(null);
-        const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+        const existingPlans = await apiClient.entities.CareerPlan.filter({ user_email: user.email });
         if (existingPlans[0]) {
-          await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+          await apiClient.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
         }
         return;
       }
@@ -210,10 +210,10 @@ export default function AcademicPlan() {
         toast.error('Failed to generate plan. Please try again.');
       }
       setGeneratingTrackIndex(null);
-      const user = await base44.auth.me();
-      const existingPlans = await base44.entities.CareerPlan.filter({ user_email: user.email });
+      const user = await apiClient.auth.me();
+      const existingPlans = await apiClient.entities.CareerPlan.filter({ user_email: user.email });
       if (existingPlans[0]) {
-        await base44.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
+        await apiClient.entities.CareerPlan.update(existingPlans[0].id, { is_generating: false });
       }
     }
   };
@@ -221,7 +221,7 @@ export default function AcademicPlan() {
   const handleTrackSelect = async (idx) => {
     setSelectedTrack(idx);
     if (plan) {
-      await base44.entities.CareerPlan.update(plan.id, { selected_track_index: idx });
+      await apiClient.entities.CareerPlan.update(plan.id, { selected_track_index: idx });
     }
   };
 
@@ -441,9 +441,9 @@ export default function AcademicPlan() {
             onClick={async () => {
               if (pollingRef.current) clearInterval(pollingRef.current);
               setGeneratingTrackIndex(null);
-              const user = await base44.auth.me();
-              const plans = await base44.entities.CareerPlan.filter({ user_email: user.email });
-              if (plans[0]) await base44.entities.CareerPlan.update(plans[0].id, { is_generating: false });
+              const user = await apiClient.auth.me();
+              const plans = await apiClient.entities.CareerPlan.filter({ user_email: user.email });
+              if (plans[0]) await apiClient.entities.CareerPlan.update(plans[0].id, { is_generating: false });
               toast.info('Plan generation cancelled.');
             }}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors mt-2"

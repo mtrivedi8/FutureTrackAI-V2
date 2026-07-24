@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Rocket, TrendingUp, BookOpen, Award, ArrowRight, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 
 const features = [
   {
@@ -35,10 +35,10 @@ export default function CollegePath() {
 
   useEffect(() => {
     const check = async () => {
-      const user = await base44.auth.me();
+      const user = await apiClient.auth.me();
       const [memberships, allSettings] = await Promise.all([
-        base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
-        base44.entities.AppSettings.filter({}),
+        apiClient.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+        apiClient.entities.AppSettings.filter({}),
       ]);
       const paymentEnabled = allSettings.find(s => s.key === 'payment_enabled')?.value === 'true';
       setPaymentGated(paymentEnabled && memberships.length === 0);

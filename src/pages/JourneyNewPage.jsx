@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import NativeSelect from "@/components/NativeSelect";
 import { toast } from "sonner";
@@ -17,8 +17,8 @@ export default function JourneyNewPage() {
     e.preventDefault();
     if (!form.title.trim()) return;
     setSaving(true);
-    const user = await base44.auth.me();
-    const entry = await base44.entities.JourneyEntry.create({
+    const user = await apiClient.auth.me();
+    const entry = await apiClient.entities.JourneyEntry.create({
       ...form,
       grade: form.grade ? Number(form.grade) : undefined,
       user_email: user.email,
@@ -26,14 +26,14 @@ export default function JourneyNewPage() {
 
     // Auto-match recommendations
     try {
-      const recs = await base44.entities.Recommendation.filter({ user_email: user.email });
+      const recs = await apiClient.entities.Recommendation.filter({ user_email: user.email });
       const titleLower = entry.title.toLowerCase();
       const matches = recs.filter(r =>
         r.status !== "Completed" &&
         (r.title.toLowerCase().includes(titleLower) || titleLower.includes(r.title.toLowerCase()))
       );
       for (const rec of matches) {
-        await base44.entities.Recommendation.update(rec.id, { status: "Completed" });
+        await apiClient.entities.Recommendation.update(rec.id, { status: "Completed" });
       }
       if (matches.length > 0) {
         toast.success(`Marked ${matches.length} suggestion${matches.length > 1 ? "s" : ""} as Completed! 🎉`);

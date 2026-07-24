@@ -1,0 +1,12 @@
+{
+  "name": "FutureTrackAI",
+  "short_name": "FutureTrackAI",
+  "description": "Your personalized AI career and academic guide",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

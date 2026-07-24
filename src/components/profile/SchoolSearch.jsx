@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Input } from "@/components/ui/input";
 import { Loader2, School, MapPin, ChevronDown, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   // Load debug mode setting on mount
   useEffect(() => {
     const loadDebugMode = async () => {
-      const settings = await base44.entities.AppSettings.filter({ key: 'debug_logging' });
+      const settings = await apiClient.entities.AppSettings.filter({ key: 'debug_logging' });
       setDebugMode(settings[0]?.value === 'true');
     };
     loadDebugMode().catch(() => setDebugMode(false));
@@ -43,7 +43,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
     setDebugSteps([]);
     try {
       addDebugStep(`⏳ Step 1: Calling lookupSchoolsByZip(${zip})...`);
-      const res = await base44.functions.invoke('lookupSchoolsByZip', { zipcode: zip });
+      const res = await apiClient.functions.invoke('lookupSchoolsByZip', { zipcode: zip });
       
       addDebugStep(`✅ Step 2: Response status ${res.status}`);
       const list = res.data?.schools || [];
@@ -95,7 +95,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
   const checkAndHarvestDocs = async (schoolName, zip, city) => {
     setDocStatus('checking');
     try {
-      const cached = await base44.entities.SchoolDocumentCache.filter({ school_name: schoolName, zipcode: zip });
+      const cached = await apiClient.entities.SchoolDocumentCache.filter({ school_name: schoolName, zipcode: zip });
       const cache = cached[0];
       const hasData = cache && cache.document_urls && Object.keys(cache.document_urls).length > 0;
       const stillFresh = hasData && cache.expires_at && new Date(cache.expires_at) > new Date();
@@ -107,7 +107,7 @@ export default function SchoolSearch({ grade, zipcode, middleSchoolName, highSch
 
       // Not cached — trigger background harvest (fire-and-forget)
       setDocStatus('harvesting');
-      base44.functions.invoke('harvestSchoolDocuments', { school_name: schoolName, zipcode: zip, city })
+      apiClient.functions.invoke('harvestSchoolDocuments', { school_name: schoolName, zipcode: zip, city })
         .then(() => setDocStatus('harvested'))
         .catch(() => setDocStatus(null));
     } catch {

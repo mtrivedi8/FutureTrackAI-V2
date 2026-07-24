@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
@@ -44,11 +44,11 @@ export default function ExportPDFButton({ profile }) {
     if (!profile) return;
     setLoading(true);
     try {
-      const user = await base44.auth.me();
+      const user = await apiClient.auth.me();
       const [plans, recs, updates] = await Promise.all([
-        base44.entities.CareerPlan.filter({ user_email: user.email }),
-        base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100),
-        base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50),
+        apiClient.entities.CareerPlan.filter({ user_email: user.email }),
+        apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100),
+        apiClient.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 50),
       ]);
 
       const plan = plans[0];

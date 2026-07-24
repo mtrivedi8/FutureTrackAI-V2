@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import ProgressForm from "../components/progress/ProgressForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +30,12 @@ export default function Progress() {
   const [paymentGated, setPaymentGated] = useState(false);
 
   const loadData = async () => {
-    const user = await base44.auth.me();
+    const user = await apiClient.auth.me();
     const [ups, recs, memberships, allSettings] = await Promise.all([
-      base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 100),
-      base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100),
-      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
-      base44.entities.AppSettings.filter({}),
+      apiClient.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 100),
+      apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100),
+      apiClient.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      apiClient.entities.AppSettings.filter({}),
     ]);
     const paymentEnabled = allSettings.find(s => s.key === 'payment_enabled')?.value === 'true';
     if (paymentEnabled && memberships.length === 0) {

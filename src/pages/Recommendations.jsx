@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 // RecommendationDetail is now a dedicated route page
 import RecommendationMapView from "../components/recommendations/RecommendationMapView";
@@ -35,12 +35,12 @@ export default function Recommendations() {
   };
 
   const loadData = async (autoGenerate = false) => {
-    const user = await base44.auth.me();
+    const user = await apiClient.auth.me();
     const [profiles, memberships, allSettings, plans] = await Promise.all([
-      base44.entities.TeenProfile.filter({ user_email: user.email }),
-      base44.entities.Membership.filter({ user_email: user.email, status: 'active' }),
-      base44.entities.AppSettings.filter({}),
-      base44.entities.CareerPlan.filter({ user_email: user.email }),
+      apiClient.entities.TeenProfile.filter({ user_email: user.email }),
+      apiClient.entities.Membership.filter({ user_email: user.email, status: 'active' }),
+      apiClient.entities.AppSettings.filter({}),
+      apiClient.entities.CareerPlan.filter({ user_email: user.email }),
     ]);
     if (!profiles.length || !profiles[0].onboarding_completed) {
       navigate('/onboarding');
@@ -56,20 +56,20 @@ export default function Recommendations() {
     }
     if (plans[0]?.career_tracks?.length > 0) setTracks(plans[0].career_tracks.filter(t => t?.name));
 
-    const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
+    const recs = await apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 100);
 
     if (autoGenerate && p && recs.length === 0) {
       setLoading(false);
       setIsSearching(true);
-      base44.functions.invoke('generateRecommendations', { profile: p, existingTitles: [] })
+      apiClient.functions.invoke('generateRecommendations', { profile: p, existingTitles: [] })
         .catch(err => console.error('generateRecommendations invoke error:', err));
       let lastCount = 0;
       let stableRounds = 0;
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         try {
-          const freshUser = await base44.auth.me();
-          const fresh = await base44.entities.Recommendation.filter({ user_email: freshUser.email }, '-created_date', 100);
+          const freshUser = await apiClient.auth.me();
+          const fresh = await apiClient.entities.Recommendation.filter({ user_email: freshUser.email }, '-created_date', 100);
           if (fresh.length > lastCount) {
             setRecommendations(fresh);
             lastCount = fresh.length;

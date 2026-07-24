@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { recommendationIcons } from "@/utils/customEmojis";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 
 const typeConfig = {
   "Career Path": { icon: recommendationIcons['Career Path'], color: "bg-primary/10 text-primary" },
@@ -64,7 +64,7 @@ export default function RecommendationCard({ recommendation, onClick, onStatusCh
                     key={s}
                     onClick={async () => {
                       setLocalStatus(s);
-                      await base44.entities.Recommendation.update(recommendation.id, { status: s });
+                      await apiClient.entities.Recommendation.update(recommendation.id, { status: s });
                       toast.success(`Marked as ${s}`);
                       onStatusChange?.();
                     }}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -15,8 +15,8 @@ export default function JourneyEntryForm({ onSave, onClose }) {
     e.preventDefault();
     if (!form.title.trim()) return;
     setSaving(true);
-    const user = await base44.auth.me();
-    const entry = await base44.entities.JourneyEntry.create({
+    const user = await apiClient.auth.me();
+    const entry = await apiClient.entities.JourneyEntry.create({
       ...form,
       grade: form.grade ? Number(form.grade) : undefined,
       user_email: user.email,

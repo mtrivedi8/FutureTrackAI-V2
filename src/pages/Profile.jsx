@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,11 +62,11 @@ export default function Profile() {
   const [abortingAll, setAbortingAll] = useState(false);
 
   const loadProfile = async () => {
-    const u = await base44.auth.me();
+    const u = await apiClient.auth.me();
     setUser(u);
     const [profiles, allSettings] = await Promise.all([
-      base44.entities.TeenProfile.filter({ user_email: u.email }),
-      base44.entities.AppSettings.filter({}),
+      apiClient.entities.TeenProfile.filter({ user_email: u.email }),
+      apiClient.entities.AppSettings.filter({}),
     ]);
     if (!profiles.length) {
       navigate("/onboarding");
@@ -85,11 +85,11 @@ export default function Profile() {
   const togglePayment = async () => {
     setTogglingPayment(true);
     const newVal = !paymentEnabled;
-    const existing = await base44.entities.AppSettings.filter({ key: 'payment_enabled' });
+    const existing = await apiClient.entities.AppSettings.filter({ key: 'payment_enabled' });
     if (existing[0]) {
-      await base44.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
+      await apiClient.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
     } else {
-      await base44.entities.AppSettings.create({ key: 'payment_enabled', value: String(newVal) });
+      await apiClient.entities.AppSettings.create({ key: 'payment_enabled', value: String(newVal) });
     }
     setPaymentEnabled(newVal);
     toast.success(`Payment ${newVal ? 'enabled' : 'disabled'}`);
@@ -99,11 +99,11 @@ export default function Profile() {
   const toggleMonthlyLimit = async () => {
     setTogglingLimit(true);
     const newVal = !monthlyLimitEnabled;
-    const existing = await base44.entities.AppSettings.filter({ key: 'monthly_limit_enabled' });
+    const existing = await apiClient.entities.AppSettings.filter({ key: 'monthly_limit_enabled' });
     if (existing[0]) {
-      await base44.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
+      await apiClient.entities.AppSettings.update(existing[0].id, { value: String(newVal) });
     } else {
-      await base44.entities.AppSettings.create({ key: 'monthly_limit_enabled', value: String(newVal) });
+      await apiClient.entities.AppSettings.create({ key: 'monthly_limit_enabled', value: String(newVal) });
     }
     setMonthlyLimitEnabled(newVal);
     toast.success(`Monthly limit ${newVal ? 'enabled' : 'disabled'}`);
@@ -124,7 +124,7 @@ export default function Profile() {
   const handleSave = async () => {
     setSaving(true);
     const { id, created_date, updated_date, created_by, goalInput, careerInput, ...data } = form;
-    await base44.entities.TeenProfile.update(profile.id, data);
+    await apiClient.entities.TeenProfile.update(profile.id, data);
     setProfile({ ...profile, ...data });
     setEditing(false);
     toast.success("Profile updated!");
@@ -133,75 +133,24 @@ export default function Profile() {
 
   const refreshRecommendations = async () => {
     setRefreshing(true);
-    const user = await base44.auth.me();
-
-    // Get progress updates to inform the AI
-    const updates = await base44.entities.ProgressUpdate.filter({ user_email: user.email }, "-created_date", 20);
-    const recs = await base44.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50);
-
-    const completedRecs = recs.filter(r => r.status === "Completed").map(r => r.title);
-    const skippedRecs = recs.filter(r => r.status === "Skipped").map(r => r.title);
-    const recentSkills = updates.flatMap(u => u.skills_gained || []);
-    const newInterests = updates.flatMap(u => u.new_interests || []);
-
-    if (newInterests.length > 0) {
-      const updatedInterests = [...new Set([...(profile.interests || []), ...newInterests])];
-      await base44.entities.TeenProfile.update(profile.id, { interests: updatedInterests });
-      setProfile(p => ({ ...p, interests: updatedInterests }));
-      setForm(p => ({ ...p, interests: updatedInterests }));
+    // Business logic + the LLM call now live server-side in the
+    // refineRecommendations edge function (an API key can't be exposed
+    // to the browser). Re-fetch the profile afterward since interests
+    // may have been updated based on recent progress.
+    const res = await apiClient.functions.invoke('refineRecommendations', {});
+    if (res.data?.error) {
+      toast.error(res.data.error);
+    } else {
+      const u = await apiClient.auth.me();
+      const [profiles] = await Promise.all([
+        apiClient.entities.TeenProfile.filter({ user_email: u.email }),
+      ]);
+      if (profiles[0]) {
+        setProfile(profiles[0]);
+        setForm(profiles[0]);
+      }
+      toast.success("New refined recommendations generated based on your progress!");
     }
-
-    const prompt = `Based on this teen's updated profile and progress, generate 3 new personalized recommendations.
-
-Profile: ${profile.display_name}, age ${profile.age}
-Location: ${[profile.city, profile.country].filter(Boolean).join(", ") || "Not specified"}
-Interests: ${[...(profile.interests || []), ...newInterests].join(", ")}
-Strengths: ${(profile.strengths || []).join(", ")}
-Goals: ${(profile.goals || []).join(", ")}
-Dream careers: ${(profile.dream_careers || []).join(", ")}
-Completed recommendations: ${completedRecs.join(", ") || "None"}
-Skipped recommendations: ${skippedRecs.join(", ") || "None"}
-Recently gained skills: ${recentSkills.join(", ") || "None"}
-New interests: ${newInterests.join(", ") || "None"}
-Recent moods: ${updates.slice(0, 5).map(u => u.mood).join(", ") || "None"}
-
-Adapt your suggestions to reflect their growth. Don't repeat completed or skipped items. Factor in their moods and new skills.
-Tailor suggestions to their location where relevant — mention local opportunities, programs, universities, or organizations available in ${profile.city || profile.country || "their area"} when applicable.
-For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: { type: "string", enum: ["Career Path", "Skill", "Course", "Activity", "Project"] },
-                title: { type: "string" },
-                description: { type: "string" },
-                why_recommended: { type: "string" },
-                difficulty_level: { type: "string", enum: ["Beginner", "Intermediate", "Advanced"] },
-                estimated_duration: { type: "string" },
-                resources: { type: "array", items: { type: "string" } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    for (const rec of result.recommendations || []) {
-      await base44.entities.Recommendation.create({
-        ...rec,
-        user_email: user.email,
-        status: "New",
-      });
-    }
-
-    toast.success("New refined recommendations generated based on your progress!");
     setRefreshing(false);
   };
 
@@ -578,7 +527,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
                 <Button
                   onClick={async () => {
                     setAbortingAll(true);
-                    const res = await base44.functions.invoke('abortAllSessions', {});
+                    const res = await apiClient.functions.invoke('abortAllSessions', {});
                     localStorage.removeItem('recs_generating');
                     toast.success(`Aborted ${res.data?.aborted ?? 0} running sessions across all users`);
                     setAbortingAll(false);
@@ -602,11 +551,11 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
                     const current = allSettings.find(s => s.key === 'debug_logging');
                     const newValue = current?.value === 'true' ? 'false' : 'true';
                     if (current) {
-                      await base44.entities.AppSettings.update(current.id, { value: newValue });
+                      await apiClient.entities.AppSettings.update(current.id, { value: newValue });
                     } else {
-                      await base44.entities.AppSettings.create({ key: 'debug_logging', value: newValue });
+                      await apiClient.entities.AppSettings.create({ key: 'debug_logging', value: newValue });
                     }
-                    const updated = await base44.entities.AppSettings.filter({});
+                    const updated = await apiClient.entities.AppSettings.filter({});
                     setAllSettings(updated);
                   }}
                   variant={allSettings.find(s => s.key === 'debug_logging')?.value === 'true' ? 'default' : 'outline'}
@@ -626,7 +575,7 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
         <Button
           variant="ghost"
           className="text-muted-foreground gap-2"
-          onClick={() => base44.auth.logout()}
+          onClick={() => apiClient.auth.logout()}
         >
           <LogOut className="w-4 h-4" /> Sign Out
         </Button>
@@ -635,18 +584,18 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
           className="text-destructive hover:text-destructive gap-2"
           onClick={async () => {
             if (!confirm("This will delete ALL your data (profile, plan, recommendations, progress) and restart onboarding. Are you sure?")) return;
-            const user = await base44.auth.me();
+            const user = await apiClient.auth.me();
             const [profiles, plans, recs, updates] = await Promise.all([
-              base44.entities.TeenProfile.filter({ user_email: user.email }),
-              base44.entities.CareerPlan.filter({ user_email: user.email }),
-              base44.entities.Recommendation.filter({ user_email: user.email }),
-              base44.entities.ProgressUpdate.filter({ user_email: user.email }),
+              apiClient.entities.TeenProfile.filter({ user_email: user.email }),
+              apiClient.entities.CareerPlan.filter({ user_email: user.email }),
+              apiClient.entities.Recommendation.filter({ user_email: user.email }),
+              apiClient.entities.ProgressUpdate.filter({ user_email: user.email }),
             ]);
             await Promise.all([
-              ...profiles.map(r => base44.entities.TeenProfile.delete(r.id)),
-              ...plans.map(r => base44.entities.CareerPlan.delete(r.id)),
-              ...recs.map(r => base44.entities.Recommendation.delete(r.id)),
-              ...updates.map(r => base44.entities.ProgressUpdate.delete(r.id)),
+              ...profiles.map(r => apiClient.entities.TeenProfile.delete(r.id)),
+              ...plans.map(r => apiClient.entities.CareerPlan.delete(r.id)),
+              ...recs.map(r => apiClient.entities.Recommendation.delete(r.id)),
+              ...updates.map(r => apiClient.entities.ProgressUpdate.delete(r.id)),
             ]);
             navigate("/onboarding");
           }}
@@ -658,23 +607,23 @@ For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, htt
           className="text-destructive hover:text-destructive gap-2"
           onClick={async () => {
             if (!confirm("PERMANENTLY delete your account and all data? This cannot be undone.")) return;
-            const user = await base44.auth.me();
+            const user = await apiClient.auth.me();
             const [profiles, plans, recs, updates, journeys] = await Promise.all([
-              base44.entities.TeenProfile.filter({ user_email: user.email }),
-              base44.entities.CareerPlan.filter({ user_email: user.email }),
-              base44.entities.Recommendation.filter({ user_email: user.email }),
-              base44.entities.ProgressUpdate.filter({ user_email: user.email }),
-              base44.entities.JourneyEntry.filter({ user_email: user.email }),
+              apiClient.entities.TeenProfile.filter({ user_email: user.email }),
+              apiClient.entities.CareerPlan.filter({ user_email: user.email }),
+              apiClient.entities.Recommendation.filter({ user_email: user.email }),
+              apiClient.entities.ProgressUpdate.filter({ user_email: user.email }),
+              apiClient.entities.JourneyEntry.filter({ user_email: user.email }),
             ]);
             await Promise.all([
-              ...profiles.map(r => base44.entities.TeenProfile.delete(r.id)),
-              ...plans.map(r => base44.entities.CareerPlan.delete(r.id)),
-              ...recs.map(r => base44.entities.Recommendation.delete(r.id)),
-              ...updates.map(r => base44.entities.ProgressUpdate.delete(r.id)),
-              ...journeys.map(r => base44.entities.JourneyEntry.delete(r.id)),
+              ...profiles.map(r => apiClient.entities.TeenProfile.delete(r.id)),
+              ...plans.map(r => apiClient.entities.CareerPlan.delete(r.id)),
+              ...recs.map(r => apiClient.entities.Recommendation.delete(r.id)),
+              ...updates.map(r => apiClient.entities.ProgressUpdate.delete(r.id)),
+              ...journeys.map(r => apiClient.entities.JourneyEntry.delete(r.id)),
             ]);
             toast.success("Account data deleted.");
-            base44.auth.logout();
+            apiClient.auth.logout();
           }}
         >
           🗑️ Delete Account
