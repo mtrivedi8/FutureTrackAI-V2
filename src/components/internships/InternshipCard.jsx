@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send, CreditCard, Trophy, Target, GraduationCap } from "lucide-react";
+import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send, CreditCard, Trophy, Target, GraduationCap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/api/apiClient";
 
@@ -66,6 +66,8 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
   const [pathOpen, setPathOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [pathSteps, setPathSteps] = useState(internship.path_steps || null);
+  const [loadingPath, setLoadingPath] = useState(false);
 
   // Show whichever action is actually relevant for how this program is
   // pursued - a legacy record with no application_method still shows both,
@@ -79,6 +81,19 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
     await apiClient.entities.Internship.update(internship.id, { status: s });
     toast.success(`Marked as ${s}`);
     onStatusChange?.();
+  };
+
+  const openPath = async () => {
+    setPathOpen(true);
+    if (pathSteps?.length > 0) return;
+    setLoadingPath(true);
+    try {
+      const res = await apiClient.functions.invoke('generateInternshipPath', { internshipId: internship.id });
+      if (res.data?.path_steps) setPathSteps(res.data.path_steps);
+    } catch (err) {
+      console.error('generateInternshipPath error:', err.message);
+    }
+    setLoadingPath(false);
   };
 
   const openCompose = () => {
@@ -145,8 +160,8 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
             </Button>
           </a>
         )}
-        {(internship.path_to_get_in || internship.path_steps?.length > 0) && (
-          <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2" onClick={() => setPathOpen(true)}>
+        {internship.path_to_get_in && (
+          <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2" onClick={openPath}>
             <Compass className="w-3 h-3" /> Path to Get In
           </Button>
         )}
@@ -192,9 +207,13 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
             </div>
           )}
 
-          {internship.path_steps?.length > 0 ? (
+          {loadingPath ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Building your personalized roadmap…
+            </div>
+          ) : pathSteps?.length > 0 ? (
             <div className="space-y-4 mt-2">
-              {internship.path_steps.map((step, i) => (
+              {pathSteps.map((step, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <GraduationCap className="w-4 h-4 text-primary" />
@@ -215,8 +234,8 @@ export default function InternshipCard({ internship, profile, onStatusChange }) 
                 </div>
               ))}
             </div>
-          ) : !internship.path_to_get_in && (
-            <p className="text-sm text-muted-foreground">No path details available for this program yet.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Couldn't build a detailed roadmap for this program right now — try again in a moment.</p>
           )}
         </DialogContent>
       </Dialog>

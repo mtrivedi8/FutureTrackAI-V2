@@ -29,19 +29,6 @@ const schema = {
           application_method: { type: 'string', enum: ['Online Application', 'Email Inquiry', 'Both'] },
           contact_email: { type: 'string' },
           path_to_get_in: { type: 'string' },
-          path_steps: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                timeframe: { type: 'string' },
-                category: { type: 'string', enum: ['Online Coursework', 'Extracurricular', 'Prerequisite', 'Evaluation', 'Application', 'Outreach', 'Project'] },
-                title: { type: 'string' },
-                description: { type: 'string' },
-                resource_url: { type: 'string' },
-              },
-            },
-          },
         },
       },
     },
@@ -90,16 +77,9 @@ Find ${perTrack} REAL internships, research programs, or structured pre-professi
 7. selectivity: your best estimate (Open, Competitive, Selective, or Highly Selective) based on the program's reputation and acceptance rate if known.
 8. admission_model: how you actually get a spot — "Pay to Play" if it's tuition/fee-based enrollment with little to no merit screening (e.g. most pre-college summer camps), "Selective" if admission is merit-based/competitive with no significant cost barrier (e.g. research programs, corporate internships, government programs), or "Both" if it's competitive AND has a real tuition/fee (e.g. elite pre-college research programs with paid tuition).
 9. application_method: the actual next step to pursue it — "Online Application" if there's a formal online application/portal to fill out, "Email Inquiry" if the realistic next step is emailing a coordinator/admissions contact to ask about applying (common for smaller or informal opportunities), or "Both" if a formal application exists but reaching out directly is also a real, useful step.
-10. path_to_get_in: 2-3 concrete sentences summarizing the overall strategy for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations).
-11. path_steps: a dated, step-by-step roadmap of 4-6 concrete steps from ${today} through the application deadline, in chronological order. Each step needs:
-    - timeframe: a specific period anchored to today and the student's current grade (e.g. "Fall 2026 (Grade ${grade})", "December 2026 (Grade ${grade})", "January–March 2027 (Grade ${grade})") - advance the grade in later steps if the timeline spans into a new school year.
-    - category: one of Online Coursework, Extracurricular, Prerequisite, Evaluation, Application, Outreach, Project.
-    - title: a short, specific action (e.g. "Build Python & Git Proficiency", "Register for Online Prerequisites").
-    - description: 1-2 sentences on why this step matters for getting in.
-    - resource_url: a real, relevant URL if one genuinely helps (a specific course, the program's prerequisite page, etc.) - leave blank if you don't have a real one, never invent a URL.
-    The last step should always be the actual application/submission step.
+10. path_to_get_in: 2-3 concrete sentences summarizing the overall strategy for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations). A detailed step-by-step roadmap is generated separately later, so keep this to a short summary.
 
-Be efficient - a short, high-confidence list beats an exhaustive search. For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in, path_steps.`;
+Be efficient - a short, high-confidence list beats an exhaustive search. For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, admission_model, application_method, contact_email, path_to_get_in.`;
 
   const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 2, effort: 'low', maxTokens: 4000 });
   return result?.internships || [];
