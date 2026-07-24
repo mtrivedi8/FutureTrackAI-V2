@@ -77,7 +77,7 @@ Adapt your suggestions to reflect their growth. Don't repeat completed or skippe
 Tailor suggestions to their location where relevant — mention local opportunities, programs, universities, or organizations available in ${profile.city || profile.country || 'their area'} when applicable.
 For resources, provide 2-3 REAL working URLs (e.g. https://www.coursera.org, https://www.khanacademy.org, https://www.youtube.com/...) that are actually relevant to the topic. Only include valid https:// URLs, no placeholder or made-up links.`;
 
-    const result = await invokeLLM({ prompt, schema });
+    const result = await invokeLLM({ source: 'refineRecommendations', prompt, schema });
     const newRecs = result?.recommendations || [];
 
     for (const rec of newRecs) {

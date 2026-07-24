@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: 'cached', document_urls: cache.document_urls });
     }
 
-    const docResult = await invokeLLM({
+    const docResult = await invokeLLM({ source: 'harvestSchoolDocuments',
       prompt: `Find official document URLs for "${school_name}"${city ? ' in ' + city : ''} (zip ${zipcode}). Search their official school/district website for:
 1. Course Catalog PDF or webpage
 2. School website homepage

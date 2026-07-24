@@ -90,7 +90,7 @@ Find 5 REAL internships, research programs, or structured pre-professional exper
 
 For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid).`;
 
-    const result = await invokeLLM({ prompt, schema, webSearch: true, maxUses: 8 });
+    const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 8 });
     const internships = result?.internships || [];
 
     let created = 0;

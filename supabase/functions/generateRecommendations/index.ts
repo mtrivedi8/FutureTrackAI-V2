@@ -86,7 +86,7 @@ For each recommendation:
 
 Mix the 5 types: Career Path, Skill, Course, Activity, Project.`;
 
-    const result = await invokeLLM({ prompt, schema: recSchema });
+    const result = await invokeLLM({ source: 'generateRecommendations', prompt, schema: recSchema });
     const recs = result?.recommendations || [];
 
     const existingTitlesSet = new Set(existingRecs.map((r) => r.title?.toLowerCase().trim()));

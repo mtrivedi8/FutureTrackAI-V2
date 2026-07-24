@@ -21,6 +21,7 @@ import Journey from './pages/Journey';
 import RecommendationDetailPage from './pages/RecommendationDetailPage';
 import JourneyNewPage from './pages/JourneyNewPage';
 import Internships from './pages/Internships';
+import Admin from './pages/Admin';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/journey/new" element={<JourneyNewPage />} />
         <Route path="/recommendations/:id" element={<RecommendationDetailPage />} />
         <Route path="/roadmap" element={<RoadmapDemo />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

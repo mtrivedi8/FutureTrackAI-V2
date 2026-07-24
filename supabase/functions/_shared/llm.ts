@@ -1,10 +1,15 @@
-import Anthropic from 'npm:@anthropic-ai/sdk@0.68';
+import Anthropic from 'npm:@anthropic-ai/sdk@0.114';
+import { logEvent } from './log.ts';
 
 // Replaces base44's hosted LLM gateway (`integrations.Core.InvokeLLM`).
 // Always uses Claude Opus 4.8 per project defaults. Structured JSON output is
 // obtained by forcing a single "submit_result" tool call whose input_schema
 // is the caller's desired schema; optional web grounding uses Anthropic's
 // server-side web_search tool (executes inline, no extra round trip needed).
+//
+// IMPORTANT: keep this SDK version reasonably current - an old SDK predates
+// fields like `thinking`/`output_config`/the current web_search tool type
+// and can silently fail to build or parse requests using them.
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
 
@@ -19,6 +24,18 @@ export interface InvokeLLMOptions {
   fileUrls?: string[];
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   maxTokens?: number;
+  /** Calling edge function's name, used only to tag log entries. */
+  source?: string;
+}
+
+function describeError(err: unknown) {
+  const e = err as any;
+  return {
+    message: e?.message ?? String(err),
+    status: e?.status,
+    name: e?.name,
+    error: e?.error,
+  };
 }
 
 async function fetchAsBase64Document(url: string): Promise<{ type: 'document'; source: { type: 'base64'; media_type: string; data: string } } | null> {
@@ -79,19 +96,30 @@ async function runOnce(opts: InvokeLLMOptions, forceTool: boolean): Promise<any 
 
 /** Invokes Claude and returns the parsed structured result, or null if it never called submit_result. */
 export async function invokeLLM(opts: InvokeLLMOptions): Promise<any | null> {
+  const source = opts.source ?? 'llm';
   try {
     const first = await runOnce(opts, true);
     if (first) return first;
+    await logEvent(source, 'warn', 'invokeLLM: model responded without calling submit_result', {
+      promptPreview: opts.prompt.slice(0, 300),
+      webSearch: !!opts.webSearch,
+    });
   } catch (err) {
-    console.error('[llm] first attempt failed:', (err as Error).message);
+    await logEvent(source, 'error', 'invokeLLM: first attempt threw', describeError(err));
   }
 
   // Fallback: force the tool call directly (mirrors base44's multi-model
   // fallback - here we retry once without web search, forcing the answer).
   try {
-    return await runOnce({ ...opts, webSearch: false }, true);
+    const fallback = await runOnce({ ...opts, webSearch: false }, true);
+    if (!fallback) {
+      await logEvent(source, 'warn', 'invokeLLM: fallback also responded without submit_result', {
+        promptPreview: opts.prompt.slice(0, 300),
+      });
+    }
+    return fallback;
   } catch (err) {
-    console.error('[llm] fallback attempt failed:', (err as Error).message);
+    await logEvent(source, 'error', 'invokeLLM: fallback attempt threw', describeError(err));
     return null;
   }
 }

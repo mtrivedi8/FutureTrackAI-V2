@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     let websiteMap: Record<string, string> = {};
     if (schoolNames.length > 0) {
       try {
-        const result = await invokeLLM({
+        const result = await invokeLLM({ source: 'importNCESSchools',
           prompt: `Find official website URLs for these schools in ${stateCode}. Return a JSON object with school name as key and website URL as value (empty string if not found): ${JSON.stringify(schoolNames)}`,
           webSearch: true,
           schema: { type: 'object', properties: { websites: { type: 'object' } } },

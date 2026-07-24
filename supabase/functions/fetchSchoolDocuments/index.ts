@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
       const llmTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LLM timeout after 25s')), 25000));
       const docResult = await Promise.race([
-        invokeLLM({
+        invokeLLM({ source: 'fetchSchoolDocuments',
           prompt: `Find direct download links and document URLs for "${schoolName}"${city ? ' in ' + city : ''}${zipcode ? ' (zip ' + zipcode + ')' : ''} from their official school/district websites.
 
 Search for and return URLs to:

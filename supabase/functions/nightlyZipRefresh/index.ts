@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
       const llmTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LLM timeout after 25s')), 25000));
       const docResult = await Promise.race([
-        invokeLLM({
+        invokeLLM({ source: 'nightlyZipRefresh',
           prompt: `Find official document URLs for "${schoolName}"${city ? ' in ' + city : ''} (zip ${zip}). Search their official school/district website for:
 1. Course Catalog PDF or webpage
 2. School website homepage

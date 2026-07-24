@@ -93,7 +93,7 @@ Build grades ${freshProfile.current_grade}-12 roadmap. For each grade include:
 Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with real program names — never generic descriptions. Tailor everything tightly to this student's unique interests, strengths, and dream careers.`;
 
       try {
-        const data = await invokeLLM({ prompt, schema: { type: 'object', properties: { track: trackSchema } } });
+        const data = await invokeLLM({ source: 'generateAcademicPlan', prompt, schema: { type: 'object', properties: { track: trackSchema } } });
         if (!data?.track) return null;
         const track = data.track;
         return {
@@ -210,11 +210,11 @@ Deno.serve(async (req) => {
       let result: any = null;
 
       if (catalogUrl) {
-        result = await invokeLLM({ prompt: `${promptBase}\n\nOfficial course catalog: ${catalogUrl}`, schema, fileUrls: [catalogUrl] });
+        result = await invokeLLM({ source: 'generateAcademicPlan', prompt: `${promptBase}\n\nOfficial course catalog: ${catalogUrl}`, schema, fileUrls: [catalogUrl] });
       } else if (schoolWebsite) {
-        result = await invokeLLM({ prompt: `${promptBase}\n\nSchool website: ${schoolWebsite} — search this site for the course catalog.`, schema, webSearch: true });
+        result = await invokeLLM({ source: 'generateAcademicPlan', prompt: `${promptBase}\n\nSchool website: ${schoolWebsite} — search this site for the course catalog.`, schema, webSearch: true });
       } else {
-        result = await invokeLLM({ prompt: `Find course catalog for "${schoolName}" in ${profile.city || profile.zipcode}. ${promptBase}`, schema, webSearch: true });
+        result = await invokeLLM({ source: 'generateAcademicPlan', prompt: `Find course catalog for "${schoolName}" in ${profile.city || profile.zipcode}. ${promptBase}`, schema, webSearch: true });
       }
 
       middle = result?.middle_courses || [];

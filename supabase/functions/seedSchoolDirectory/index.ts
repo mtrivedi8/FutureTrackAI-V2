@@ -35,7 +35,7 @@ const SCHOOL_SCHEMA = {
 async function fetchSchoolsForType(stateCode: string, schoolType: 'middle' | 'high') {
   const typeLabel = schoolType === 'middle' ? 'middle schools (grades 6-8)' : 'high schools (grades 9-12)';
   try {
-    const result = await invokeLLM({
+    const result = await invokeLLM({ source: 'seedSchoolDirectory',
       prompt: `Search the web and return public and private ${typeLabel} in the US state "${stateCode}". For each school provide: school name, zip code (5 digits), city, school type (middle, high, or middle_high), and school district. Focus on accuracy of zip codes. Return up to 150 schools.`,
       webSearch: true,
       maxUses: 10,

@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     let totalAdded = 0;
     for (const zip of uniqueZips) {
       try {
-        const result = await invokeLLM({
+        const result = await invokeLLM({ source: 'refreshSchoolDirectory',
           prompt: `Search the web and return all middle schools and high schools located in or serving US zip code ${zip}. Include school name, city, state, school type (middle, high, or middle_high), and district name. Return an empty array if nothing found.`,
           webSearch: true,
           schema: {

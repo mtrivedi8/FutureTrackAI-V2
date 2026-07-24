@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const { data: existing = [] } = await supabaseAdmin.from('school_directory').select('*').eq('zipcode', zipcode);
     if (existing.length > 0) return jsonResponse({ schools: existing, source: 'directory' });
 
-    const result = await invokeLLM({
+    const result = await invokeLLM({ source: 'lookupSchoolsByZip',
       prompt: `Find all middle schools and high schools in the ${zipcode} zip code area. For each school, provide: school_name, school_type (middle or high), city, state, district. Return as JSON array.`,
       webSearch: true,
       schema: {

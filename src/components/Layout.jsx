@@ -2,9 +2,10 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import TopHeader from "./TopHeader";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "./PageTransition";
-import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap, Briefcase } from "lucide-react";
+import { Home, Compass, TrendingUp, User, BookOpen, Trophy, GraduationCap, Briefcase, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
   { path: "/", icon: Home, label: "Dashboard" },
@@ -19,6 +20,7 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   if (location.pathname === "/onboarding") {
     return <Outlet />;
@@ -59,6 +61,22 @@ export default function Layout() {
             );
           })}
         </nav>
+        {user?.role === 'admin' && (
+          <div className="px-3 pb-2">
+            <Link
+              to="/admin"
+              className={cn(
+                "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                location.pathname === "/admin"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <ShieldAlert className="w-5 h-5" />
+              Admin
+            </Link>
+          </div>
+        )}
         <div className="p-4">
           <div className="rounded-xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 p-4">
             <p className="text-xs font-medium text-foreground mb-1">Pro Tip 💡</p>

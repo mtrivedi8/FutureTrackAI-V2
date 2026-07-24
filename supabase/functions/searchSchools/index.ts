@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const { query } = await req.json();
     if (!query || query.length < 2) return jsonResponse({ schools: [] });
 
-    const result = await invokeLLM({
+    const result = await invokeLLM({ source: 'searchSchools',
       prompt: `Search for US middle schools and high schools (grades 6-12) whose name matches or contains "${query}".
 Return real schools from across the United States. Include the school name, city, and state.
 Return up to 20 results. Only include schools that actually exist.`,

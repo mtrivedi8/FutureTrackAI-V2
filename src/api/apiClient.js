@@ -16,6 +16,7 @@ const TABLES = {
   SchoolDocumentCache: 'school_document_cache',
   UsageCredit: 'usage_credits',
   Internship: 'internships',
+  FunctionLog: 'function_logs',
 };
 
 function makeEntity(table) {
