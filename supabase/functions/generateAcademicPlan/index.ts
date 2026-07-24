@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../_shared/supabaseAdmin.ts';
 import { getAuthedUser } from '../_shared/auth.ts';
 import { invokeLLM } from '../_shared/llm.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { logEvent } from '../_shared/log.ts';
 
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
@@ -117,6 +118,9 @@ Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with
     const plan = plans?.[0];
 
     if (valid.length === 0) {
+      await logEvent('generateAcademicPlan', 'error', 'All 3 track generations produced no track', {
+        results: results.map((r) => (r.status === 'rejected' ? { status: r.status, reason: String(r.reason?.message ?? r.reason) } : { status: r.status, value: r.value })),
+      }, profile.user_email);
       if (plan) await supabaseAdmin.from('career_plans').update({ is_generating: false }).eq('id', plan.id);
       return;
     }
@@ -139,6 +143,9 @@ Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with
     }
   } catch (err) {
     console.error('[GENERATE_TRACKS] Fatal error:', (err as Error).message);
+    await logEvent('generateAcademicPlan', 'error', 'generateTracks fatal error', {
+      message: (err as Error)?.message, stack: (err as Error)?.stack,
+    }, profile.user_email);
   }
 }
 
@@ -246,15 +253,23 @@ Deno.serve(async (req) => {
     }
 
     const backgroundWork = generateTracks(profileWithEmail, journey, middle, high, schoolName);
-    if (typeof EdgeRuntime !== 'undefined') {
-      EdgeRuntime.waitUntil(backgroundWork);
-    } else {
-      backgroundWork.catch((err) => console.error('background generateTracks error:', err.message));
+    backgroundWork.catch((err) => console.error('background generateTracks error:', err.message));
+    try {
+      if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+        EdgeRuntime.waitUntil(backgroundWork);
+      }
+    } catch (err) {
+      await logEvent('generateAcademicPlan', 'warn', 'EdgeRuntime.waitUntil failed, background work may be cut short', {
+        message: (err as Error)?.message,
+      }, user.email);
     }
 
     return jsonResponse({ status: 'generating' });
   } catch (error) {
     console.error('generateAcademicPlan error:', (error as Error).message);
+    await logEvent('generateAcademicPlan', 'error', 'Top-level request handler error', {
+      message: (error as Error)?.message, stack: (error as Error)?.stack,
+    });
     return jsonResponse({ error: (error as Error).message }, 500);
   }
 });
