@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, MapPin, CalendarClock, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { MapPin, CalendarClock, ExternalLink, Mail, Compass, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/api/apiClient";
 
@@ -14,10 +17,35 @@ const statusColors = {
   "Skipped": "bg-muted text-muted-foreground",
 };
 
-const STATUS_OPTIONS = ["Applied", "Interviewing", "Accepted", "Rejected"];
+const selectivityColors = {
+  "Open": "bg-green-500/10 text-green-600",
+  "Competitive": "bg-blue-500/10 text-blue-600",
+  "Selective": "bg-secondary/10 text-secondary",
+  "Highly Selective": "bg-accent/10 text-accent",
+};
 
-export default function InternshipCard({ internship, onStatusChange }) {
+function buildEmailDraft({ internship, profile }) {
+  const grade = profile?.current_grade;
+  const interests = (profile?.interests || []).slice(0, 3).join(", ");
+  const subject = `Interest in ${internship.title}${internship.organization ? ` at ${internship.organization}` : ""}`;
+  const body = `Dear ${internship.organization || "Admissions Team"},
+
+My name is ${profile?.display_name || "[your name]"}, and I'm a${grade ? ` grade ${grade}` : ""} student${interests ? ` interested in ${interests}` : ""}. I'm very interested in ${internship.title}${internship.organization ? ` at ${internship.organization}` : ""}${internship.why_recommended ? ` because ${internship.why_recommended.charAt(0).toLowerCase()}${internship.why_recommended.slice(1)}` : "."}
+
+I'd love to learn more about the application process and how I can be a strong candidate. Could you share any details about eligibility, timeline, or ways to prepare?
+
+Thank you for your time and consideration.
+
+Best regards,
+${profile?.display_name || "[your name]"}${grade ? `\nGrade ${grade}` : ""}`;
+  return { subject, body };
+}
+
+export default function InternshipCard({ internship, profile, onStatusChange }) {
   const [localStatus, setLocalStatus] = useState(internship.status);
+  const [pathOpen, setPathOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [draft, setDraft] = useState(null);
 
   const updateStatus = async (s) => {
     setLocalStatus(s);
@@ -26,68 +54,140 @@ export default function InternshipCard({ internship, onStatusChange }) {
     onStatusChange?.();
   };
 
+  const openCompose = () => {
+    setDraft(buildEmailDraft({ internship, profile }));
+    setEmailOpen(true);
+  };
+
+  const sendViaMailClient = () => {
+    const to = internship.contact_email || "";
+    const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`;
+    window.location.href = url;
+  };
+
+  const copyDraft = async () => {
+    await navigator.clipboard.writeText(`Subject: ${draft.subject}\n\n${draft.body}`);
+    toast.success("Copied to clipboard");
+  };
+
   return (
-    <div className="rounded-2xl bg-card border border-border p-3 sm:p-5 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
-      <div className="flex items-start gap-2 sm:gap-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-primary/10 text-primary">
-          <Briefcase className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-heading font-semibold text-foreground">{internship.title}</h3>
-          {internship.organization && (
-            <p className="text-sm font-medium text-primary/80">{internship.organization}</p>
+    <div className="rounded-2xl bg-card border border-border p-4 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 flex flex-col h-full">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="font-heading font-semibold text-foreground">{internship.organization || "Organization"}</h3>
+        <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+          {internship.selectivity && (
+            <Badge variant="secondary" className={cn("text-[10px]", selectivityColors[internship.selectivity])}>{internship.selectivity}</Badge>
           )}
-          <p className="text-sm text-muted-foreground mt-1 mb-2">{internship.description}</p>
-          {internship.why_recommended && (
-            <p className="text-xs text-muted-foreground italic mb-3">"{internship.why_recommended}"</p>
+          {internship.contact_email && (
+            <Badge variant="secondary" className="text-[10px] gap-1 bg-green-500/10 text-green-600"><Mail className="w-2.5 h-2.5" />Email found</Badge>
           )}
-
-          <div className="flex items-center gap-2 flex-wrap mb-3">
-            <Badge variant="secondary" className={cn("text-[10px]", statusColors[localStatus])}>
-              {localStatus || "New"}
-            </Badge>
-            {internship.duration && <Badge variant="outline" className="text-[10px]">{internship.duration}</Badge>}
-            {internship.location && (
-              <Badge variant="outline" className="text-[10px] gap-1"><MapPin className="w-2.5 h-2.5" />{internship.location}</Badge>
-            )}
-            {internship.deadline && (
-              <Badge variant="outline" className="text-[10px] gap-1"><CalendarClock className="w-2.5 h-2.5" />{internship.deadline}</Badge>
-            )}
-            {internship.grade_levels?.length > 0 && (
-              <Badge variant="outline" className="text-[10px]">Grades {internship.grade_levels.join(', ')}</Badge>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {internship.application_url && (
-              <a
-                href={internship.application_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] px-2 py-1 rounded-lg border font-medium bg-primary text-primary-foreground border-primary flex items-center gap-1"
-              >
-                Apply <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            )}
-            {STATUS_OPTIONS.map((s) => (
-              <button
-                key={s}
-                onClick={() => updateStatus(s)}
-                className={cn(
-                  "text-[10px] px-2 py-1 rounded-lg border font-medium transition-colors select-none",
-                  localStatus === s
-                    ? s === "Accepted" ? "bg-green-500/20 text-green-700 border-green-300"
-                      : s === "Rejected" ? "bg-destructive/20 text-destructive border-destructive/40"
-                      : "bg-primary/20 text-primary border-primary/40"
-                    : "bg-muted text-muted-foreground border-border hover:bg-muted/70"
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
+
+      {internship.application_url ? (
+        <a href={internship.application_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline mb-2 inline-block">
+          {internship.title}
+        </a>
+      ) : (
+        <p className="text-sm font-medium text-foreground mb-2">{internship.title}</p>
+      )}
+
+      <p className="text-sm text-muted-foreground mb-2 flex-1">{internship.description}</p>
+
+      <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground mb-2">
+        {internship.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{internship.location}</span>}
+        {internship.deadline && <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" />{internship.deadline}</span>}
+      </div>
+
+      {internship.eligibility && (
+        <p className="text-xs text-muted-foreground italic mb-3">{internship.eligibility}</p>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <Badge variant="secondary" className={cn("text-[10px]", statusColors[localStatus])}>{localStatus || "New"}</Badge>
+        {internship.season && <Badge variant="outline" className="text-[10px]">{internship.season}</Badge>}
+        {internship.duration && <Badge variant="outline" className="text-[10px]">{internship.duration}</Badge>}
+      </div>
+
+      <div className="flex items-center gap-1.5 flex-wrap mt-auto">
+        {internship.application_url && (
+          <a href={internship.application_url} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2">
+              Visit <ExternalLink className="w-2.5 h-2.5" />
+            </Button>
+          </a>
+        )}
+        {internship.path_to_get_in && (
+          <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2" onClick={() => setPathOpen(true)}>
+            <Compass className="w-3 h-3" /> Path to Get In
+          </Button>
+        )}
+        <Button size="sm" className="h-7 text-[10px] gap-1 px-2 bg-gradient-to-r from-primary to-accent" onClick={openCompose}>
+          <Mail className="w-3 h-3" /> Compose Email
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-border/50">
+        {["Applied", "Interviewing", "Accepted", "Rejected"].map((s) => (
+          <button
+            key={s}
+            onClick={() => updateStatus(s)}
+            className={cn(
+              "text-[10px] px-2 py-1 rounded-lg border font-medium transition-colors select-none",
+              localStatus === s
+                ? s === "Accepted" ? "bg-green-500/20 text-green-700 border-green-300"
+                  : s === "Rejected" ? "bg-destructive/20 text-destructive border-destructive/40"
+                  : "bg-primary/20 text-primary border-primary/40"
+                : "bg-muted text-muted-foreground border-border hover:bg-muted/70"
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <Dialog open={pathOpen} onOpenChange={setPathOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Path to Get In</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{internship.path_to_get_in}</p>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Compose Outreach Email</DialogTitle>
+          </DialogHeader>
+          {draft && (
+            <div className="space-y-3">
+              {internship.contact_email ? (
+                <p className="text-xs text-muted-foreground">To: <span className="font-medium text-foreground">{internship.contact_email}</span></p>
+              ) : (
+                <p className="text-xs text-muted-foreground">No contact email was found for this program — copy this draft and use the program's contact/inquiry form instead.</p>
+              )}
+              <input
+                className="w-full text-sm rounded-md border border-input bg-transparent px-3 py-2"
+                value={draft.subject}
+                onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
+              />
+              <Textarea
+                rows={12}
+                value={draft.body}
+                onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">This is a draft only — review and personalize it before sending. Nothing is sent automatically.</p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={copyDraft} className="gap-2"><Copy className="w-3.5 h-3.5" /> Copy</Button>
+            <Button size="sm" onClick={sendViaMailClient} className="gap-2 bg-gradient-to-r from-primary to-accent">
+              <Send className="w-3.5 h-3.5" /> Open in Email App
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

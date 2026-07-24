@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../_shared/supabaseAdmin.ts';
 import { getAuthedUser } from '../_shared/auth.ts';
 import { invokeLLM } from '../_shared/llm.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { logEvent } from '../_shared/log.ts';
 
 const schema = {
   type: 'object',
@@ -20,11 +21,62 @@ const schema = {
           grade_levels: { type: 'array', items: { type: 'number' } },
           duration: { type: 'string' },
           location: { type: 'string' },
+          eligibility: { type: 'string' },
+          selectivity: { type: 'string', enum: ['Open', 'Competitive', 'Selective', 'Highly Selective'] },
+          contact_email: { type: 'string' },
+          path_to_get_in: { type: 'string' },
         },
       },
     },
   },
 };
+
+/** Next upcoming summer application cycle, e.g. if it's already past June this year, target next year's. */
+function nextSummerYear(): number {
+  const now = new Date();
+  return now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+}
+
+async function findInternshipsForBucket(opts: {
+  bucketLabel: string;
+  bucketDescription: string;
+  profile: any;
+  grade: number;
+  season: string;
+  journeySummary: string;
+  pastInternships: string[];
+  perTrack: number;
+  excludeKeys: Set<string>;
+}) {
+  const { bucketLabel, bucketDescription, profile, grade, season, journeySummary, pastInternships, perTrack, excludeKeys } = opts;
+
+  const prompt = `You are a career counselor finding REAL, currently available internships and structured pre-professional programs for a high-achieving student, targeting the ${season} application cycle.
+
+Student: ${profile.display_name}, age ${profile.age}, grade ${grade}.
+Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'United States'}.
+Interests: ${(profile.interests || []).join(', ') || 'Not specified'}.
+Strengths: ${(profile.strengths || []).join(', ') || 'Not specified'}.
+Dream careers: ${(profile.dream_careers || []).join(', ') || 'Not specified'}.
+Focus area for this batch: ${bucketLabel} — ${bucketDescription}
+Journey so far: ${journeySummary}.
+${pastInternships.length ? `Already done these internships (do NOT repeat): ${pastInternships.join(', ')}` : ''}
+${excludeKeys.size ? `Already suggested (do NOT repeat): ${[...excludeKeys].join('; ')}` : ''}
+
+Find ${perTrack} REAL internships, research programs, or structured pre-professional experiences for the ${season} cycle that:
+1. Fit this student's grade level (${grade}) — if under 10th grade, prioritize junior/pipeline programs, shadowing, or entry-level structured programs rather than formal paid internships which are rare before 10th grade.
+2. Align tightly with "${bucketLabel}" and this student's interests and dream careers.
+3. Are REAL, named programs/organizations with a genuine, working application URL (official program pages, company career pages, or well-known boards). Never invent a fake URL.
+4. Include a realistic application deadline for the ${season} cycle, or "Rolling" if year-round.
+5. Search the organization's official page for a real admissions/coordinator/contact email address for questions about the program. Only include contact_email if you actually find one published on an official source — leave it blank otherwise. Never invent an email address.
+6. eligibility: one sentence on who qualifies (grade, citizenship, GPA, etc. if known).
+7. selectivity: your best estimate (Open, Competitive, Selective, or Highly Selective) based on the program's reputation and acceptance rate if known.
+8. path_to_get_in: 2-3 concrete sentences of specific, actionable advice for how this exact student could strengthen their application (skills to build, projects to show, who to ask for recommendations).
+
+For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid), eligibility, selectivity, contact_email, path_to_get_in.`;
+
+  const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 10 });
+  return result?.internships || [];
+}
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -34,7 +86,8 @@ Deno.serve(async (req) => {
     const user = await getAuthedUser(req);
     if (!user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-    const { trackIndex } = await req.json().catch(() => ({}));
+    const { perTrack } = await req.json().catch(() => ({}));
+    const countPerBucket = Math.min(Math.max(parseInt(perTrack) || 6, 1), 10);
 
     const { data: profiles } = await supabaseAdmin
       .from('teen_profiles').select('*').eq('user_email', user.email).limit(1);
@@ -44,9 +97,7 @@ Deno.serve(async (req) => {
     const { data: plans } = await supabaseAdmin
       .from('career_plans').select('*').eq('user_email', user.email).limit(1);
     const plan = plans?.[0];
-    const tracks = plan?.career_tracks || [];
-    const idx = typeof trackIndex === 'number' ? trackIndex : (plan?.selected_track_index || 0);
-    const track = tracks[idx] || null;
+    const tracks = (plan?.career_tracks || []).filter((t: any) => t?.name);
 
     const { data: journeyEntries = [] } = await supabaseAdmin
       .from('journey_entries').select('*').eq('user_email', user.email);
@@ -57,59 +108,62 @@ Deno.serve(async (req) => {
 
     const { data: existing = [] } = await supabaseAdmin
       .from('internships').select('title, organization').eq('user_email', user.email);
-    const existingKeys = new Set(existing.map((i) => `${i.title}|${i.organization || ''}`.toLowerCase().trim()));
+    const excludeKeys = new Set(existing.map((i) => `${i.title}|${i.organization || ''}`.toLowerCase().trim()));
 
     const grade = profile.current_grade || 9;
-    const trackContext = track
-      ? `Selected career track: "${track.name}" — ${track.description || ''}. College goals: ${track.college_goals || 'N/A'}.`
-      : 'No career track generated yet — base suggestions on interests and dream careers only.';
+    const season = `Summer ${nextSummerYear()}`;
 
-    const gradeEntry = track?.grades?.find((g: any) => g.grade === grade);
-    const gradeContext = gradeEntry
-      ? `This grade's plan focus: ${gradeEntry.focus || ''}. Suggested summer activities already on the roadmap: ${(gradeEntry.summer_activities || []).join(', ') || 'none listed'}.`
-      : '';
+    const buckets = [
+      { trackName: null, bucketLabel: 'General', bucketDescription: 'General career exploration matched to interests and dream careers' },
+      ...tracks.map((t: any) => ({ trackName: t.name, bucketLabel: t.name, bucketDescription: t.description || '' })),
+    ];
 
-    const prompt = `You are a career counselor finding REAL, currently available internships and structured pre-professional programs for a high-achieving student.
-
-Student: ${profile.display_name}, age ${profile.age}, grade ${grade}.
-Location: ${[profile.city, profile.country].filter(Boolean).join(', ') || 'United States'}.
-Interests: ${(profile.interests || []).join(', ') || 'Not specified'}.
-Strengths: ${(profile.strengths || []).join(', ') || 'Not specified'}.
-Dream careers: ${(profile.dream_careers || []).join(', ') || 'Not specified'}.
-${trackContext}
-${gradeContext}
-Journey so far: ${journeySummary}.
-${pastInternships.length ? `Already done these internships (do NOT repeat): ${pastInternships.join(', ')}` : ''}
-${existingKeys.size ? `Already suggested (do NOT repeat): ${[...existingKeys].join('; ')}` : ''}
-
-Find 5 REAL internships, research programs, or structured pre-professional experiences that:
-1. Fit this student's grade level (${grade}) — if under 10th grade, prioritize junior/pipeline programs, shadowing, or entry-level structured programs rather than formal paid internships which are rare before 10th grade.
-2. Align tightly with their career track, interests, and dream careers.
-3. Are REAL, named programs/organizations with a genuine, working application URL (company career pages, program sites, or well-known internship boards like handshake, indeed, or the org's own site). Never invent a fake URL.
-4. Include a realistic application deadline or note "Rolling" if year-round.
-
-For each: title, organization, description (2-3 sentences), why_recommended (specific to this student), application_url, deadline, grade_levels (array of grades this applies to), duration (e.g. "8 weeks, summer"), location (city/remote/hybrid).`;
-
-    const result = await invokeLLM({ source: 'generateInternships', prompt, schema, webSearch: true, maxUses: 8 });
-    const internships = result?.internships || [];
+    const bucketResults = await Promise.allSettled(
+      buckets.map((b) =>
+        findInternshipsForBucket({
+          bucketLabel: b.bucketLabel,
+          bucketDescription: b.bucketDescription,
+          profile, grade, season, journeySummary, pastInternships,
+          perTrack: countPerBucket,
+          excludeKeys,
+        })
+      )
+    );
 
     let created = 0;
-    for (const internship of internships) {
-      const key = `${internship.title}|${internship.organization || ''}`.toLowerCase().trim();
-      if (!internship.title || existingKeys.has(key)) continue;
-      existingKeys.add(key);
-      await supabaseAdmin.from('internships').insert({
-        ...internship,
-        user_email: user.email,
-        track_name: track?.name || null,
-        status: 'New',
-      });
-      created++;
+    for (let i = 0; i < buckets.length; i++) {
+      const result = bucketResults[i];
+      if (result.status !== 'fulfilled') {
+        await logEvent('generateInternships', 'error', `Bucket "${buckets[i].bucketLabel}" failed`, {
+          reason: String((result as PromiseRejectedResult).reason?.message ?? (result as PromiseRejectedResult).reason),
+        }, user.email);
+        continue;
+      }
+      for (const internship of result.value) {
+        const key = `${internship.title}|${internship.organization || ''}`.toLowerCase().trim();
+        if (!internship.title || excludeKeys.has(key)) continue;
+        excludeKeys.add(key);
+        await supabaseAdmin.from('internships').insert({
+          ...internship,
+          user_email: user.email,
+          track_name: buckets[i].trackName,
+          season,
+          status: 'New',
+        });
+        created++;
+      }
+    }
+
+    if (created === 0) {
+      await logEvent('generateInternships', 'warn', 'No internships created across any bucket', {
+        bucketCount: buckets.length,
+      }, user.email);
     }
 
     return jsonResponse({ count: created });
   } catch (error) {
     console.error('generateInternships error:', (error as Error).message);
+    await logEvent('generateInternships', 'error', 'Top-level handler error', { message: (error as Error)?.message });
     return jsonResponse({ error: (error as Error).message }, 500);
   }
 });
