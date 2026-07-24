@@ -60,6 +60,11 @@ const courseSchema = {
   },
 };
 
+/** Canonical form for matching school names that differ only in casing/hyphenation/whitespace. */
+function normalizeSchoolName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
 /** Orders courses so ones relevant to the student's actual grade come first, before any top-N truncation. */
 function prioritizeCoursesForGrade(middle: any[], high: any[], grade: number) {
   const isMiddleGrade = grade <= 8;
@@ -74,7 +79,8 @@ function prioritizeCoursesForGrade(middle: any[], high: any[], grade: number) {
   return [...byGradeMatch(primary), ...byGradeMatch(secondary)];
 }
 
-async function fetchCourseCatalog(schoolName: string, profile: any, grade: number) {
+async function fetchCourseCatalog(rawSchoolName: string, profile: any, grade: number) {
+  const schoolName = normalizeSchoolName(rawSchoolName);
   const { data: existingCacheRows } = await supabaseAdmin
     .from('school_document_cache').select('*').eq('school_name', schoolName).eq('zipcode', profile.zipcode).limit(1);
   const cache = existingCacheRows?.[0];
@@ -139,24 +145,45 @@ async function fetchCourseCatalog(schoolName: string, profile: any, grade: numbe
     // that path is what has proven reliable elsewhere in this app.
     result = await invokeLLM({
       source: 'generateAcademicPlan',
-      prompt: `${promptBase}\n\nUse your knowledge of typical course offerings for a school like "${schoolName}" in ${profile.city || profile.zipcode}.`,
-      schema, effort: 'medium', maxTokens: 4000,
+      prompt: `${promptBase}\n\nUse your knowledge of typical course offerings for a school like "${schoolName}" in ${profile.city || profile.zipcode}. This student is in grade ${grade}, so it is CRITICAL that ${grade <= 8 ? 'middle_courses (grades 6-8)' : 'high_courses (grades 9-12)'} is fully populated with 15+ real, grade-appropriate course names - do not leave it empty or thin even if you spend less effort on the other band.`,
+      schema, effort: 'medium', maxTokens: 6000,
     });
   }
 
   let middle = result?.middle_courses || [];
   let high = result?.high_courses || [];
 
-  if (middle.length === 0 && high.length === 0) {
-    await logEvent('generateAcademicPlan', 'warn', `Could not extract a real course catalog for "${schoolName}" - using generic fallback courses`, { documentUrls }, profile.user_email);
-    middle = [
-      { name: 'English 7', subject_area: 'English', level: 'Standard', grade_levels: [7], required_or_elective: 'Required' },
-      { name: 'Math 7', subject_area: 'Math', level: 'Standard', grade_levels: [7], required_or_elective: 'Required' },
-    ];
-    high = [
+  // The band the roadmap is actually being built for (grades 9-12 use high
+  // school courses, grades 7-8 use middle school courses) must never come
+  // back empty - if it did, the roadmap would be forced to pull from the
+  // wrong band entirely (seen in practice: a 9th grader's plan filled with
+  // "Physical Science 8" because high_courses came back empty while
+  // middle_courses was fully populated).
+  const isHighSchoolGrade = grade >= 9;
+  const relevantBandEmpty = isHighSchoolGrade ? high.length === 0 : middle.length === 0;
+
+  if (relevantBandEmpty) {
+    await logEvent('generateAcademicPlan', 'warn', `Course catalog fetch returned no ${isHighSchoolGrade ? 'high school' : 'middle school'} courses for "${schoolName}" (grade ${grade}) - using generic fallback for that band`, { documentUrls, middleCount: middle.length, highCount: high.length }, profile.user_email);
+    const fallbackHigh = [
       { name: 'English 9', subject_area: 'English', level: 'Standard', grade_levels: [9], required_or_elective: 'Required' },
+      { name: 'English 10', subject_area: 'English', level: 'Standard', grade_levels: [10], required_or_elective: 'Required' },
+      { name: 'Algebra I', subject_area: 'Math', level: 'Standard', grade_levels: [9], required_or_elective: 'Required' },
       { name: 'Algebra II', subject_area: 'Math', level: 'Standard', grade_levels: [9, 10], required_or_elective: 'Required' },
+      { name: 'Geometry', subject_area: 'Math', level: 'Standard', grade_levels: [9, 10], required_or_elective: 'Required' },
+      { name: 'Biology', subject_area: 'Science', level: 'Standard', grade_levels: [9, 10], required_or_elective: 'Required' },
+      { name: 'Chemistry', subject_area: 'Science', level: 'Standard', grade_levels: [10, 11], required_or_elective: 'Required' },
+      { name: 'World History', subject_area: 'Social Studies', level: 'Standard', grade_levels: [9, 10], required_or_elective: 'Required' },
+      { name: 'Introduction to Computer Science', subject_area: 'Technology', level: 'Standard', grade_levels: [9, 10, 11, 12], required_or_elective: 'Elective' },
     ];
+    const fallbackMiddle = [
+      { name: 'English 7', subject_area: 'English', level: 'Standard', grade_levels: [7], required_or_elective: 'Required' },
+      { name: 'English 8', subject_area: 'English', level: 'Standard', grade_levels: [8], required_or_elective: 'Required' },
+      { name: 'Math 7', subject_area: 'Math', level: 'Standard', grade_levels: [7], required_or_elective: 'Required' },
+      { name: 'Pre-Algebra', subject_area: 'Math', level: 'Standard', grade_levels: [7, 8], required_or_elective: 'Required' },
+      { name: 'Life Science', subject_area: 'Science', level: 'Standard', grade_levels: [7], required_or_elective: 'Required' },
+      { name: 'Physical Science', subject_area: 'Science', level: 'Standard', grade_levels: [8], required_or_elective: 'Required' },
+    ];
+    if (isHighSchoolGrade) high = fallbackHigh; else middle = fallbackMiddle;
   }
 
   const cacheData = {

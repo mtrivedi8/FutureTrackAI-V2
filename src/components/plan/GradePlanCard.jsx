@@ -204,7 +204,14 @@ export default function GradePlanCard({ grade, gradeData, schoolName, schoolInfo
                   ) : (
                     <h3 className="font-heading font-semibold text-sm text-foreground">School Courses</h3>
                   )}
-                  <span className="text-xs text-muted-foreground">📚 From course catalog</span>
+                  {(schoolInfo?.catalog_url || schoolInfo?.school_website) ? (
+                    <a href={schoolInfo.catalog_url || schoolInfo.school_website} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline flex items-center gap-1">
+                      📚 From course catalog <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">📚 From course catalog</span>
+                  )}
                   {schoolInfo && (schoolInfo.catalog_url || schoolInfo.school_website) && (
                     <div className="flex items-center gap-2 text-xs ml-auto">
                       {schoolInfo.school_website && (
