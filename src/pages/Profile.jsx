@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck, StopCircle } from "lucide-react";
+import { User, Edit3, Save, Sparkles, Loader2, LogOut, School, RotateCcw, ShieldCheck, StopCircle, CalendarDays } from "lucide-react";
 import SchoolSearch from "@/components/profile/SchoolSearch";
 import { cn } from "@/lib/utils";
+import { currentSchoolYear, progressGrade } from "@/lib/schoolYear";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -72,8 +73,13 @@ export default function Profile() {
       navigate("/onboarding");
       return;
     }
-    setProfile(profiles[0]);
-    setForm(profiles[0]);
+    let p = profiles[0];
+    const bump = progressGrade(p);
+    if (bump.changed) {
+      p = await apiClient.entities.TeenProfile.update(p.id, { current_grade: bump.grade, grade_year: bump.gradeYear });
+    }
+    setProfile(p);
+    setForm(p);
     const paymentSetting = allSettings.find(s => s.key === 'payment_enabled');
     const limitSetting = allSettings.find(s => s.key === 'monthly_limit_enabled');
     setPaymentEnabled(paymentSetting ? paymentSetting.value === 'true' : true);
@@ -216,17 +222,35 @@ export default function Profile() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <h2 className="font-heading font-semibold text-lg flex items-center gap-2"><School className="w-5 h-5" /> School Info</h2>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Current grade</label>
-              <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
-                <SelectContent>
-                  {[7,8,9,10,11,12].map(g => (
-                    <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Current grade</label>
+                <Select value={String(form.current_grade || "")} onValueChange={v => setForm(p => ({ ...p, current_grade: parseInt(v) }))}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select your grade" /></SelectTrigger>
+                  <SelectContent>
+                    {[7,8,9,10,11,12].map(g => (
+                      <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">School year</label>
+                <Select value={form.grade_year || currentSchoolYear()} onValueChange={v => setForm(p => ({ ...p, grade_year: v }))}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select school year" /></SelectTrigger>
+                  <SelectContent>
+                    {(() => {
+                      const start = parseInt(currentSchoolYear().split('-')[0], 10);
+                      return [-1, 0, 1].map(offset => {
+                        const y = start + offset;
+                        return <SelectItem key={y} value={`${y}-${y + 1}`}>{y}-{y + 1}</SelectItem>;
+                      });
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground -mt-2">This anchors your grade to a school year, so it automatically advances each year.</p>
             <SchoolSearch
               grade={form.current_grade || null}
               zipcode={form.zipcode || ""}
@@ -245,9 +269,14 @@ export default function Profile() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-muted/50 px-4 py-3 flex items-start gap-3">
           <School className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
           <div className="space-y-1">
-            {profile.middle_school_name && <p className="text-sm font-medium">📚 {profile.middle_school_name}</p>}
+            {profile.middle_school_name && <p className="text-sm font-medium">🎓 {profile.middle_school_name}</p>}
             {profile.high_school_name && <p className="text-sm font-medium">🎓 {profile.high_school_name}</p>}
-            {profile.current_grade && <p className="text-xs text-muted-foreground">Current Grade: {profile.current_grade}</p>}
+            {profile.current_grade && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" />
+                Grade {profile.current_grade}{profile.grade_year ? ` · ${profile.grade_year}` : ""}
+              </p>
+            )}
           </div>
         </motion.div>
       )}

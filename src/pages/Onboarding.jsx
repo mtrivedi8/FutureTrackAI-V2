@@ -8,6 +8,7 @@ import { Sparkles, ArrowRight, ArrowLeft, Rocket, Star, Zap, Heart, School, Grad
 import SchoolSearch from "@/components/profile/SchoolSearch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { currentSchoolYear } from "@/lib/schoolYear";
 import { motion, AnimatePresence } from "framer-motion";
 
 const INTERESTS = [
@@ -96,6 +97,7 @@ export default function Onboarding() {
       user_email: userEmail,
       onboarding_completed: true,
       account_created_date: new Date().toISOString(),
+      grade_year: currentSchoolYear(),
     });
 
     // Kick off recommendations and academic plan generation in background

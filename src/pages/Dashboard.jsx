@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { apiClient } from "@/api/apiClient";
+import { progressGrade } from "@/lib/schoolYear";
 import StatsOverview from "../components/dashboard/StatsOverview";
 import RecommendationCard from "../components/dashboard/RecommendationCard";
 
@@ -24,7 +25,11 @@ export default function Dashboard() {
       navigate("/onboarding");
       return;
     }
-    const p = profiles[0];
+    let p = profiles[0];
+    const bump = progressGrade(p);
+    if (bump.changed) {
+      p = await apiClient.entities.TeenProfile.update(p.id, { current_grade: bump.grade, grade_year: bump.gradeYear });
+    }
     setProfile(p);
     const [recs, updates] = await Promise.all([
       apiClient.entities.Recommendation.filter({ user_email: user.email }, "-created_date", 50),
