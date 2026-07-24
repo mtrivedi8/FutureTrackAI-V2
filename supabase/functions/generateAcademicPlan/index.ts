@@ -89,32 +89,58 @@ async function fetchCourseCatalog(schoolName: string, profile: any, grade: numbe
   }
 
   // Find the school's real course catalog/website first, so we scan an
-  // actual document instead of guessing from general knowledge.
-  const { documentUrls } = await discoverSchoolDocuments({
-    schoolName, zipcode: profile.zipcode, city: profile.city, source: 'generateAcademicPlan',
-  });
+  // actual document instead of guessing from general knowledge. Web-search
+  // LLM calls have proven unreliable in practice (silent failures with no
+  // error, seemingly regardless of effort/search-budget tuning) - guard
+  // every one with a hard timeout so a flaky search can never leave the
+  // whole plan generation hanging with is_generating stuck true.
+  const withTimeout = async <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+      ]);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const { documentUrls } = await withTimeout(
+    discoverSchoolDocuments({ schoolName, zipcode: profile.zipcode, city: profile.city, source: 'generateAcademicPlan' }),
+    45000,
+    { cacheId: null, documentUrls: {}, fromCache: false }
+  );
 
   const promptBase = `Extract all courses from "${schoolName}"'s course catalog for ${profile.city || profile.zipcode}. Include: name, level (Standard/Honors/AP/IB/Dual Enrollment), subject_area, grade_levels array, required_or_elective. Return { middle_courses: [...], high_courses: [...] }. Aim for 25+ courses per level. Be quick and direct.`;
   const schema = { type: 'object', properties: { middle_courses: courseSchema, high_courses: courseSchema } };
 
   let result: any = null;
   if (documentUrls.course_catalog) {
-    result = await invokeLLM({
-      source: 'generateAcademicPlan',
-      prompt: `${promptBase}\n\nOfficial course catalog to scan: ${documentUrls.course_catalog}`,
-      schema, fileUrls: [documentUrls.course_catalog], effort: 'medium', maxTokens: 5000,
-    });
+    result = await withTimeout(
+      invokeLLM({
+        source: 'generateAcademicPlan',
+        prompt: `${promptBase}\n\nOfficial course catalog to scan: ${documentUrls.course_catalog}`,
+        schema, fileUrls: [documentUrls.course_catalog], effort: 'medium', maxTokens: 5000,
+      }),
+      45000, null
+    );
   } else if (documentUrls.school_website) {
-    result = await invokeLLM({
-      source: 'generateAcademicPlan',
-      prompt: `${promptBase}\n\nSchool website: ${documentUrls.school_website} — search this site for the course catalog.`,
-      schema, webSearch: true, maxUses: 3, effort: 'low', maxTokens: 4000,
-    });
+    result = await withTimeout(
+      invokeLLM({
+        source: 'generateAcademicPlan',
+        prompt: `${promptBase}\n\nSchool website: ${documentUrls.school_website} — search this site for the course catalog.`,
+        schema, webSearch: true, maxUses: 3, effort: 'low', maxTokens: 4000,
+      }),
+      45000, null
+    );
   } else {
+    // No document/website discovered (or discovery timed out) - fall back
+    // to the model's own knowledge rather than another web search, since
+    // that path is what has proven reliable elsewhere in this app.
     result = await invokeLLM({
       source: 'generateAcademicPlan',
-      prompt: `Find the course catalog for "${schoolName}" in ${profile.city || profile.zipcode}. ${promptBase}`,
-      schema, webSearch: true, maxUses: 3, effort: 'low', maxTokens: 4000,
+      prompt: `${promptBase}\n\nUse your knowledge of typical course offerings for a school like "${schoolName}" in ${profile.city || profile.zipcode}.`,
+      schema, effort: 'medium', maxTokens: 4000,
     });
   }
 
