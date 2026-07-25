@@ -227,11 +227,18 @@ async function generateTracks(profile: any, journey: any, orderedCourses: any[],
       (journey.completed_courses || []).length ? `Courses already taken: ${journey.completed_courses.join(', ')}` : '',
       (journey.completed_activities || []).length ? `Activities/internships done: ${journey.completed_activities.join(', ')}` : '',
       (journey.completed_recommendations || []).length ? `Completed suggestions: ${journey.completed_recommendations.join(', ')}` : '',
-      (journey.skills_gained || []).length ? `Skills gained: ${journey.skills_gained.join(', ')}` : '',
+      (journey.in_progress_recommendations || []).length ? `Currently in progress: ${journey.in_progress_recommendations.join(', ')}` : '',
+      (journey.skills_gained || []).length ? `Skills gained along the way: ${journey.skills_gained.join(', ')}` : '',
+      (journey.new_interests || []).length ? `New interests that have emerged: ${journey.new_interests.join(', ')}` : '',
+      (journey.recent_milestones || []).length ? `Recent achievements/milestones: ${journey.recent_milestones.join(', ')}` : '',
+      (journey.moods || []).length ? `Recent mood/engagement trend (most recent first): ${journey.moods.join(', ')}` : '',
     ].filter(Boolean);
     const journeyContext = journeyParts.length ? ' Journey so far — ' + journeyParts.join('. ') + '.' : '';
+    const journeyInstruction = journeyParts.length
+      ? ' Do NOT re-suggest anything already listed as completed or in-progress above - build forward from where the student actually is.'
+      : '';
 
-    const studentBase = `Student: ${freshProfile.display_name}, age ${freshProfile.age}, grade ${grade}. Interests: ${(freshProfile.interests || []).join(', ')}. Strengths: ${(freshProfile.strengths || []).join(', ')}. Goals: ${(freshProfile.goals || []).join(', ')}. Dream Careers: ${(freshProfile.dream_careers || []).join(', ')}.${journeyContext}`;
+    const studentBase = `Student: ${freshProfile.display_name}, age ${freshProfile.age}, grade ${grade}. Interests: ${(freshProfile.interests || []).join(', ')}. Strengths: ${(freshProfile.strengths || []).join(', ')}. Goals: ${(freshProfile.goals || []).join(', ')}. Dream Careers: ${(freshProfile.dream_careers || []).join(', ')}.${journeyContext}${journeyInstruction}`;
     const coursesForPrompt = orderedCourses.slice(0, 40);
     const allCoursesSummary = coursesForPrompt
       .map((c) => `${c.name} (${c.subject_area}${c.grade_levels?.length ? `, grades ${c.grade_levels.join('/')}` : ''})`)
@@ -246,10 +253,25 @@ async function generateTracks(profile: any, journey: any, orderedCourses: any[],
       `Interdisciplinary combining ${interests.slice(0, 2).join(' + ') || 'emerging fields'}`,
     ];
 
-    const trackPromises = [0, 1, 2].map(async (i) => {
+    const { data: plans } = await supabaseAdmin
+      .from('career_plans').select('*').eq('user_email', profile.user_email).limit(1);
+    const plan = plans?.[0];
+    const existingTracks: any[] = Array.isArray(plan?.career_tracks) ? plan.career_tracks : [];
+
+    const requestedIndex = Number.isInteger(journey.regenerate_track_index) ? journey.regenerate_track_index : null;
+    const adaptMode = !!journey.adapt_mode;
+    // A single-track regenerate only makes sense against a plan that already
+    // has that track; otherwise fall back to generating the full set.
+    const indicesToGenerate = (requestedIndex !== null && existingTracks[requestedIndex]) ? [requestedIndex] : [0, 1, 2];
+
+    const trackPromises = indicesToGenerate.map(async (i) => {
+      const existingTrack = existingTracks[i];
+      const adaptContext = (adaptMode && existingTrack)
+        ? `\n\nThis track already exists and should be ADAPTED, not reinvented from scratch. Current track: "${existingTrack.name}" — ${existingTrack.description}\nCurrent grade-by-grade plan: ${(existingTrack.grades || []).map((g: any) => `Grade ${g.grade} (${g.focus})`).join(' | ')}\nUsing the student's journey/progress above, keep grades that are already substantially complete close to unchanged, and evolve the focus, milestones, and remaining grades to reflect what they've actually done, learned, and grown interested in. This is a progress-aware update, not a fresh restart.`
+        : '';
       const prompt = `Create ONE career track for: ${studentBase}
 Track ${i + 1} focus: ${trackHints[i]}
-Goals: ${(freshProfile.goals || []).join(', ')}
+Goals: ${(freshProfile.goals || []).join(', ')}${adaptContext}
 
 name: a professional career-track title describing the FIELD, 2-6 words (e.g. "Astrophysics & Data Science Track", "Business & Entrepreneurship Track"). Never use the student's own name (${freshProfile.display_name}) as the track name.
 
@@ -292,14 +314,19 @@ Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with
     });
 
     const results = await Promise.allSettled(trackPromises);
-    const valid = results.map((r) => (r.status === 'fulfilled' ? r.value : null)).filter(Boolean);
+    const generated = results.map((r) => (r.status === 'fulfilled' ? r.value : null));
 
-    const { data: plans } = await supabaseAdmin
-      .from('career_plans').select('*').eq('user_email', profile.user_email).limit(1);
-    const plan = plans?.[0];
+    // Merge newly-generated tracks back into their original slots, keeping
+    // any track that wasn't part of this request (or that failed to
+    // generate) exactly as it was rather than dropping it.
+    const generatedByIndex = new Map<number, any>();
+    indicesToGenerate.forEach((idx, i) => { if (generated[i]) generatedByIndex.set(idx, generated[i]); });
+    const finalTracks = indicesToGenerate.length === 3
+      ? [0, 1, 2].map((idx) => generatedByIndex.get(idx) || existingTracks[idx]).filter(Boolean)
+      : existingTracks.map((t, idx) => generatedByIndex.get(idx) || t);
 
-    if (valid.length === 0) {
-      await logEvent('generateAcademicPlan', 'error', 'All 3 track generations produced no track', {
+    if (finalTracks.length === 0) {
+      await logEvent('generateAcademicPlan', 'error', 'All track generations produced no track', {
         results: results.map((r) => (r.status === 'rejected' ? { status: r.status, reason: String(r.reason?.message ?? r.reason) } : { status: r.status, value: r.value })),
       }, profile.user_email);
       if (plan) await supabaseAdmin.from('career_plans').update({ is_generating: false }).eq('id', plan.id);
@@ -308,7 +335,7 @@ Prioritize highly prestigious, competitive, and elite programs. Be SPECIFIC with
 
     if (plan) {
       await supabaseAdmin.from('career_plans').update({
-        career_tracks: valid, school_info, is_generating: false,
+        career_tracks: finalTracks, school_info, is_generating: false,
       }).eq('id', plan.id);
     }
 
